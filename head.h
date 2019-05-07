@@ -1,3 +1,4 @@
+#include"deviceInfo.h"
 #ifndef HEAD_H
 #define HEAD_H
 
@@ -81,7 +82,7 @@ typedef struct {
 	u_char* GATEWAY_MAC;
 	u_char* TARGET_IP;
 	u_char* GATEWAY_IP;
-	char* dev;
+	char dev[MAX_IF_NAME_LEN];
 	char* filter;
 	int mode;
 } MITM_info;

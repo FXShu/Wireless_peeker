@@ -6,7 +6,7 @@ OBJS += main.o
 OBJS += arp.o
 OBJS += sniffer.o
 OBJS += packet.o
-
+OBJS += getif.o
 LIBS_c += -lnet
 LIBS_c += -lpcap
 LIBS_c += -lpthread
@@ -26,5 +26,7 @@ sniffer.o: sniffer.c sniffer.h
 packet.o: packet.h packet.c
 	$(CC) -c packet.c
 
+getif.o: getif.h getif.c
+	$(CC) -c getif.c
 clean:
-	rm MITM main.o arp.o sniffer.o
+	rm MITM $(OBJS)

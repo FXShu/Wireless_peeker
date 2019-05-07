@@ -1,5 +1,3 @@
-#include <pcap/pcap.h>
-#include<netinet/in.h>
 #include"sniffer.h"
 
 void print_ip(u_char* ip){
@@ -85,6 +83,29 @@ void proc_pkt(u_char* user,const struct pcap_pkthdr* hp,const u_char* packet){
 
 }
 
+int sniffer_init(sni_info* info,char* errbuf){
+	struct in_addr addr_net;
+	u_int tmp_mask;
+	u_int tmp_net_addr;
+	info->dev = pcap_lookupdev(errbuf);
+	if(!info->dev)return FAIL;
+
+	if(pcap_lookupnet(info->dev,&tmp_net_addr,&tmp_mask,errbuf)==-1)return FAIL;
+
+	addr_net.s_addr = tmp_mask;
+	info->mask = inet_ntoa(addr_net);
+	addr_net.s_addr = tmp_net_addr;
+	info->net = inet_ntoa(addr_net);
+
+	info->handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
+
+	if(!info->handle){
+		return FAIL;
+		errbuf = "you don't have permission,please run this program as root!\n";
+	}
+	
+}
+
 int getPacket(u_char* arg, const struct pcap_pkthdr* hp, const u_char* packet, char* data){
 	MITM_info MITM_arg = *(MITM_info*)arg;
 	int time =1;
@@ -166,5 +187,11 @@ void Sniffer (const char* filter_exp){
         pcap_close(handle);
 }
 
-void getgatewayMAC(u_char* user,const struct pcap_pkthdr* hp, const u_char* packet){
+void getgatewayMAC(int* gateway_ip,sni_info* info, const u_char* packet){
+	struct bpf_program filter;
+	char filter_app[20] ="src ";
+	char gateway[15];
+	sprintf(gateway,"%d.%d.%d.%d",*gateway_ip++,*gateway_ip++,*gateway_ip++,*gateway_ip);
+	strcat(filter_app,gateway);
+	//pcap_compile(ha)
 }
