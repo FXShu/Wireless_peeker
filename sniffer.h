@@ -1,11 +1,12 @@
 #ifndef SNIFFER_H
 #define SNIFFER_H
+
 #include<pcap/pcap.h>
 #include<netinet/in.h>
 #include<stdio.h>
-#include<stdlib.h>
 #include<arpa/inet.h>
 #include<string.h>
+#include<stdlib.h>
 
 #include"head.h"
 #include"common.h"

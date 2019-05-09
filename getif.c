@@ -1,5 +1,8 @@
 #include"getif.h"
 
+#include<sys/socket.h>
+#include<sys/ioctl.h>
+#include<net/if.h>
 
 void getAttackerMAC(char* dev,u_char* mac){
 	int sockfd;

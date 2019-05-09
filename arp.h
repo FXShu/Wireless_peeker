@@ -4,7 +4,7 @@
 #ifndef LIBNET_H
 #define LIBNET_H
 #include<libnet.h>
-#endif
+#endif /* LIBNET_H */
 
 #include"head.h"
 

