@@ -20,6 +20,7 @@ void* arp_spoof(void* info){
 	if(debug){
 		printf("======start arp spoof======\n");
 		printf("dev is %s\n",m_info->dev);
+		printf("target's IP is ");
 		print_ip(m_info->TARGET_IP);
 	}
 	int p_tag_target;
@@ -50,7 +51,6 @@ int main(int argc,char* argv[]){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
 	char* usr_dev;
-	bool get_dev;
 	for(;;){
 		c=getopt(argc, argv,"i:hdl");
 		if(c < 0)break;
@@ -68,9 +68,8 @@ int main(int argc,char* argv[]){
 			case 'l':
 				if(!if_buf){
 					if(getifinfo(&if_buf,errbuf)){
-						printf("can't get the device info"
-                                                "please try by superuse angin\n");
-                                        	return -1;
+                                        	exitcode = 10;
+						goto out;
 					}
 				}
 				while(if_buf->next){
@@ -92,17 +91,18 @@ int main(int argc,char* argv[]){
 	pthread_attr_setdetachstate(&a,PTHREAD_CREATE_DETACHED);
 	
 	if(getifinfo(&if_buf,errbuf)){
-		printf("can get device info"
-			"please run by superuser");
-		return -1;
+		exitcode = 10;
+		goto out;
 	}
-
 	if(!checkdevice(if_buf,usr_dev)){
-		printf("can't find spceify interface\n");
-		return -1;
+		exitcode = 11;
+		goto out;
 	}
 	getAttackerMAC(usr_dev,ATTACKER_MAC);
-	print_mac(ATTACKER_MAC);
+	if(debug){
+		printf("the attacker MAC is ");
+		print_mac(ATTACKER_MAC);
+	}
 
         MITM_info info={
                 .TARGET_MAC=TARGET_MAC,
@@ -119,5 +119,13 @@ int main(int argc,char* argv[]){
 	return 0;
 
 out :
+	switch(exitcode){
+		case 10:
+			printf("can't find device info,please run by superuser again\n");
+		break;
+		case 11:
+			printf("can't find specify interface,please check by flag 'l'\n");
+		break;
+	}
 	return exitcode;
 }
