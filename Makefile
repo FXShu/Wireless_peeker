@@ -27,6 +27,6 @@ packet.o: packet.h packet.c
 	$(CC) -c packet.c
 
 getif.o: getif.h getif.c
-	$(CC) -c getif.c
+	$(CC) -c getif.c 
 clean:
 	rm MITM $(OBJS)

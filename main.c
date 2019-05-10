@@ -1,21 +1,19 @@
 #include<unistd.h>
 #include<pthread.h>
 #include <sys/socket.h>
+#include"common.h"
 #include"arp.h"
 #include"sniffer.h"
 #include"getif.h"
 
-typedef enum{
-	false =0,
-	true =1
-}bool;
 
 bool debug=false;
 void usage(){
 	printf("MITM usage:\n"
 		"  -h = show this help test\n"
 		"  -d = increase debugging verbosity\n"
-		"  -i = interface name\n");
+		"  -i = interface name\n"
+		"  -l = list all available interface\n");
 }
 void* arp_spoof(void* info){
 	MITM_info* m_info= (MITM_info*)info;
@@ -52,8 +50,9 @@ int main(int argc,char* argv[]){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
 	char* usr_dev;
+	bool get_dev;
 	for(;;){
-		c=getopt(argc, argv,"i:hd");
+		c=getopt(argc, argv,"i:hdl");
 		if(c < 0)break;
 		switch(c){
 			case 'h':
@@ -65,6 +64,20 @@ int main(int argc,char* argv[]){
 			break;
 			case 'i':
 				usr_dev = optarg;
+			break;
+			case 'l':
+				if(!if_buf){
+					if(getifinfo(&if_buf,errbuf)){
+						printf("can't get the device info"
+                                                "please try by superuse angin\n");
+                                        	return -1;
+					}
+				}
+				while(if_buf->next){
+                                                printf("%s\n",if_buf->name);
+                                                if_buf = if_buf->next;
+				}
+				return 0;
 			break;
 			default:
 		       		usage();
@@ -78,21 +91,15 @@ int main(int argc,char* argv[]){
 	pthread_attr_init(&a);
 	pthread_attr_setdetachstate(&a,PTHREAD_CREATE_DETACHED);
 	
-	if(!pcap_findalldevs(&if_buf,errbuf)){
-		bool get_dev;
-		while(if_buf->next){
-			if(strcmp(usr_dev,if_buf->name)) {
-				get_dev = true;
-				break;
-			}
-			if_buf = if_buf->next;
-		}
-		if(!get_dev){
-			printf("input interface can't find");
-			return -1;	
-		}
-	}else{
-		printf("%s\n",errbuf);
+	if(getifinfo(&if_buf,errbuf)){
+		printf("can get device info"
+			"please run by superuser");
+		return -1;
+	}
+
+	if(!checkdevice(if_buf,usr_dev)){
+		printf("can't find spceify interface\n");
+		return -1;
 	}
 	getAttackerMAC(usr_dev,ATTACKER_MAC);
 	print_mac(ATTACKER_MAC);
