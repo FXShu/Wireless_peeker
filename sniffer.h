@@ -24,6 +24,7 @@ typedef struct {
 	char* net;
 	struct bpf_program filter;
 	char filter_app[100];
+	unsigned char mac[6];
 }sni_info;
 
 int sniffer_init(sni_info* info,char* errbuf);

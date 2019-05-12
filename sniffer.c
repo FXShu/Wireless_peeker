@@ -1,5 +1,6 @@
 #include"sniffer.h"
-extern bool debug; 
+//extern bool debug; 
+bool debug;
 void proc_pkt(u_char* user,const struct pcap_pkthdr* hp,const u_char* packet){
 	ethernet_header* pEther;
 	ip_header* pIpv4;

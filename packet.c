@@ -41,7 +41,6 @@ int ping(unsigned char* dest_ip){
 	hdr.checksum = checksum((unsigned short*)&hdr,sizeof(hdr));
 	
 	if(sendto(sockfd,&hdr,sizeof(hdr),0,(struct sockaddr*)&addr,sizeof(addr))==-1){
-		printf()
 		return -1;
 	}
 	return 0;
