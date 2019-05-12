@@ -8,6 +8,7 @@ void getAttackerMAC(char* dev,u_char* mac){
 	ioctl(sockfd,SIOCGIFHWADDR,&req);
 	strncpy(mac,req.ifr_hwaddr.sa_data,6);
 }
+
 int getifinfo(pcap_if_t** if_t,char* errbuf){
 	if(!pcap_findalldevs(if_t,errbuf)){
 		return 0;
@@ -25,6 +26,4 @@ bool checkdevice(pcap_if_t* if_buf,char* dev){
 	}
 	return get_dev;
 }
-void getGatewayMAC(){
 
-}
