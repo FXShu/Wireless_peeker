@@ -22,7 +22,7 @@ int main(){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	struct bpf_program buf;
 	char filter_app[100];
-	dev = "wlp2s0";
+	dev = "wlp3s0";
 	struct in_addr addr_net;
 	u_int mask;
 	u_int net_addr;
@@ -65,4 +65,10 @@ int main(){
 	pcap_loop(info,1,getgatewayMAC,(u_char*)&sni_info);
 
 	print_mac(sni_info.mac);
+        info = pcap_open_live(dev,0,65536,1000,errbuf);
+	if(info){
+		printf("successful\n");
+	}else{
+		printf("fail\n");
+	}
 }

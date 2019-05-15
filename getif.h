@@ -2,11 +2,8 @@
 #define GETIF_H
 #include"common.h"
 
-#ifndef PCAP_PCAP_H
-#define PCAP_PCAP_H
 #include<pcap/pcap.h>
-#endif /* PCAP_PCAP_H */
-
+#include<unistd.h>
 #include<sys/socket.h>
 #include<sys/ioctl.h>
 #include<net/if.h>
@@ -18,7 +15,7 @@
 
 typedef unsigned char u_char;
 
-void getAttackerMAC(char* dev,u_char* mac);
+void getAttackerInfo(char* dev,u_char* mac,u_char* ip);
 void getGatewayMAC();
 int  getifinfo(pcap_if_t** if_t,char* errbuf);
 bool checkdevice(pcap_if_t* if_buf,char* dev);

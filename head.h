@@ -82,7 +82,7 @@ typedef struct {
 	unsigned char* GATEWAY_MAC;
 	unsigned char* TARGET_IP;
 	unsigned char* GATEWAY_IP;
-	char dev[MAX_IF_NAME_LEN];
+	char dev[10];
 	char* filter;
 	int mode;
 } MITM_info;

@@ -1,81 +1,45 @@
 #include"sniffer.h"
-//extern bool debug; 
-bool debug;
-void proc_pkt(u_char* user,const struct pcap_pkthdr* hp,const u_char* packet){
-	ethernet_header* pEther;
-	ip_header* pIpv4;
-	arp_header* pArp;
-	pEther = (ethernet_header*)packet;
-	printf("--------------------------------------\n");
-	print_type(ntohs(pEther->eth_type));
-	printf("eth src MAC address is :");
-	print_mac(pEther->SRC_mac);
-	printf("eth des MAC address is :");
-	print_mac(pEther->DST_mac);
-
-	/* settle ip */
-	if(ntohs(pEther->eth_type) == EPT_IPv4){
-		pIpv4 = (ip_header*)(packet + sizeof(ethernet_header));
-		print_protocol(pIpv4->protocol_type);
-	        printf("src IP address is:");
-		print_ip(pIpv4->src_ip);
-		printf("des IP address is :");
-                print_ip(pIpv4->dest_ip);
-	
-	        /* settle port*/
-	        if(pIpv4->protocol_type == PROTOCOL_TCP){
-		        tcp_header* pTcp;
-		        pTcp = (tcp_header*)(packet + sizeof(ethernet_header) + sizeof(ip_header));
-		        printf("src port address is: %hu\n", ntohs(pTcp->sour_port));
-		        printf("des port address is :%hu\n", ntohs(pTcp->dest_port));
-	        }
-	        else if (pIpv4->protocol_type == PROTOCOL_UDP){
-		        udp_header* pUdp;
-		        pUdp = (udp_header*)(packet + sizeof(ethernet_header) + sizeof(ip_header));
-	 	        printf("src port address is : %hu\n",ntohs(pUdp->sour_port));
-		        printf("des port address is : %hu\n",ntohs(pUdp->dest_port));
-	        }
-	}else if (ntohs(pEther->eth_type) == EPT_ARP){
-		pArp = (arp_header*)(packet + sizeof(ethernet_header));
-		printf("src MAC address is:");
-		print_mac(pArp->src_mac);
-		printf("eth des address is:");
-		print_mac(pArp->dest_mac);
-		printf("src IP address is :");
-		print_ip(pArp->src_ip);
-		printf("des IP address is :");
-		print_ip(pArp->dest_ip);
-	}
-
-}
-
+extern bool debug; 
+//	bool debug;
 void getGatewayMAC(u_char* arg,const struct pcap_pkthdr* hp, const u_char* packet){
+	sni_info* sni = (sni_info*)arg;
+	ethernet_header* eth_header = (ethernet_header*)packet;
+	strcpy(sni->gateway_mac,eth_header->SRC_mac);
 }
 int sniffer_init(sni_info* info,char* errbuf){
 	struct in_addr addr_net;
 	u_int tmp_mask;
 	u_int tmp_net_addr;
-	info->dev = pcap_lookupdev(errbuf);
-	if(!info->dev)return FAIL;
-
 	if(pcap_lookupnet(info->dev,&tmp_net_addr,&tmp_mask,errbuf)==-1)return FAIL;
-
 	addr_net.s_addr = tmp_mask;
 	info->mask = inet_ntoa(addr_net);
 	addr_net.s_addr = tmp_net_addr;
-	info->net = inet_ntoa(addr_net);
-
-	info->handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
-
-	if(!info->handle) return -1;
-	//info->filter_app = "icmp[icmptype] = icmp-echoreply";
+	info->handle = pcap_open_live(info->dev,65536,0,1000,errbuf);  //no promiscous mode,or can't get the gateway mac
+	if(!info->handle){
+		printf("%s\n",errbuf);
+		return -1;
+	}
 	strcpy(info->filter_app,"icmp[icmptype] = icmp-echoreply");
 	if(pcap_compile(info->handle,&info->filter,info->filter_app,0,*(info->net))){
 		if(debug)printf("%s\n",pcap_geterr(info->handle));
 		return -1;
 	}
 	pcap_setfilter(info->handle,&(info->filter));
+	ping("8.8.8.8");
 	pcap_loop(info->handle,1,getGatewayMAC,(u_char*)info);
+	info->handle = pcap_open_live(info->dev,65536,1,100,errbuf); // set to promiscous mode to get packet
+	getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
+	
+	if(debug){
+		printf("the gateway's mac is ");
+		print_mac(info->gateway_mac);
+		printf("the attacker's mac is ");
+		print_mac(info->attacker_mac);
+		printf("the attacker's ip is ");
+		print_ip(info->attacker_ip);
+	}
+
+	return 0;
 }
 
 int getPacket(u_char* arg, const struct pcap_pkthdr* hp, const u_char* packet, char* data){
@@ -107,54 +71,4 @@ int getPacket(u_char* arg, const struct pcap_pkthdr* hp, const u_char* packet, c
 		return FromGateway;
 	//	forword(); //gateway -> victim
 	}
-}
-void Sniffer (const char* filter_exp){
-        char* dev;
-        char errbuf[PCAP_ERRBUF_SIZE];
-        u_int mask;
-        u_int net_addr;
-        char* net;
-        char* real_mask;
-        struct in_addr addr_net;
-        pcap_t* handle;
-        struct bpf_program filter;
-        char filter_app[100];
-
-        /* start dev */
-        dev = pcap_lookupdev(errbuf);
-        if(dev == NULL){
-                printf("%s\n",errbuf);
-                exit(1);
-        }
-        /* start device */
-        if (pcap_lookupnet(dev, &net_addr,&mask,errbuf) == -1 ){
-                printf("%s\n",errbuf);
-                exit(1);
-        }
-
-        addr_net.s_addr = mask;
-        real_mask = inet_ntoa(addr_net);
-        printf("\nmask: %s\n",real_mask);
-        addr_net.s_addr = net_addr;
-        net = inet_ntoa(addr_net);
-
-        handle = pcap_open_live(dev,65536,1,1000,errbuf);
-
-        if(!handle){
-                printf("%s\n",errbuf);
-                printf("If the problem is \"you don't have permission\",please run this program as root!\n");
-                exit(1);
-        }
-
-        /*filtering*/
-        if (filter_exp != NULL) strcpy(filter_app,filter_exp);
-        pcap_compile(handle,&filter,filter_app,0,*net);
-        pcap_setfilter(handle,&filter);
-
-        /*loop caputring*/
-        printf("\nstart sniff:\n\n");
-        pcap_loop(handle,-1 ,proc_pkt,NULL);
-
-        /* end */
-        pcap_close(handle);
 }
