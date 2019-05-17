@@ -18,7 +18,8 @@ void getAttackerInfo(char* dev,u_char* mac,u_char* ip){
 int getifinfo(pcap_if_t** if_t,char* errbuf){
 	if(!pcap_findalldevs(if_t,errbuf)){
 		return 0;
-	}else return -1;
+	}
+	return -1;
 }
 
 bool checkdevice(pcap_if_t* if_buf,char* dev){

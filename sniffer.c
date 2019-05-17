@@ -1,5 +1,6 @@
 #include"sniffer.h"
 extern bool debug; 
+extern bool manual;
 //	bool debug;
 void getGatewayMAC(u_char* arg,const struct pcap_pkthdr* hp, const u_char* packet){
 	sni_info* sni = (sni_info*)arg;
@@ -14,31 +15,33 @@ int sniffer_init(sni_info* info,char* errbuf){
 	addr_net.s_addr = tmp_mask;
 	info->mask = inet_ntoa(addr_net);
 	addr_net.s_addr = tmp_net_addr;
-	info->handle = pcap_open_live(info->dev,65536,0,1000,errbuf);  //no promiscous mode,or can't get the gateway mac
-	if(!info->handle){
-		printf("%s\n",errbuf);
-		return -1;
-	}
-	strcpy(info->filter_app,"icmp[icmptype] = icmp-echoreply");
-	if(pcap_compile(info->handle,&info->filter,info->filter_app,0,*(info->net))){
-		if(debug)printf("%s\n",pcap_geterr(info->handle));
-		return -1;
-	}
-	pcap_setfilter(info->handle,&(info->filter));
-	ping("8.8.8.8");
-	pcap_loop(info->handle,1,getGatewayMAC,(u_char*)info);
-	info->handle = pcap_open_live(info->dev,65536,1,100,errbuf); // set to promiscous mode to get packet
-	getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
+	if(!manual){
+		info->handle = pcap_open_live(info->dev,65536,0,1000,errbuf);  //no promiscous mode,or can't get the gateway mac
+		if(!info->handle){
+			printf("%s\n",errbuf);
+			return -1;
+		}
+		strcpy(info->filter_app,"icmp[icmptype] = icmp-echoreply");
+		if(pcap_compile(info->handle,&info->filter,info->filter_app,0,*(info->net))){
+			if(debug)printf("%s\n",pcap_geterr(info->handle));
+			return -1;
+		}
+		pcap_setfilter(info->handle,&(info->filter));
+		ping("8.8.8.8");
+		pcap_loop(info->handle,1,getGatewayMAC,(u_char*)info);
+		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
 	
-	if(debug){
-		printf("the gateway's mac is ");
-		print_mac(info->gateway_mac);
-		printf("the attacker's mac is ");
-		print_mac(info->attacker_mac);
-		printf("the attacker's ip is ");
-		print_ip(info->attacker_ip);
+		if(debug){
+			printf("the gateway's mac is ");
+			print_mac(info->gateway_mac);
+			printf("the attacker's mac is ");
+			print_mac(info->attacker_mac);
+			printf("the attacker's ip is ");
+			print_ip(info->attacker_ip);
+		}
 	}
 
+	info->handle = pcap_open_live(info->dev,65536,1,100,errbuf); // set to promiscous mode to get packet
 	return 0;
 }
 

@@ -26,6 +26,7 @@ typedef struct {
 	char* net;
 	struct bpf_program filter;
 	char filter_app[100];
+	unsigned char gateway_ip[4];
 	unsigned char gateway_mac[6];
 	unsigned char attacker_ip[4];
 	unsigned char attacker_mac[6];

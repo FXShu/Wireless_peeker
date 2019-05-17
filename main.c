@@ -1,6 +1,5 @@
 #include<unistd.h>
 #include<pthread.h>
-#include <sys/socket.h>
 #include"common.h"
 #include"arp.h"
 #include"sniffer.h"
@@ -8,17 +7,18 @@
 #include"print.h"
 
 bool debug=false;
+bool manual=false;
 void usage(){
 	printf("MITM usage:\n"
 		"  -h = show this help test\n"
 		"  -d = increase debugging verbosity\n"
 		"  -i = interface name\n"
-		"  -l = list all available interface\n");
+		"  -l = list all available interface\n"
+		"  -m = manual set interface information\n");
 }
 
 int main(int argc,char* argv[]){
 	int c ,exitcode;
-
 	u_char ATTACKER_MAC[6];
 	u_char TARGET_MAC[6]={0xd0,0xc5,0xd3,0x26,0x36,0x77};
 	u_char ATTACKER_IP[4];
@@ -30,7 +30,7 @@ int main(int argc,char* argv[]){
 	pcap_if_t* if_buf;
 	char* usr_dev;
 	for(;;){
-		c=getopt(argc, argv,"i:hdl");
+		c=getopt(argc, argv,"i:hdlm");
 		if(c < 0)break;
 		switch(c){
 			case 'h':
@@ -44,17 +44,19 @@ int main(int argc,char* argv[]){
 				usr_dev = optarg;
 			break;
 			case 'l':
-				if(!if_buf){
-					if(getifinfo(&if_buf,errbuf)){
-                                        	exitcode = 10;
-						goto out;
-					}
+				if(getifinfo(&if_buf,errbuf)){
+                                        exitcode = 10;
+					goto out;
 				}
+				
 				while(if_buf->next){
                                                 printf("%s\n",if_buf->name);
                                                 if_buf = if_buf->next;
 				}
 				return 0;
+			break;
+			case 'm':
+				manual=true;	
 			break;
 			default:
 		       		usage();
@@ -83,8 +85,17 @@ int main(int argc,char* argv[]){
 		goto out;
 	}
 	
-	printf("please key in target's ip\n");
+	printf("please type target's ip\n");
 	scanf("%hhd.%hhd.%hhd.%hhd",&TARGET_IP[0],&TARGET_IP[1],&TARGET_IP[2],&TARGET_IP[3]);
+	if(manual){
+		printf("type gateway's mac\n");
+		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",&dev_info.gateway_mac[0],&dev_info.gateway_mac[1],
+					&dev_info.gateway_mac[2],&dev_info.gateway_mac[3],
+					&dev_info.gateway_mac[4],&dev_info.gateway_mac[5]);
+		printf("type gateway's ip\n");
+		scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.gateway_ip[0],&dev_info.gateway_ip[1],
+					&dev_info.gateway_ip[2],&dev_info.gateway_ip[3]);
+	}
 
         MITM_info info={
                 .TARGET_MAC=TARGET_MAC,
@@ -110,5 +121,6 @@ out :
 			printf("can't find specify interface,please check by flag 'l'\n");
 		break;
 	}
+	free(if_buf);
 	return -1;
 }
