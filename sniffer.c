@@ -2,10 +2,134 @@
 extern bool debug; 
 extern bool manual;
 //	bool debug;
+#define BUFSIZE 8192
+
+struct route_info{
+	u_int dstAddr;
+	u_int srcAddr;
+	u_int gateWay;
+	char ifName[IF_NAMESIZE];
+};
+
+void spilt(char* str,char* delim,char* ip ,int ip_len){
+        char* str_t = strdup(str);
+
+        *ip++ = atoi(strtok(str_t,delim));
+
+        for(int i=0; i<ip_len-1; i++ ){
+                *ip++ = atoi((strtok(NULL,delim)));
+
+        }
+        free(str_t);
+}
+
 void getGatewayMAC(u_char* arg,const struct pcap_pkthdr* hp, const u_char* packet){
 	sni_info* sni = (sni_info*)arg;
 	ethernet_header* eth_header = (ethernet_header*)packet;
 	strcpy(sni->gateway_mac,eth_header->SRC_mac);
+}
+
+int readNlSock(int sockfd,char* buf,int seqNum,int pid){
+	struct nlmsghdr* nlHdr;
+	int readLen = 0, msgLen = 0;
+
+	do{
+		readLen = recv(sockfd,buf,BUFSIZE - msgLen,0);
+		nlHdr = (struct nlmsghdr *)buf;
+		if(nlHdr->nlmsg_type == NLMSG_DONE){
+			break;
+		}
+
+		buf += readLen;
+		msgLen += readLen;
+
+		if((nlHdr->nlmsg_flags & NLM_F_MULTI) == 0){
+			break;
+		}
+	}
+	while((nlHdr->nlmsg_seq != seqNum) || (nlHdr->nlmsg_pid != pid));
+	return msgLen;
+}
+void parseRoutes(struct nlmsghdr* nlHdr,struct route_info *rtInfo,char* gateway){
+	struct rtmsg* rtMsg;
+	struct rtattr* rtAttr;
+	int rtLen;
+	char tempBuf[100];
+	struct in_addr dst;
+	struct in_addr gate;
+
+	rtMsg = (struct rtmsg*)NLMSG_DATA(nlHdr);
+	if((rtMsg->rtm_family != AF_INET) || (rtMsg->rtm_table != RT_TABLE_MAIN))
+		return;
+	rtAttr = (struct rtattr*)RTM_RTA(rtMsg);
+	rtLen = RTM_PAYLOAD(nlHdr);
+	for(;RTA_OK(rtAttr,rtLen);rtAttr = RTA_NEXT(rtAttr,rtLen)){
+		switch(rtAttr->rta_type){
+			case RTA_OIF:
+				if_indextoname(*(int*)RTA_DATA(rtAttr),rtInfo->ifName);
+			break;
+			case RTA_GATEWAY:
+				rtInfo->gateWay = *(u_int*)RTA_DATA(rtAttr);
+			break;
+			case RTA_PREFSRC:
+				rtInfo->srcAddr = *(u_int*)RTA_DATA(rtAttr);
+			break;
+			case RTA_DST:
+				rtInfo->dstAddr = *(u_int*)RTA_DATA(rtAttr);
+			break;
+		}
+	}
+	dst.s_addr = rtInfo->dstAddr;
+	if(strstr((char*)inet_ntoa(dst),"0.0.0.0")){
+		gate.s_addr = rtInfo->gateWay;
+		spilt((char*)inet_ntoa(gate),".",gateway,4);
+	}
+	return;
+}
+
+int getGatewayIP(u_char* gateway){
+	struct nlmsghdr *nlMsg;
+	struct rtmsg *rtMsg;
+	struct route_info* rtInfo;
+	char msgBuf[BUFSIZE];
+
+	int sockfd, len, msgSeq = 0;
+	if((sockfd = socket(PF_NETLINK,SOCK_DGRAM,NETLINK_ROUTE))<0){
+		perror("Socket Creation: ");
+		return -1;
+	}
+
+	memset(msgBuf, 0, BUFSIZE);
+
+	nlMsg = (struct nlmsghdr*)msgBuf;
+	rtMsg = (struct rtmsg*)NLMSG_DATA(nlMsg);
+
+	nlMsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+	nlMsg->nlmsg_type = RTM_GETROUTE;
+
+	nlMsg->nlmsg_flags = NLM_F_DUMP | NLM_F_REQUEST;
+	nlMsg->nlmsg_seq = msgSeq++;
+	nlMsg->nlmsg_pid = getpid();
+
+	if(send(sockfd,nlMsg,nlMsg->nlmsg_len,0)<0){
+		if(debug){
+			printf("Write to Socket Failed....\n");
+		}
+	}
+	if((len = readNlSock(sockfd,msgBuf,msgSeq,getpid()))<0){
+		if(debug){
+			printf("Read From Socket Failed.....\n");
+		}
+	}
+	rtInfo = (struct route_info*)malloc(sizeof(struct route_info));
+	for(;NLMSG_OK(nlMsg,len);nlMsg = NLMSG_NEXT(nlMsg,len)){
+		memset(rtInfo, 0, sizeof(struct route_info));
+		parseRoutes(nlMsg,rtInfo,gateway);
+	}
+	free(rtInfo);
+	close(sockfd);
+	return 0;
+
 }
 int sniffer_init(sni_info* info,char* errbuf){
 	struct in_addr addr_net;
@@ -30,10 +154,14 @@ int sniffer_init(sni_info* info,char* errbuf){
 		ping("8.8.8.8");
 		pcap_loop(info->handle,1,getGatewayMAC,(u_char*)info);
 		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
-	
+		//u_char test[6];	
+		getGatewayIP(info->gateway_ip);
+		//getGatewayIP(test);
 		if(debug){
 			printf("the gateway's mac is ");
 			print_mac(info->gateway_mac);
+			printf("the gateway's ip is ");
+			print_ip(info->gateway_ip);
 			printf("the attacker's mac is ");
 			print_mac(info->attacker_mac);
 			printf("the attacker's ip is ");

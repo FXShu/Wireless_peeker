@@ -1,6 +1,7 @@
 #ifndef SNIFFER_H
 #define SNIFFER_H
-
+#include<linux/netlink.h>
+#include<linux/rtnetlink.h>
 #include<pcap/pcap.h>
 #include<netinet/in.h>
 #include<stdio.h>
