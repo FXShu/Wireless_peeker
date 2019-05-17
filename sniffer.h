@@ -31,6 +31,8 @@ typedef struct {
 	unsigned char gateway_mac[6];
 	unsigned char attacker_ip[4];
 	unsigned char attacker_mac[6];
+	unsigned char target_ip[4];
+	unsigned char target_mac[6];
 }sni_info;
 
 int sniffer_init(sni_info* info,char* errbuf);

@@ -29,6 +29,12 @@ void getGatewayMAC(u_char* arg,const struct pcap_pkthdr* hp, const u_char* packe
 	strcpy(sni->gateway_mac,eth_header->SRC_mac);
 }
 
+void getTargetMAC(u_char* arg,const struct pcap_pkthdr* hp,const u_char* packet){
+	sni_info* sni = (sni_info*)arg;
+	ethernet_header* eth_header = (ethernet_header*)packet;
+	strcpy(sni->target_mac,eth_header->SRC_mac);
+}
+
 int readNlSock(int sockfd,char* buf,int seqNum,int pid){
 	struct nlmsghdr* nlHdr;
 	int readLen = 0, msgLen = 0;
@@ -122,14 +128,14 @@ int getGatewayIP(u_char* gateway){
 		}
 	}
 	rtInfo = (struct route_info*)malloc(sizeof(struct route_info));
-	for(;NLMSG_OK(nlMsg,len);nlMsg = NLMSG_NEXT(nlMsg,len)){
+	for(;NLMSG_OK((struct nlmsghdr*)msgBuf,len);
+			nlMsg = NLMSG_NEXT((struct nlmsghdr*)msgBuf,len)){
 		memset(rtInfo, 0, sizeof(struct route_info));
 		parseRoutes(nlMsg,rtInfo,gateway);
 	}
 	free(rtInfo);
 	close(sockfd);
 	return 0;
-
 }
 int sniffer_init(sni_info* info,char* errbuf){
 	struct in_addr addr_net;
@@ -140,7 +146,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 	info->mask = inet_ntoa(addr_net);
 	addr_net.s_addr = tmp_net_addr;
 	if(!manual){
-		info->handle = pcap_open_live(info->dev,65536,0,1000,errbuf);  //no promiscous mode,or can't get the gateway mac
+		info->handle = pcap_open_live(info->dev,65536,0,100,errbuf);  //no promiscous mode,or can't get the gateway mac
 		if(!info->handle){
 			printf("%s\n",errbuf);
 			return -1;
@@ -151,21 +157,34 @@ int sniffer_init(sni_info* info,char* errbuf){
 			return -1;
 		}
 		pcap_setfilter(info->handle,&(info->filter));
+	
 		ping("8.8.8.8");
-		pcap_loop(info->handle,1,getGatewayMAC,(u_char*)info);
+		pcap_dispatch(info->handle,1,getGatewayMAC,(u_char*)info);
 		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
-		//u_char test[6];	
 		getGatewayIP(info->gateway_ip);
-		//getGatewayIP(test);
+		char* target;
+		sprintf(target,"%d.%d.%d.%d",info->target_ip[0],info->target_ip[1],
+						info->target_ip[2],info->target_ip[3],10);
+		ping(target);
+		printf("ping start\n");
+		pcap_dispatch(info->handle,1,getTargetMAC,(u_char*)info);
+		printf("ping end\n");
 		if(debug){
+			printf("=========================================\n");
 			printf("the gateway's mac is ");
 			print_mac(info->gateway_mac);
 			printf("the gateway's ip is ");
 			print_ip(info->gateway_ip);
+			printf("=========================================\n");
 			printf("the attacker's mac is ");
 			print_mac(info->attacker_mac);
 			printf("the attacker's ip is ");
 			print_ip(info->attacker_ip);
+			printf("=========================================\n");
+			printf("the target's mac is ");
+			print_mac(info->target_mac);
+			printf("the target's ip is ");
+			print_ip(info->target_ip);
 		}
 	}
 

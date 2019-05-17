@@ -19,11 +19,11 @@ void usage(){
 
 int main(int argc,char* argv[]){
 	int c ,exitcode;
-	u_char ATTACKER_MAC[6];
-	u_char TARGET_MAC[6]={0xd0,0xc5,0xd3,0x26,0x36,0x77};
-	u_char ATTACKER_IP[4];
-	u_char TARGET_IP[4];//={192,168,43,127};
-	u_char GATEWAY_IP[4]={192,168,43,1};
+	//u_char ATTACKER_MAC[6];
+	//u_char TARGET_MAC[6];
+	//u_char ATTACKER_IP[4];
+	//u_char TARGET_IP[4];
+	//u_char GATEWAY_IP[4];
 	
 	sni_info dev_info;
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -78,6 +78,11 @@ int main(int argc,char* argv[]){
 		exitcode = 11;
 		goto out;
 	}
+
+	printf("please type target's ip = ");
+	scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1],
+			&dev_info.target_ip[2],&dev_info.target_ip[3]);
+
 	/* sniffer init */
 	dev_info.dev=usr_dev;
 	if(sniffer_init(&dev_info,errbuf)){
@@ -85,8 +90,6 @@ int main(int argc,char* argv[]){
 		goto out;
 	}
 	
-	printf("please type target's ip\n");
-	scanf("%hhd.%hhd.%hhd.%hhd",&TARGET_IP[0],&TARGET_IP[1],&TARGET_IP[2],&TARGET_IP[3]);
 	if(manual){
 		printf("type gateway's mac\n");
 		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",&dev_info.gateway_mac[0],&dev_info.gateway_mac[1],
@@ -98,17 +101,16 @@ int main(int argc,char* argv[]){
 	}
 
         MITM_info info={
-                .TARGET_MAC=TARGET_MAC,
+                .TARGET_MAC=dev_info.target_mac,
                 .ATTACKER_MAC=dev_info.attacker_mac,
                 .GATEWAY_MAC=dev_info.gateway_mac,
-                .TARGET_IP=TARGET_IP,
-                .GATEWAY_IP=GATEWAY_IP,
-        //	.dev = usr_dev,
+                .TARGET_IP=dev_info.target_ip,
+                .GATEWAY_IP=dev_info.gateway_ip,
 	};
         strcpy(info.dev,usr_dev);
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
-	pthread_create(&t,NULL,arp_spoof,&info);
-	pthread_join(t,NULL);
+//	pthread_create(&t,NULL,arp_spoof,&info);
+//	pthread_join(t,NULL);
 	
 	return 0;
 
