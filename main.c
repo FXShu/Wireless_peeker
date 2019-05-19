@@ -112,6 +112,7 @@ int main(int argc,char* argv[]){
 //	pthread_create(&t,NULL,arp_spoof,&info);
 //	pthread_join(t,NULL);
 	
+	free(if_buf);	
 	return 0;
 
 out :
@@ -123,6 +124,5 @@ out :
 			printf("can't find specify interface,please check by flag 'l'\n");
 		break;
 	}
-	free(if_buf);
 	return -1;
 }

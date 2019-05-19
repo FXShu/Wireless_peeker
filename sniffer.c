@@ -164,7 +164,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 		getGatewayIP(info->gateway_ip);
 		char* target;
 		sprintf(target,"%d.%d.%d.%d",info->target_ip[0],info->target_ip[1],
-						info->target_ip[2],info->target_ip[3],10);
+						info->target_ip[2],info->target_ip[3]);
 		ping(target);
 		printf("ping start\n");
 		pcap_dispatch(info->handle,1,getTargetMAC,(u_char*)info);
@@ -192,33 +192,3 @@ int sniffer_init(sni_info* info,char* errbuf){
 	return 0;
 }
 
-int getPacket(u_char* arg, const struct pcap_pkthdr* hp, const u_char* packet, char* data){
-	MITM_info MITM_arg = *(MITM_info*)arg;
-	int time =1;
-	char* dev = MITM_arg.dev;
-	u_short type = EPT_IPv4;
-	u_char* victim_MAC = MITM_arg.TARGET_MAC;
-	u_char* victim_IP  = MITM_arg.TARGET_IP;
-	u_char* gateway_MAC = MITM_arg.GATEWAY_MAC;
-	u_char* gateway_IP = MITM_arg.GATEWAY_IP;
-	u_char* attacker_MAC = MITM_arg.ATTACKER_MAC;
-
-	/* get packet info */
-	ethernet_header* pEther = (ethernet_header*)packet;
-	ip_header* pIPv4 = (ip_header*)(packet+14);
-	tcp_header* pTCP = (tcp_header*)(packet+34);
-	//char* data = (char*)(packet+54);
-	strcpy(data,(char*)(packet+54));
-	/* get packet from victim */
-	// this condition maybe mean that thist function 
-	// just only care the packet which source mac is equal victim mac or gateway mac
-	if(!memcmp(pEther->SRC_mac,victim_MAC,6)){  
-		return FromVictim;
-	//	char* p = strstr(data,"HTTP");
-	//	if(p)printf("%s\n",data);
-	//	forword(); //victim  -> gateway
-	}else if(!memcmp(pEther->SRC_mac,gateway_MAC,6)){
-		return FromGateway;
-	//	forword(); //gateway -> victim
-	}
-}

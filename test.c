@@ -11,8 +11,8 @@ void getgatewayMAC(u_char* user,const struct pcap_pkthdr* pkt,const u_char* data
 	ethernet_header* eth_header = (ethernet_header*)data;
 	printf("gateway's MAC is ");
 	print_mac(eth_header->SRC_mac);
-	strcpy(sni->mac, eth_header->SRC_mac);
-	print_mac(sni->mac);
+	strcpy(sni->gateway_mac, eth_header->SRC_mac);
+	print_mac(sni->gateway_mac);
 	
 }
 
@@ -64,7 +64,7 @@ int main(){
 	
 	pcap_loop(info,1,getgatewayMAC,(u_char*)&sni_info);
 
-	print_mac(sni_info.mac);
+	print_mac(sni_info.gateway_mac);
         info = pcap_open_live(dev,0,65536,1000,errbuf);
 	if(info){
 		printf("successful\n");
