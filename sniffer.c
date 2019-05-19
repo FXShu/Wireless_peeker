@@ -165,7 +165,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 		}
 		pcap_setfilter(info->handle,&(info->filter));
 		handle = info->handle;
-		alarm(1);
+		alarm(2);
 		signal(SIGALRM,shutdown_pcap);
 		getGatewayIP(info->gateway_ip);
 		char* gatewayIp;
@@ -173,7 +173,12 @@ int sniffer_init(sni_info* info,char* errbuf){
 						info->gateway_ip[2],info->gateway_ip[3]);
 		ping(gatewayIp);
 		if(pcap_dispatch(info->handle,1,getGatewayMAC,(u_char*)info)<0){
-			return 12;
+			ping("8.8.8.8");
+			if(pcap_dispatch(info->handle,1,getGatewayMAC,(u_char*)info)<0){
+			       	return 12;
+			}else{
+				alarm(0);
+			}
 		}else{
 			alarm(0);
 		}

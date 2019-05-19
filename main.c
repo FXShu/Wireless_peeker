@@ -19,16 +19,11 @@ void usage(){
 
 int main(int argc,char* argv[]){
 	int c ,exitcode;
-	//u_char ATTACKER_MAC[6];
-	//u_char TARGET_MAC[6];
-	//u_char ATTACKER_IP[4];
-	//u_char TARGET_IP[4];
-	//u_char GATEWAY_IP[4];
-	
 	sni_info dev_info;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
 	char* usr_dev;
+	
 	for(;;){
 		c=getopt(argc, argv,"i:hdlm");
 		if(c < 0)break;
@@ -97,6 +92,13 @@ int main(int argc,char* argv[]){
 		printf("type gateway's ip\n");
 		scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.gateway_ip[0],&dev_info.gateway_ip[1],
 					&dev_info.gateway_ip[2],&dev_info.gateway_ip[3]);
+		printf("type target's mac\n");
+		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",&dev_info.target_mac[0],&dev_info.target_mac[1],
+                                        &dev_info.target_mac[2],&dev_info.target_mac[3],
+                                        &dev_info.target_mac[4],&dev_info.target_mac[5]);
+		printf("type gateway's ip\n");
+		scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1],
+                                        &dev_info.target_ip[2],&dev_info.target_ip[3]);
 	}
 
         MITM_info info={
