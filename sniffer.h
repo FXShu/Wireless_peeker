@@ -1,5 +1,6 @@
 #ifndef SNIFFER_H
 #define SNIFFER_H
+#include<unistd.h>
 #include<linux/netlink.h>
 #include<linux/rtnetlink.h>
 #include<pcap/pcap.h>
@@ -8,6 +9,7 @@
 #include<arpa/inet.h>
 #include<string.h>
 #include<stdlib.h>
+#include<signal.h>
 
 #include"getif.h"
 #include"head.h"

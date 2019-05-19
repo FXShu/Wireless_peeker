@@ -4,6 +4,8 @@ extern bool manual;
 //	bool debug;
 #define BUFSIZE 8192
 
+pcap_t* handle;
+
 struct route_info{
 	u_int dstAddr;
 	u_int srcAddr;
@@ -137,6 +139,11 @@ int getGatewayIP(u_char* gateway){
 	close(sockfd);
 	return 0;
 }
+
+void shutdown_pcap(){
+	pcap_breakloop(handle);
+}
+
 int sniffer_init(sni_info* info,char* errbuf){
 	struct in_addr addr_net;
 	u_int tmp_mask;
@@ -157,18 +164,30 @@ int sniffer_init(sni_info* info,char* errbuf){
 			return -1;
 		}
 		pcap_setfilter(info->handle,&(info->filter));
-	
-		ping("8.8.8.8");
-		pcap_dispatch(info->handle,1,getGatewayMAC,(u_char*)info);
-		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
+		handle = info->handle;
+		alarm(1);
+		signal(SIGALRM,shutdown_pcap);
 		getGatewayIP(info->gateway_ip);
+		char* gatewayIp;
+		sprintf(gatewayIp,"%d.%d.%d.%d",info->gateway_ip[0],info->gateway_ip[1],
+						info->gateway_ip[2],info->gateway_ip[3]);
+		ping(gatewayIp);
+		if(pcap_dispatch(info->handle,1,getGatewayMAC,(u_char*)info)<0){
+			return 12;
+		}else{
+			alarm(0);
+		}
+		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
 		char* target;
 		sprintf(target,"%d.%d.%d.%d",info->target_ip[0],info->target_ip[1],
 						info->target_ip[2],info->target_ip[3]);
+		alarm(1);
 		ping(target);
-		printf("ping start\n");
-		pcap_dispatch(info->handle,1,getTargetMAC,(u_char*)info);
-		printf("ping end\n");
+		if(pcap_dispatch(info->handle,1,getTargetMAC,(u_char*)info)<0){
+			return 13;
+		}else{
+			alarm(0);
+		}
 		if(debug){
 			printf("=========================================\n");
 			printf("the gateway's mac is ");

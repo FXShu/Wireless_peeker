@@ -85,8 +85,7 @@ int main(int argc,char* argv[]){
 
 	/* sniffer init */
 	dev_info.dev=usr_dev;
-	if(sniffer_init(&dev_info,errbuf)){
-		exitcode = 10;
+	if(exitcode = sniffer_init(&dev_info,errbuf)){
 		goto out;
 	}
 	
@@ -122,6 +121,12 @@ out :
 		break;
 		case 11:
 			printf("can't find specify interface,please check by flag 'l'\n");
+		break;
+		case 12:
+			printf("gateway is not exist or reject ping packet\n");
+		break;
+		case 13:
+			printf("target is not exist or reject ping packet\n");
 		break;
 	}
 	return -1;
