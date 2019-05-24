@@ -5,7 +5,14 @@ void print_ip(unsigned char* ip){
 		printf("%d",ip[i]);
 		if(i<3)printf(".");
 	}
-	printf("\n");
+}
+
+void println_ip(unsigned char* ip){
+        for(int i=0;i<4;i++){
+                printf("%d",ip[i]);
+                if(i<3)printf(".");
+        }
+        printf("\n");
 }
 
 void print_mac(unsigned char* mac){
@@ -14,7 +21,15 @@ void print_mac(unsigned char* mac){
 		printf("%x",mac[i]);
 		if(i<5)printf(":");
 	}
-	printf("\n");
+}
+
+void println_mac(unsigned char* mac){
+        for(int i=0;i<6;i++){
+                if(mac[i]<16)printf("0");
+                printf("%x",mac[i]);
+                if(i<5)printf(":");
+        }
+        printf("\n");
 }
 
 void print_type(unsigned short type){
@@ -31,6 +46,7 @@ void print_protocol(unsigned char protocol_type){
 	switch(protocol_type){
 		case PROTOCOL_TCP : printf("protocol type : TCP\n");break;
 		case PROTOCOL_UDP : printf("protocol type : UDP\n");break;
+		case PROTOCOL_ICMP :printf("protocol type : ICMP\n");break;
 		default : printf("Unknown type\n");
 	}
 }

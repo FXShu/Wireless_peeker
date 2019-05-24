@@ -6,7 +6,11 @@
 //typedef unsigned char u_char;
 void print_ip(unsigned char* ip);
 
+void println_ip(unsigned char* ip);
+
 void print_mac(unsigned char* mac);
+
+void println_mac(unsigned char* mac);
 
 void print_type(unsigned short type);
 

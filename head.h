@@ -10,9 +10,10 @@
 #define EPT_RARP 0x8035
 
 /* protocol type */
-
-#define PROTOCOL_TCP 0x06
-#define PROTOCOL_UDP 0x11
+#define PROTOCOL_ICMP 0x01
+#define PROTOCOL_IGMP 0x02
+#define PROTOCOL_TCP  0x06
+#define PROTOCOL_UDP  0x11
 
 /* address length */
 #define MAC_ADDR_LEN 6

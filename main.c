@@ -19,13 +19,14 @@ void usage(){
 
 int main(int argc,char* argv[]){
 	int c ,exitcode;
+	char user_filter[100];
 	sni_info dev_info;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
 	char* usr_dev;
 	
 	for(;;){
-		c=getopt(argc, argv,"i:hdlm");
+		c=getopt(argc, argv,"i:hdlmf:");
 		if(c < 0)break;
 		switch(c){
 			case 'h':
@@ -53,17 +54,14 @@ int main(int argc,char* argv[]){
 			case 'm':
 				manual=true;	
 			break;
+			case 'f':
+				strcpy(user_filter,optarg);
+			break;
 			default:
 		       		usage();
 				goto out;	
 		}
 	}
-
-	pthread_t t;
-	//the thread of arp_spoof need to be detached or joinable?
-	pthread_attr_t a;
-	pthread_attr_init(&a);
-	pthread_attr_setdetachstate(&a,PTHREAD_CREATE_DETACHED);
 	
 	if(getifinfo(&if_buf,errbuf)){
 		exitcode = 10;
@@ -83,7 +81,7 @@ int main(int argc,char* argv[]){
 	if(exitcode = sniffer_init(&dev_info,errbuf)){
 		goto out;
 	}
-	
+	printf("sniffer init successful\n");	
 	if(manual){
 		printf("type gateway's mac\n");
 		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",&dev_info.gateway_mac[0],&dev_info.gateway_mac[1],
@@ -109,10 +107,22 @@ int main(int argc,char* argv[]){
                 .GATEWAY_IP=dev_info.gateway_ip,
 	};
         strcpy(info.dev,usr_dev);
+	info.filter = user_filter;
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
-//	pthread_create(&t,NULL,arp_spoof,&info);
-//	pthread_join(t,NULL);
-	
+
+	pthread_t arp_td;
+	pthread_t cap_td;
+	//the thread of arp_spoof need to be detached or joinable?
+	pthread_attr_t a;
+	pthread_attr_init(&a);
+	pthread_attr_setdetachstate(&a,PTHREAD_CREATE_DETACHED);
+
+
+	pthread_create(&arp_td,NULL,arp_spoof,&info);
+	pthread_create(&cap_td,NULL,capute,&info);
+	//pthread_join(arp_td,NULL);
+	pthread_join(cap_td,NULL);
+
 	free(if_buf);	
 	return 0;
 

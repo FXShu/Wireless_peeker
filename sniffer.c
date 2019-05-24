@@ -159,7 +159,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 			return -1;
 		}
 		strcpy(info->filter_app,"icmp[icmptype] = icmp-echoreply");
-		if(pcap_compile(info->handle,&info->filter,info->filter_app,0,*(info->net))){
+		if(pcap_compile(info->handle,&info->filter,info->filter_app,0,tmp_mask)){
 			if(debug)printf("%s\n",pcap_geterr(info->handle));
 			return -1;
 		}
@@ -196,19 +196,19 @@ int sniffer_init(sni_info* info,char* errbuf){
 		if(debug){
 			printf("=========================================\n");
 			printf("the gateway's mac is ");
-			print_mac(info->gateway_mac);
+			println_mac(info->gateway_mac);
 			printf("the gateway's ip is ");
-			print_ip(info->gateway_ip);
+			println_ip(info->gateway_ip);
 			printf("=========================================\n");
 			printf("the attacker's mac is ");
-			print_mac(info->attacker_mac);
+			println_mac(info->attacker_mac);
 			printf("the attacker's ip is ");
-			print_ip(info->attacker_ip);
+			println_ip(info->attacker_ip);
 			printf("=========================================\n");
 			printf("the target's mac is ");
-			print_mac(info->target_mac);
+			println_mac(info->target_mac);
 			printf("the target's ip is ");
-			print_ip(info->target_ip);
+			println_ip(info->target_ip);
 		}
 	}
 
@@ -216,3 +216,62 @@ int sniffer_init(sni_info* info,char* errbuf){
 	return 0;
 }
 
+void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* packet){
+	int header_len;
+	ethernet_header* pEther = (ethernet_header*) packet;
+	header_len = sizeof(ethernet_header);
+	ip_header* pIpv4 = (ip_header*) (packet+header_len);
+	header_len += sizeof(ip_header);
+	tcp_header* pTcp;
+	switch (pIpv4->protocol_type){
+		case PROTOCOL_ICMP :
+		break;
+		case PROTOCOL_TCP : ;
+			tcp_header* pTcp = (tcp_header*) (packet + header_len);
+		       	header_len += ((pTcp->header_len_flag)>>12)*4; 
+			//the length of tcp header is not fix,if option flag is setup,the length of header can be maximun 40 bytes
+		break;
+		case PROTOCOL_UDP : ;
+			udp_header* pUdp = (udp_header*) (packet + header_len);
+			header_len += sizeof(udp_header);
+		break;	
+	}
+	print_ip(pIpv4->src_ip);
+	printf(" >> ");
+	print_ip(pIpv4->dest_ip);
+	printf("  ");
+	print_protocol(pIpv4->protocol_type);
+	printf("\n");
+}
+
+void* capute(void* mitm_info){
+	if(debug){
+		printf("=======capute pcaket come from target=======\n");
+	}
+	pcap_t* handle;
+	MITM_info* info = (MITM_info*)mitm_info;
+	struct bpf_program bpf;
+	u_int netNum;
+	u_int netmask;
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_lookupnet(info->dev,&netNum,&netmask,errbuf);
+	handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
+	if(!handle){
+		printf("error : %s\n",errbuf);
+		return NULL;
+	}
+
+	if(pcap_compile(handle,&bpf,info->filter,0,netmask)){
+		if(debug){
+			printf("error : %s\n",pcap_geterr(handle));
+		}
+		return NULL;
+	}
+	if(pcap_setfilter(handle,&bpf)<0){
+		if(debug){
+			printf("error : %s\n",pcap_geterr(handle));
+		}
+		return NULL;
+	}
+	pcap_loop(handle,-1,anylysis_packet,NULL);
+}

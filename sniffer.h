@@ -42,4 +42,6 @@ int sniffer_init(sni_info* info,char* errbuf);
 void Sniffer(const char* filter_exp);
 
 int getPacket(u_char* arg,const struct pcap_pkthdr* hp,const u_char* packet,char* data);
+
+void* capute(void* mitm_info);
 #endif

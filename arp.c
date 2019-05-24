@@ -48,9 +48,8 @@ void* arp_spoof(void* info){
 	MITM_info* m_info=(MITM_info*)info;
 	if(debug){
 		printf("=======start arp spoof=======\n");
-		printf("dev is %s\n",m_info->dev);
 		printf("target's IP is ");
-		print_ip(m_info->TARGET_IP);	
+		println_ip(m_info->TARGET_IP);	
 	}
 	int p_tag_target;
 	p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
