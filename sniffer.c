@@ -220,28 +220,48 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 	int header_len;
 	ethernet_header* pEther = (ethernet_header*) packet;
 	header_len = sizeof(ethernet_header);
-	ip_header* pIpv4 = (ip_header*) (packet+header_len);
-	header_len += sizeof(ip_header);
-	tcp_header* pTcp;
-	switch (pIpv4->protocol_type){
-		case PROTOCOL_ICMP :
+	switch(ntohs(pEther->eth_type)){
+		case EPT_IPv4 :;
+			ip_header* pIpv4 = (ip_header*) (packet+header_len);
+			header_len += sizeof(ip_header);
+			tcp_header* pTcp;
+			switch (pIpv4->protocol_type){
+				case PROTOCOL_ICMP :
+				break;
+				case PROTOCOL_TCP : ;
+					tcp_header* pTcp = (tcp_header*) (packet + header_len);
+		       			header_len += ((pTcp->header_len_flag)>>12)*4; 
+					//the length of tcp header is not fix,if option flag is setup,
+					//the length of header can be maximun 40 bytes
+				break;
+				case PROTOCOL_UDP : ;
+					udp_header* pUdp = (udp_header*) (packet + header_len);
+					header_len += sizeof(udp_header);
+				break;	
+			}
+			print_ip(pIpv4->src_ip);
+			printf(" >> ");
+			print_ip(pIpv4->dest_ip);
+			printf("  ");
+			print_protocol(pIpv4->protocol_type);
+			printf("\n");
 		break;
-		case PROTOCOL_TCP : ;
-			tcp_header* pTcp = (tcp_header*) (packet + header_len);
-		       	header_len += ((pTcp->header_len_flag)>>12)*4; 
-			//the length of tcp header is not fix,if option flag is setup,the length of header can be maximun 40 bytes
+		case EPT_ARP :;
+			arp_header* pArp = (arp_header*)(packet + header_len);
+			switch(ntohs(pArp -> option)){
+				case ARP_REQURST :
+					printf("who was ");
+					print_ip(pArp->dest_mac);
+					printf(" talk to ");
+					println_ip(pArp->src_ip);
+				break;
+				case ARP_REPLY : 
+					print_mac(pArp->src_mac);
+					printf(" is ");
+					println_ip(pArp->src_ip);
+			}
 		break;
-		case PROTOCOL_UDP : ;
-			udp_header* pUdp = (udp_header*) (packet + header_len);
-			header_len += sizeof(udp_header);
-		break;	
 	}
-	print_ip(pIpv4->src_ip);
-	printf(" >> ");
-	print_ip(pIpv4->dest_ip);
-	printf("  ");
-	print_protocol(pIpv4->protocol_type);
-	printf("\n");
 }
 
 void* capute(void* mitm_info){
