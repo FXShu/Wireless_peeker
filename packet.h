@@ -9,11 +9,14 @@
 #include<netinet/ip_icmp.h>
 #include<arpa/inet.h>
 
+#include"common.h"
+#include"head.h"
+
 typedef unsigned short u_short;
 typedef unsigned char  u_char;
 
 int forword(char* dev, u_short pro_type,u_char* DST,u_char* SRC,
-		const u_char* payload,int len,int Times);
+		const u_char* payload,int len);
 
 int ping(unsigned char* dest_ip);
 

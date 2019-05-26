@@ -217,6 +217,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 }
 
 void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* packet){
+	MITM_info* info = (MITM_info*)user;
 	int header_len;
 	ethernet_header* pEther = (ethernet_header*) packet;
 	header_len = sizeof(ethernet_header);
@@ -262,6 +263,8 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			}
 		break;
 	}
+	forword(info->dev,ntohs(pEther->eth_type),pEther->DST_mac,pEther->SRC_mac,
+			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
 }
 
 void* capute(void* mitm_info){
@@ -293,5 +296,5 @@ void* capute(void* mitm_info){
 		}
 		return NULL;
 	}
-	pcap_loop(handle,-1,anylysis_packet,NULL);
+	pcap_loop(handle,-1,anylysis_packet,(u_char*)info);
 }
