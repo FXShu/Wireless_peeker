@@ -25,5 +25,5 @@ typedef struct{
 
 typedef struct{
 	struct http_type type;
-	struct http_header header;
+	struct hash_table header;
 }http_payload;

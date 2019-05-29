@@ -2,12 +2,7 @@ CC=gcc
 LIBS_c=
 OBJS= 
 
-OBJS += main.o 
-OBJS += arp.o
-OBJS += sniffer.o
-OBJS += packet.o
-OBJS += getif.o
-OBJS += print.o
+OBJS += main.o arp.o sniffer.o packet.o getif.o print.o hashtab.o
 OBJS_t = print.o packet.o test.o sniffer.o
 LIBS_c += -lnet
 LIBS_c += -lpcap
@@ -38,10 +33,13 @@ getif.o: getif.h getif.c
 print.o: print.h print.c
 	$(CC) -c print.c
 
+hashtab.o: hashtab.c hashtab.h
+	$(CC) -c hashtab.c
+
 test.o : test.c
 	$(CC) -c test.c
 
 clean:
-	rm MITM $(OBJS) 
+	rm MITM *.o 
 clean_test :
 	rm test $(OBJS_t)

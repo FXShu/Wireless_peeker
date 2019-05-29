@@ -1,10 +1,40 @@
 #include"hashtab.h"
 
+int malloc_and_copy_string(char** dst, char* src){
+        int len;
+
+        if(*dst || src){
+                return -1;
+        }
+        len = strlen(src);
+        *dst = malloc(len+1);
+        memset(*dst,0,len+1);
+        strncpy(*dst, src, len);
+
+        return 0;
+}
+
+int malloc_and_copy_node(struct node* dst,struct node* src){
+        int len;
+        if(dst || src){
+                return -1;
+        }
+        if((-1 == malloc_and_copy_string(&dst->key,src->key)) ||
+                        (-1 == malloc_and_copy_string(&dst->value,src->value))){
+                if(dst->key) free(dst->key);
+                if(dst->value) free(dst->value);
+                return -1;
+        }
+        dst->next = NULL;
+        return 0;
+}
+
+
 int hash(struct hash_table* table,char* key){
 	int len, hash_index, char_sum =0;
 	char c;
 
-	if(!table || table->max_node_index <=0 || !key){
+	 if(NULL == table || table->max_node_index <= 0 || NULL == key){
 		return -1;
 	}
 
@@ -31,7 +61,7 @@ int search(struct hash_table* table,struct node* node){
 	}
 	cur = table->nodes[hash_index];
 	if(!cur){
-		return -1
+		return -1;
 	}
 	while(cur && strcmp(cur->key,node->key)){
 		cur = cur->next;
@@ -68,35 +98,6 @@ void free_node(struct node** p){
 	n = NULL;
 }
 
-int malloc_and_copy_string(char** dst, char* src){
-	int len;
-
-	if(*dst || src){
-		return -1;
-	}
-	len = strlen(src);
-	*dst = malloc(len+1);
-	memset(*dst,0,len+1);
-	strncpy(*dst, src, len);
-
-	return 0;
-}
-
-int malloc_and_copy_node(struct node* dst,struct node* src){
-	int len;
-	if(dst || src){
-		return -1;
-	}
-	if((-1 == malloc_and_copy_string(&dst->key,src->key)) ||
-			(-1 == malloc_and_copy_string(&dst->value,src->value))){
-		if(dst->key) free(dst->key);
-		if(dst->value) free(dst->value);
-		return -1;
-	}
-	dst->next = NULL;
-	return 0;
-}
-
 int insert(struct hash_table* table,struct node* node){
 	struct node** cur;
 	int hash_index;
@@ -126,7 +127,7 @@ int insert(struct hash_table* table,struct node* node){
 int cancel(struct hash_table* table,struct node* node){
 	struct node **cur,**next,**prev;
 	int hash_index;
-	if(!table || !table->node || !node ||
+	if(!table || !table->nodes || !node ||
 			!node->key || !node->value){
 		return -1;
 	}
@@ -138,7 +139,7 @@ int cancel(struct hash_table* table,struct node* node){
 
 	cur = &table->nodes[hash_index];
 	if(!*cur){
-		return -1
+		return -1;
 	}
 	next = &((*cur)->next);
 	prev = &table->nodes[hash_index];
@@ -168,7 +169,7 @@ int init_hashtable(struct hash_table* table,int size){
 		printf("init: malloc fail with %ld byte\n",size * sizeof(struct node*));
 		return -1;
 	}
-	memset(tables->nodes,0,size * sizeof(struct node*));
+	memset(table->nodes,0,size * sizeof(struct node*));
 
 	table->max_node_index = size;
 	table->hash = hash;
@@ -200,7 +201,7 @@ inline struct node* create_node(char* key,char* value){
 	struct node* n;
 
 	n = malloc(sizeof(struct node));
-	memset(n,o,sizeof(struct node));
+	memset(n,0,sizeof(struct node));
 	if(key){
 		malloc_and_copy_string(&n->key,key);
 	}
