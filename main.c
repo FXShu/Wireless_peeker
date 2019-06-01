@@ -5,7 +5,7 @@
 #include"sniffer.h"
 #include"getif.h"
 #include"print.h"
-
+int debug_level;
 bool debug=false;
 bool manual=false;
 void usage(){
@@ -14,7 +14,8 @@ void usage(){
 		"  -d = increase debugging verbosity\n"
 		"  -i = interface name\n"
 		"  -l = list all available interface\n"
-		"  -m = manual set interface information\n");
+		"  -m = manual set interface information\n"
+		"  -f <filter> set packet filter\n");
 }
 
 int main(int argc,char* argv[]){

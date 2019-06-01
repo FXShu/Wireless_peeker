@@ -234,6 +234,17 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 		       			header_len += ((pTcp->header_len_flag)>>12)*4; 
 					//the length of tcp header is not fix,if option flag is setup,
 					//the length of header can be maximun 40 bytes
+					switch(pTcp->dest_port) {
+						case 80 :;
+							http_resquest_payload payload;
+							parse_http_request(packet+header_len,&payload);
+						break;
+					}
+					switch(pTcp->sour_port) {
+						case 80 :;
+							 http_reply_payload payload;
+							 parse_http_reply(packet+header_len,&payload);
+					}
 				break;
 				case PROTOCOL_UDP : ;
 					udp_header* pUdp = (udp_header*) (packet + header_len);
@@ -263,8 +274,9 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			}
 		break;
 	}
+	
 	forword(info->dev,ntohs(pEther->eth_type),pEther->DST_mac,pEther->SRC_mac,
-			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));	
 }
 
 void* capute(void* mitm_info){

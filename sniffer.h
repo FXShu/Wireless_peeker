@@ -16,7 +16,7 @@
 #include"common.h"
 #include"print.h"
 #include"packet.h"
-
+#include"parse.h"
 typedef enum {
 	FromVictim,
 	FromGateway

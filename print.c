@@ -1,5 +1,5 @@
 #include"print.h"
-
+extern int debug_level;
 void print_ip(unsigned char* ip){
 	for(int i=0;i<4;i++){
 		printf("%d",ip[i]);
@@ -49,4 +49,13 @@ void print_protocol(unsigned char protocol_type){
 		case PROTOCOL_ICMP :printf("protocol type : ICMP\n");break;
 		default : printf("Unknown type\n");
 	}
+}
+
+void log_printf(int level,char* format,...){
+	va_list ap;
+	va_start(ap,format);
+	if(level > debug_level){
+		vprintf(format,ap);
+	}
+	va_end(ap);
 }
