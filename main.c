@@ -108,7 +108,7 @@ int main(int argc,char* argv[]){
                 .GATEWAY_IP=dev_info.gateway_ip,
 	};
         strcpy(info.dev,usr_dev);
-	//info.filter += user_filter;
+	info.filter = user_filter;
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
 
 	pthread_t arp_td;

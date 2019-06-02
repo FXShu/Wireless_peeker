@@ -230,8 +230,8 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 				case PROTOCOL_ICMP :
 				break;
 				case PROTOCOL_TCP : ;
-					tcp_header* pTcp = (tcp_header*) (packet + header_len);
-		       			header_len += ((pTcp->header_len_flag)>>12)*4; 
+					pTcp = (tcp_header*) (packet + header_len);
+					header_len += ((pTcp->header_len_flag)>>12)*4; 
 					//the length of tcp header is not fix,if option flag is setup,
 					//the length of header can be maximun 40 bytes
 					switch(pTcp->dest_port) {
@@ -252,8 +252,14 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 				break;	
 			}
 			print_ip(pIpv4->src_ip);
+			if(pTcp != NULL){
+				printf(":%d",pTcp->sour_port);
+			}
 			printf(" >> ");
 			print_ip(pIpv4->dest_ip);
+			if(pTcp != NULL){
+				printf(":%d",pTcp->dest_port);
+			}
 			printf("  ");
 			print_protocol(pIpv4->protocol_type);
 			printf("\n");
