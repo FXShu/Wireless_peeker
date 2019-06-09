@@ -8,4 +8,6 @@ typedef enum{
 	true =1
 }bool;
 
+#define MAX_IPV4_LEN 16
+#define MAX_MAC_LEN 17
 #endif

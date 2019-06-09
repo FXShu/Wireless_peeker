@@ -1,7 +1,8 @@
 #include"sniffer.h"
 extern bool debug; 
 extern bool manual;
-//	bool debug;
+extern char *ip_s;
+extern char *mac_s;
 #define BUFSIZE 8192
 
 pcap_t* handle;
@@ -120,14 +121,10 @@ int getGatewayIP(u_char* gateway){
 	nlMsg->nlmsg_pid = getpid();
 
 	if(send(sockfd,nlMsg,nlMsg->nlmsg_len,0)<0){
-		if(debug){
-			printf("Write to Socket Failed....\n");
-		}
+		log_printf(MSG_DEBUG,"Write to Socket Failed");
 	}
 	if((len = readNlSock(sockfd,msgBuf,msgSeq,getpid()))<0){
-		if(debug){
-			printf("Read From Socket Failed.....\n");
-		}
+		log_printf(MSG_DEBUG,"Read From Socket Failed");
 	}
 	rtInfo = (struct route_info*)malloc(sizeof(struct route_info));
 	for(;NLMSG_OK((struct nlmsghdr*)msgBuf,len);
@@ -153,14 +150,15 @@ int sniffer_init(sni_info* info,char* errbuf){
 	info->mask = inet_ntoa(addr_net);
 	addr_net.s_addr = tmp_net_addr;
 	if(!manual){
-		info->handle = pcap_open_live(info->dev,65536,0,100,errbuf);  //no promiscous mode,or can't get the gateway mac
+		info->handle = pcap_open_live(info->dev,65536,0,100,errbuf);  
+		//no promiscous mode,or can't get the gateway mac
 		if(!info->handle){
-			printf("%s\n",errbuf);
+			log_printf(MSG_ERROR,"%s",errbuf);
 			return -1;
 		}
 		strcpy(info->filter_app,"icmp[icmptype] = icmp-echoreply");
 		if(pcap_compile(info->handle,&info->filter,info->filter_app,0,tmp_mask)){
-			if(debug)printf("%s\n",pcap_geterr(info->handle));
+			log_printf(MSG_ERROR,"%s",pcap_geterr(info->handle));
 			return -1;
 		}
 		pcap_setfilter(info->handle,&(info->filter));
@@ -193,23 +191,12 @@ int sniffer_init(sni_info* info,char* errbuf){
 		}else{
 			alarm(0);
 		}
-		if(debug){
-			printf("=========================================\n");
-			printf("the gateway's mac is ");
-			println_mac(info->gateway_mac);
-			printf("the gateway's ip is ");
-			println_ip(info->gateway_ip);
-			printf("=========================================\n");
-			printf("the attacker's mac is ");
-			println_mac(info->attacker_mac);
-			printf("the attacker's ip is ");
-			println_ip(info->attacker_ip);
-			printf("=========================================\n");
-			printf("the target's mac is ");
-			println_mac(info->target_mac);
-			printf("the target's ip is ");
-			println_ip(info->target_ip);
-		}
+		log_printf(MSG_DEBUG,"the gateway's mac  is" MACSTR,MAC2STR(info->gateway_mac));
+		log_printf(MSG_DEBUG,"the gateway's ip   is " IPv4STR,IPv42STR(info->gateway_ip));
+		log_printf(MSG_DEBUG,"the target's mac   is" MACSTR,MAC2STR(info->target_mac));
+                log_printf(MSG_DEBUG,"the target's ip    is " IPv4STR,IPv42STR(info->target_ip));
+		log_printf(MSG_DEBUG,"the attacker's mac is " MACSTR,MAC2STR(info->attacker_mac));
+                log_printf(MSG_DEBUG,"the attacker's ip  is " IPv4STR,IPv42STR(info->attacker_ip));
 	}
 
 	info->handle = pcap_open_live(info->dev,65536,1,100,errbuf); // set to promiscous mode to get packet
@@ -274,9 +261,7 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 					println_ip(pArp->src_ip);
 				break;
 				case ARP_REPLY : 
-					print_mac(pArp->src_mac);
-					printf(" is ");
-					println_ip(pArp->src_ip);
+					log_printf(MSG_INFO,MACSTR " is " IPv4STR,MAC2STR(pArp->src_mac),IPv42STR(pArp->src_ip));
 			}
 		break;
 	}
@@ -286,9 +271,7 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 }
 
 void* capute(void* mitm_info){
-	if(debug){
-		printf("=======capute pcaket come from target=======\n");
-	}
+	log_printf(MSG_DEBUG,"=======capute pcaket come from target=======");
 	pcap_t* handle;
 	MITM_info* info = (MITM_info*)mitm_info;
 	struct bpf_program bpf;
@@ -298,20 +281,19 @@ void* capute(void* mitm_info){
 	pcap_lookupnet(info->dev,&netNum,&netmask,errbuf);
 	handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
 	if(!handle){
-		printf("error : %s\n",errbuf);
+		log_printf(MSG_ERROR,"Sniffer1: %s",errbuf);
+		pcap_close(handle);
 		return NULL;
 	}
 
 	if(pcap_compile(handle,&bpf,info->filter,0,netmask)){
-		if(debug){
-			printf("error : %s\n",pcap_geterr(handle));
-		}
+		log_printf(MSG_ERROR,"Sniffer2: %s",pcap_geterr(handle));
+		pcap_close(handle);
 		return NULL;
 	}
 	if(pcap_setfilter(handle,&bpf)<0){
-		if(debug){
-			printf("error : %s\n",pcap_geterr(handle));
-		}
+		log_printf(MSG_ERROR,"Sniffer3: %s",pcap_geterr(handle));
+		pcap_close(handle);
 		return NULL;
 	}
 	pcap_loop(handle,-1,anylysis_packet,(u_char*)info);

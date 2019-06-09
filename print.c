@@ -7,6 +7,17 @@ void print_ip(unsigned char* ip){
 	}
 }
 
+char* ip4tostring(char* ip_s,unsigned char* ip){
+        sprintf(ip_s,"%d.%d.%d.%d",ip[0],ip[1],ip[2],ip[3]);
+        return ip_s;
+}
+
+char* mactostring(char* mac_s,unsigned char* mac){
+	sprintf(mac_s,"%x:%x:%x:%x:%x:%x",mac[0],mac[1],mac[2],
+					mac[3],mac[4],mac[5]);
+	return mac_s;
+}
+
 void println_ip(unsigned char* ip){
         for(int i=0;i<4;i++){
                 printf("%d",ip[i]);
@@ -56,6 +67,7 @@ void log_printf(int level,char* format,...){
 	va_start(ap,format);
 	if(level > debug_level){
 		vprintf(format,ap);
+		printf("\n");
 	}
 	va_end(ap);
 }

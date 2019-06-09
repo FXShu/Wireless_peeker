@@ -5,6 +5,8 @@
 #include"sniffer.h"
 #include"getif.h"
 #include"print.h"
+char ip_s[MAX_IPV4_LEN];
+char mac_s[MAX_MAC_LEN];
 int debug_level;
 bool debug=false;
 bool manual=false;
@@ -25,9 +27,8 @@ int main(int argc,char* argv[]){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
 	char* usr_dev;
-	
 	for(;;){
-		c=getopt(argc, argv,"i:hdlmf:");
+		c=getopt(argc, argv,"i:hd:lmf:");
 		if(c < 0)break;
 		switch(c){
 			case 'h':
@@ -35,7 +36,7 @@ int main(int argc,char* argv[]){
 				goto out;
 			break;
 			case 'd':
-				debug=true;
+				debug_level = atoi(optarg);
 			break;
 			case 'i':
 				usr_dev = optarg;

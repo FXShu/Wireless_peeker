@@ -10,7 +10,7 @@ LIBS_c += -lpthread
 LIBS_t = -lpcap
 
 MITM : $(OBJS) 
-	$(CC) -o MITM $(OBJS) $(LIBS_c)
+	$(CC)  -g -o MITM $(OBJS) $(LIBS_c)
 
 test : $(OBJS_t)
 	$(CC) -o test $(OBJS_t) $(LIBS_t)
