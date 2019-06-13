@@ -215,10 +215,6 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			header_len += sizeof(ip_header);
 			tcp_header* pTcp;
 			switch (pIpv4->protocol_type){
-				case PROTOCOL_ICMP :
-					log_printf(MSG_INFO,IPv4STR " icmp to " IPv4STR ,IPv42STR(pIpv4->src_ip),
-                                                IPv42STR(pIpv4->dest_ip) );
-				break;
 				case PROTOCOL_TCP : ;
 					pTcp = (tcp_header*) (packet + header_len);
 					header_len += ((pTcp->header_len_flag)>>12)*4; 
@@ -293,7 +289,7 @@ void* capute(void* mitm_info){
 		return NULL;
 	}
 	log_printf(MSG_DEBUG,"init interface successful,start to capute package");
-	pcap_loop(handle,100,anylysis_packet,(u_char*)info);
+	pcap_loop(handle,-1,anylysis_packet,(u_char*)info);
 	pcap_close(handle);
 	return 0;
 }
