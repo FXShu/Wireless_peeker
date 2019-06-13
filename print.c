@@ -65,7 +65,7 @@ void print_protocol(unsigned char protocol_type){
 void log_printf(int level,char* format,...){
 	va_list ap;
 	va_start(ap,format);
-	if(level > debug_level){
+	if(level >= debug_level){
 		vprintf(format,ap);
 		printf("\n");
 	}

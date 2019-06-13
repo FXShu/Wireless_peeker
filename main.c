@@ -21,6 +21,7 @@ void usage(){
 }
 
 int main(int argc,char* argv[]){
+	bool filter_set = false;
 	int c ,exitcode;
 	char user_filter[100];
 	sni_info dev_info;
@@ -58,6 +59,7 @@ int main(int argc,char* argv[]){
 			break;
 			case 'f':
 				strcpy(user_filter,optarg);
+				filter_set = true;
 			break;
 			default:
 		       		usage();
@@ -73,7 +75,11 @@ int main(int argc,char* argv[]){
 		exitcode = 11;
 		goto out;
 	}
-
+	if(filter_set) {
+		strcat(user_filter," && not arp");
+	} else {
+		strcpy(user_filter,"not arp");
+	}
 	printf("please type target's ip = ");
 	scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1],
 			&dev_info.target_ip[2],&dev_info.target_ip[3]);
