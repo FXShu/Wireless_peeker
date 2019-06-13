@@ -19,7 +19,6 @@ unsigned short checksum(unsigned short* buf,int bufsz){
 
 int forword(char* dev,u_short pro_type, u_char* DST, u_char* SRC,
 		const u_char* payload,int len){
-	log_printf(MSG_DEBUG,"get a package form " MACSTR " ,forward to " MACSTR,MAC2STR(SRC),MAC2STR(DST));
 	libnet_t* net_t;
 	char errbuf[LIBNET_ERRBUF_SIZE];
 	libnet_ptag_t tag; // typedef int32_t libnet_ptag_t
