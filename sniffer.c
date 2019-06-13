@@ -233,8 +233,8 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 							 http_reply_payload payload;
 							 parse_http_reply(packet+header_len,&payload);
 					}
-				log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d",IPv42STR(pIpv4->src_ip),pTcp->sour_port,
-					 IPv42STR(pIpv4->dest_ip),pTcp->dest_port );
+				log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d",IPv42STR(pIpv4->src_ip),
+						pTcp->sour_port,IPv42STR(pIpv4->dest_ip),pTcp->dest_port );
 				break;
 				case PROTOCOL_UDP : ;
 					udp_header* pUdp = (udp_header*) (packet + header_len);
@@ -246,13 +246,12 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			arp_header* pArp = (arp_header*)(packet + header_len);
 			switch(ntohs(pArp -> option)){
 				case ARP_REQURST :
-					printf("who was ");
-					print_ip(pArp->dest_mac);
-					printf(" talk to ");
-					println_ip(pArp->src_ip);
+					log_printf(MSG_INFO,"who was " MACSTR " talk to " MACSTR,
+							MAC2STR(pArp->dest_mac),MAC2STR(pArp->src_ip));
 				break;
 				case ARP_REPLY : 
-					log_printf(MSG_INFO,MACSTR " is " IPv4STR,MAC2STR(pArp->src_mac),IPv42STR(pArp->src_ip));
+					log_printf(MSG_INFO,MACSTR " is " IPv4STR,
+							MAC2STR(pArp->src_mac),IPv42STR(pArp->src_ip));
 			}
 		break;
 	}
@@ -279,18 +278,18 @@ void* capute(void* mitm_info){
 	pcap_lookupnet(info->dev,&netNum,&netmask,errbuf);
 	handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
 	if(!handle){
-		log_printf(MSG_ERROR,"Sniffer1: %s",errbuf);
+		log_printf(MSG_ERROR,"Sniffer: %s",errbuf);
 		pcap_close(handle);
 		return NULL;
 	}
 
 	if(pcap_compile(handle,&bpf,info->filter,0,netmask)){
-		log_printf(MSG_ERROR,"Sniffer2: %s",pcap_geterr(handle));
+		log_printf(MSG_ERROR,"Sniffer: %s",pcap_geterr(handle));
 		pcap_close(handle);
 		return NULL;
 	}
 	if(pcap_setfilter(handle,&bpf)<0){
-		log_printf(MSG_ERROR,"Sniffer3: %s",pcap_geterr(handle));
+		log_printf(MSG_ERROR,"Sniffer: %s",pcap_geterr(handle));
 		pcap_close(handle);
 		return NULL;
 	}

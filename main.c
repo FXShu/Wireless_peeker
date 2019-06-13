@@ -18,7 +18,6 @@ void usage(){
 		"  -l = list all available interface\n"
 		"  -m = manual set interface information\n"
 		"  -f <filter> set packet filter\n");
-	printf()
 }
 
 int main(int argc,char* argv[]){
