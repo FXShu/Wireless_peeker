@@ -142,6 +142,7 @@ void shutdown_pcap(){
 }
 
 int sniffer_init(sni_info* info,char* errbuf){
+	log_printf(MSG_DEBUG,"sniffer_init start!");
 	struct in_addr addr_net;
 	u_int tmp_mask;
 	u_int tmp_net_addr;
@@ -191,9 +192,9 @@ int sniffer_init(sni_info* info,char* errbuf){
 		}else{
 			alarm(0);
 		}
-		log_printf(MSG_DEBUG,"the gateway's mac  is" MACSTR,MAC2STR(info->gateway_mac));
+		log_printf(MSG_DEBUG,"the gateway's mac  is " MACSTR,MAC2STR(info->gateway_mac));
 		log_printf(MSG_DEBUG,"the gateway's ip   is " IPv4STR,IPv42STR(info->gateway_ip));
-		log_printf(MSG_DEBUG,"the target's mac   is" MACSTR,MAC2STR(info->target_mac));
+		log_printf(MSG_DEBUG,"the target's mac   is " MACSTR,MAC2STR(info->target_mac));
                 log_printf(MSG_DEBUG,"the target's ip    is " IPv4STR,IPv42STR(info->target_ip));
 		log_printf(MSG_DEBUG,"the attacker's mac is " MACSTR,MAC2STR(info->attacker_mac));
                 log_printf(MSG_DEBUG,"the attacker's ip  is " IPv4STR,IPv42STR(info->attacker_ip));
@@ -232,24 +233,14 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 							 http_reply_payload payload;
 							 parse_http_reply(packet+header_len,&payload);
 					}
+				log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d",IPv42STR(pIpv4->src_ip),pTcp->sour_port,
+					 IPv42STR(pIpv4->dest_ip),pTcp->dest_port );
 				break;
 				case PROTOCOL_UDP : ;
 					udp_header* pUdp = (udp_header*) (packet + header_len);
 					header_len += sizeof(udp_header);
 				break;	
 			}
-			print_ip(pIpv4->src_ip);
-			if(pTcp != NULL){
-				printf(":%d",pTcp->sour_port);
-			}
-			printf(" >> ");
-			print_ip(pIpv4->dest_ip);
-			if(pTcp != NULL){
-				printf(":%d",pTcp->dest_port);
-			}
-			printf("  ");
-			print_protocol(pIpv4->protocol_type);
-			printf("\n");
 		break;
 		case EPT_ARP :;
 			arp_header* pArp = (arp_header*)(packet + header_len);
@@ -265,9 +256,16 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			}
 		break;
 	}
-	
-	forword(info->dev,ntohs(pEther->eth_type),pEther->DST_mac,pEther->SRC_mac,
-			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));	
+	if(memcpy(pEther->SRC_mac,info->TARGET_MAC,6)){	
+		log_printf(MSG_DEBUG,"get a package from target,forward to gateway");
+//		forword(info->dev,ntohs(pEther->eth_type),info->GATEWAY_IP,pEther->SRC_mac,
+//			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+	}
+	if(memcpy(pEther->SRC_mac,info->GATEWAY_MAC,6)){
+		log_printf(MSG_DEBUG,"get a package from gateway,forward to target");
+//		forword(info->dev,ntohs(pEther->eth_type),info->TARGET_MAC,pEther->SRC_mac,
+//				packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+	}	
 }
 
 void* capute(void* mitm_info){
@@ -296,5 +294,7 @@ void* capute(void* mitm_info){
 		pcap_close(handle);
 		return NULL;
 	}
-	pcap_loop(handle,-1,anylysis_packet,(u_char*)info);
+	pcap_loop(handle,100,anylysis_packet,(u_char*)info);
+
+
 }

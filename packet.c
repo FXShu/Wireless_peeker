@@ -19,28 +19,23 @@ unsigned short checksum(unsigned short* buf,int bufsz){
 
 int forword(char* dev,u_short pro_type, u_char* DST, u_char* SRC,
 		const u_char* payload,int len){
+	log_printf(MSG_DEBUG,"get a package form " MACSTR " ,forward to " MACSTR,MAC2STR(SRC),MAC2STR(DST));
 	libnet_t* net_t;
 	char errbuf[LIBNET_ERRBUF_SIZE];
 	libnet_ptag_t tag; // typedef int32_t libnet_ptag_t
 	net_t = libnet_init(LIBNET_LINK,dev,errbuf);
 	if(!net_t){
-		if(debug){
-			printf("error: %s\n",errbuf);
-		}
+		log_printf(MSG_DEBUG,"error: %s\n",errbuf);
 		return -1;
 	}	
 	tag = libnet_build_ethernet(DST,SRC,pro_type,payload,len,net_t,0);
 	if(tag<0){
-		if(debug){
-			printf("error : %s\n",libnet_geterror(net_t));
-		}
+		log_printf(MSG_DEBUG,"error : %s\n",libnet_geterror(net_t));
 		libnet_destroy(net_t);
 		return -1;
 	}
 	if(libnet_write(net_t) < 0){
-		if(debug){
-			printf("error : %s\n",libnet_geterror(net_t));
-		}
+		log_printf(MSG_DEBUG,"error : %s\n",libnet_geterror(net_t));
 		libnet_destroy(net_t);
 		return -1;
 	}

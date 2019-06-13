@@ -13,11 +13,12 @@ bool manual=false;
 void usage(){
 	printf("MITM usage:\n"
 		"  -h = show this help test\n"
-		"  -d = increase debugging verbosity\n"
+		"  -d <level> = increase debugging verbosity\n"
 		"  -i = interface name\n"
 		"  -l = list all available interface\n"
 		"  -m = manual set interface information\n"
 		"  -f <filter> set packet filter\n");
+	printf()
 }
 
 int main(int argc,char* argv[]){

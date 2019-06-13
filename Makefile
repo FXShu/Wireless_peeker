@@ -1,4 +1,5 @@
 CC=gcc
+CFLAGS = -g
 LIBS_c=
 OBJS= 
 
@@ -10,37 +11,37 @@ LIBS_c += -lpthread
 LIBS_t = -lpcap
 
 MITM : $(OBJS) 
-	$(CC)  -g -o MITM $(OBJS) $(LIBS_c)
+	$(CC) $(OBJS) -g -o MITM  $(LIBS_c)
 
 test : $(OBJS_t)
 	$(CC) -o test $(OBJS_t) $(LIBS_t)
 
 main.o: main.c
-	$(CC) -c main.c 
+	$(CC) -g -c main.c 
 
 arp.o: arp.c arp.h
-	$(CC) -c arp.c
+	$(CC) -g -c arp.c
 
 sniffer.o: sniffer.c sniffer.h
-	$(CC) -c sniffer.c 
+	$(CC) -g -c sniffer.c 
 
 packet.o: packet.h packet.c
-	$(CC) -c packet.c
+	$(CC) -g -c packet.c
 
 getif.o: getif.h getif.c
-	$(CC) -c getif.c 
+	$(CC) -g -c getif.c 
 
 print.o: print.h print.c
-	$(CC) -c print.c
+	$(CC) -g -c print.c
 
 hashtab.o: hashtab.c hashtab.h
-	$(CC) -c hashtab.c
+	$(CC) -g -c hashtab.c
 
 parse.o: parse.c parse.h
-	$(CC) -c parse.c
+	$(CC) -g -c parse.c
 
 test.o : test.c
-	$(CC) -c test.c
+	$(CC) -g -c test.c
 
 clean:
 	rm MITM *.o 
