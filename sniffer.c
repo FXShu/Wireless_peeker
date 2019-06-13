@@ -257,11 +257,11 @@ void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* pa
 			}
 		break;
 	}
-	if(memcpy(pEther->SRC_mac,info->TARGET_MAC,6)){	
+	if(!memcmp(pEther->SRC_mac,info->TARGET_MAC,6)){	
 		forword(info->dev,ntohs(pEther->eth_type),info->GATEWAY_MAC,info->ATTACKER_MAC,
 			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
 	}
-	if(memcpy(pEther->SRC_mac,info->GATEWAY_MAC,6)){
+	if(!memcmp(pEther->SRC_mac,info->GATEWAY_MAC,6)){
 		forword(info->dev,ntohs(pEther->eth_type),info->TARGET_MAC,info->ATTACKER_MAC,
 				packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
 	}	

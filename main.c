@@ -89,7 +89,8 @@ int main(int argc,char* argv[]){
 	if(exitcode = sniffer_init(&dev_info,errbuf)){
 		goto out;
 	}
-	printf("sniffer init successful\n");	
+	printf("sniffer init successful\n");
+	//strcat(user_filter," && ether src 40:9f:38:82:fc:2b");	
 	if(manual){
 		printf("type gateway's mac\n");
 		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",&dev_info.gateway_mac[0],&dev_info.gateway_mac[1],
