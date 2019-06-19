@@ -1,8 +1,8 @@
 #include"sniffer.h"
-extern bool debug; 
 extern bool manual;
 extern char *ip_s;
 extern char *mac_s;
+extern char *wfile;
 #define BUFSIZE 8192
 
 pcap_t* handle;
@@ -203,8 +203,10 @@ int sniffer_init(sni_info* info,char* errbuf){
 	//info->handle = pcap_open_live(info->dev,65536,0,100,errbuf); 
 	return 0;
 }
-
-void anylysis_packet(u_char* user,const struct pcap_pkthdr* hp ,const u_char* packet){
+void write_packet(u_char *user,const struct pcap_pkthdr *hp,const u_char *packet) {
+	pcap_dump(user, hp, packet);
+}
+void anylysis_packet(u_char *user,const struct pcap_pkthdr *hp ,const u_char *packet){
 	MITM_info* info = (MITM_info*)user;
 	int header_len;
 	ethernet_header* pEther = (ethernet_header*) packet;
@@ -289,7 +291,17 @@ void* capute(void* mitm_info){
 		return NULL;
 	}
 	log_printf(MSG_DEBUG,"init interface successful,start to capute package");
-	pcap_loop(handle,-1,anylysis_packet,(u_char*)info);
+	if(wfile) {
+		pcap_dumper_t *dumper;
+		dumper=pcap_dump_open(handle,wfile);
+		if(dumper) {
+
+		} else {
+			log_printf(MSG_ERROR,"%s:%s",__FUNCTION__,pcap_geterr(handle));
+		}
+	} else {
+		pcap_loop(handle,-1,anylysis_packet,(u_char*)info);
+	}
 	pcap_close(handle);
 	return 0;
 }

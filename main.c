@@ -8,7 +8,7 @@
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
 int debug_level;
-bool debug=false;
+char *wfile;
 bool manual=false;
 void usage(){
 	printf("MITM usage:\n"
@@ -29,7 +29,7 @@ int main(int argc,char* argv[]){
 	pcap_if_t* if_buf;
 	char* usr_dev;
 	for(;;){
-		c=getopt(argc, argv,"i:hd:lmf:");
+		c=getopt(argc, argv,"i:hd:lmf:w:");
 		if(c < 0)break;
 		switch(c){
 			case 'h':
@@ -60,6 +60,9 @@ int main(int argc,char* argv[]){
 			case 'f':
 				strcpy(user_filter,optarg);
 				filter_set = true;
+			break;
+			case 'w':
+				wfile=optarg;
 			break;
 			default:
 		       		usage();
