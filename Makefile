@@ -1,5 +1,5 @@
 CC=gcc 
-CFLAGS = -g -std=gnu99 
+CFLAGS = -g -std=gnu99 -pedantic 
 LIBS_c=
 OBJS= 
 
