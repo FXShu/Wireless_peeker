@@ -21,6 +21,9 @@ struct hack_trace_ref {
 #define hack_trace_dump(title, ptr) \
 	hack_trace_dump_func((title), (ptr)->btrace, HACK_TRACE_LEN)
 void hack_trace_dump_func(const char *title, void **btrace, int btrace_num);
+#define hack_trace_record(ptr) \
+	(ptr)->btrace_num = backtrace((ptr)->btrace, WPA_TRACE_LEN)
+void hack_trace_show(const char *title);
 #define hack_trace_add_ref(ptr, name, addr) \
 	hack_trace_add_ref_func(&(ptr)->hack_trace_ref_##name, (addr))
 void hack_trace_add_ref_func(struct hack_trace_ref *ref, const void *addr);
