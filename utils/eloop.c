@@ -191,6 +191,12 @@ static int eloop_sock_queue(int sock, eloop_event_type type) {
 		ev.events = EPOLLERR | EPOLLHUP;
 		break;
 	}
+	ev.data.fd = sock;
+	if (epoll_ctl(eloop.epollfd, EPOLL_CTL_ADD, sock, &ev) < 0){
+		log_printf(MSG_ERROR, "%s: epoll_ctl(ADD) for fd=%d failed: %s",
+					__func__, sock, strerror(errno));
+		return -1;
+	}
 	return 0;
 }
 #endif /* CONFIG_ELOOP_EPOLL */
@@ -247,9 +253,9 @@ static int eloop_sock_table_add_sock(struct eloop_sock_table *table,
 #ifdef CONFIG_ELOOP_POLL
 	if (new_max_sock >= eloop.max_pollfd_map) {
 		struct pollfd **nmap;
-		nmap = os_realloc_array(eloop.pollfd_map, new_max_sock + 50,
+		nmap = os_realloc_array(eloop.pollfds_map, new_max_sock + 50,
 					sizeof(struct pollfd *));
-		if (nmap == NULL) 
+		if (!nmap) 
 			return -1;
 
 		eloop.max_pollfd_map = new_max_sock + 50;
@@ -259,5 +265,84 @@ static int eloop_sock_table_add_sock(struct eloop_sock_table *table,
 	if (eloop.count + 1 > eloop.max_poll_fds) {
 		struct pollfd *n;
 		int nmax = eloop.count + 1 + 50;
+		n = os_realloc_array(eloop.pollfds_map, new_max_sock + 50,
+					sizeof(struct pollfd *));
+		if (!n)
+			return -1;
+		eloop.max_poll_fds = nmax;
+		eloop.pollfds = n ;
 	}
+#endif /* CONFIG_ELOOP_POLL */
+#if defined(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE)
+	if (new_max_sock >= eloop.max_fd) {
+		next = eloop.max_fd == 0 ? 16 : eloop.max_fd * 2;
+		temp_table = os_realloc_array(eloop.fd_table, next,
+						 sizeof(struct eloop_sock));
+		if(!temp_table)
+			return -1;
+
+		eloop.max_fd = next;
+		eloop.fd_table = temp_table;
+	}
+#endif /* CONFIG_ELOOP_EPOLL || COBFIG_ELOOP_KQUEUE */
+
+#ifdef CONFIG_ELOOP_EPOLL
+	if (eloop.count + 1 > eloop.epoll_max_event_num) {
+		next = eloop.epoll_max_event_num == 0 ? 8 :
+			eloop.epoll_max_event_num * 2;
+		temp_events = os_realloc_array(eloop.epoll_events, next,
+						sizeof(struct epoll_events));
+		if (!temp_events) {
+			log_printf(MSG_ERROR, "%s: malloc for epoll failed: %s",
+						__func__,strerror(errno));
+			return -1;
+		}
+
+		eloop.epoll_max_event_num = next;
+		eloop.epoll_events = temp_events;
+	}
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+	if (eloop.count + 1 > eloop.kqueue_nevents) {
+		next = eloop.kqueue_nevents == 0 ? 8 : eloop.kqueue_nevents * 2;
+		temp_events = os_malloc(next * sizeof(*temp_events));
+		if (!temp_events) {
+			log_printf(MSG_ERROR,
+					"%s: malloc for kqueue failed: %s",
+					__func__,strerror(errno));
+			return -1;
+		}
+
+		os_free(eloop.kqueue_events);
+		eloop.kqueue_events = temp_events;
+		eloop.kqueue_nevents = next;
+	}
+#endif /* CONFIG_ELOOP_KQUEUE */
+
+	eloop_trace_sock_remove_ref(table);
+	tmp = os_realloc_array(table->table, table->count + 1,
+				sizeof(struct eloop_sock));
+	if(!tmp){
+		eloop_trace_sock_add_ref(table);
+		return -1;
+	}
+
+	tmp[table->count].sock = sock;
+	tmp[table->count].eloop_data = eloop_data;
+	tmp[table->count].user_data = user_data;
+	tmp[table->conut].handler = handler;
+	wpa_trace_record(&tmp[table->count]);
+	table->count++;
+	table->table = tmp;
+	eloop.max_sock = new_max_sock;
+	eloop.count++;
+	table->changed =1;
+	eloop_trace_sock_add_ref(table);
+#if defined(CONFIG_ELOOP_EPOLL) || difned(CONFIG_ELOOP_KQUEUE)
+	if (eloop_sock_queue(sock, table->type) < 0)
+		return -1;
+	os_memcpy(&eloop.fd_table[sock], &table->table[table->count -1],
+						sizeof(struct eloop_sock));
+#endif /*  CONFIG_ELOOP_EPOLL || CONFIG_ELOOP_KQUEUE */
+	return 0;
 }
