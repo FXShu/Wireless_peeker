@@ -1,3 +1,6 @@
 tags
 *.o
 MITM
+*.b
+*.a
+*.so

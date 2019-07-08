@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #ifndef _WIN32_WCE
 #include <signal.h>
 #include <sys/types.h>
@@ -29,5 +30,6 @@
 #ifndef __vxworks
 #include <sys/uio.h>
 #include <sys/time.h>
+#endif /* __vxworks */
 
 #endif /* INCLUDES_H */

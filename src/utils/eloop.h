@@ -1,7 +1,7 @@
 #ifndef ELOOP_H
 #define ELOOP_H
 #include<sys/epoll.h>
-
+#include "os.h"
 
 /**
  * eloop_event_type - eloop socket event type for eloop_register_sock()

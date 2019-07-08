@@ -140,3 +140,10 @@ void hack_trace_show(const char *title) {
 	hack_trace_record(&info);
 	hack_trace_dump(title, &info);
 }
+#else /* HACK_TRACE_BFD */
+#define wpa_trace_bfd_init() do { } while (0)
+#define wpa_trace_bfd_addr(pc) do { } while (0)
+#define wpa_trace_bfd_addr2func(pc) NULL
+#endif /* HACK_TRACE_BFD */
+
+#endif /* HACK_TRACE */

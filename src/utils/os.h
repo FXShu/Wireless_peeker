@@ -46,7 +46,7 @@ char * os_strdup(const char *s);
 #endif
 #endif
 
-typedef log os_time_t;
+typedef long os_time_t;
 
 void os_sleep(os_time_t sec, os_time_t usec); 
 
@@ -65,3 +65,4 @@ static inline void * os_realloc_array(void *ptr, size_t nmemb, size_t size) {
 		return NULL;
 	return os_realloc(ptr, nmemb * size);
 }
+#endif /* OS_H */

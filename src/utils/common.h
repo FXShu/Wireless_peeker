@@ -133,3 +133,4 @@ static inline unsigned int hack_swap_32(unsigned int v)
 #define WPA_BYTE_SWAP_DEFINED
 
 #endif /* __CYGWIN__ || CONFIG_NATIVE_WINDOWS */
+#endif /* COMMON_H */

@@ -1,17 +1,27 @@
 CC=gcc 
 CFLAGS = -g -std=gnu99 -pedantic 
+CFLAGS += -I$(abspath ../src)
+CFLAGS += -I$(abspath ../src/utils)
 LIBS_c=
 OBJS= 
 
 OBJS += main.o arp.o sniffer.o packet.o getif.o print.o hashtab.o parse.o
 OBJS_t = print.o packet.o test.o sniffer.o
+
 LIBS_c += -lnet
 LIBS_c += -lpcap
 LIBS_c += -lpthread
 LIBS_t = -lpcap
 
-MITM : $(OBJS) 
+BINALL=MITM
+ALL = $(BINALL)
+all: install $(ALL)
+
+MITM : $(OBJS)	
 	$(CC) $(CFLAGS) $(OBJS) -o MITM  $(LIBS_c)
+
+install: 
+	$(MAKE) -C src
 
 test : $(OBJS_t)
 	$(CC) $(CFLAGS) -o test $(OBJS_t) $(LIBS_t)
@@ -45,5 +55,7 @@ test.o : test.c
 
 clean:
 	rm MITM *.o 
+	$(MAKE) -C src clean
 clean_test :
 	rm test $(OBJS_t)
+	$(MAKE) -C src clean

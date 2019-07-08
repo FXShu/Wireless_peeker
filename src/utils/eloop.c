@@ -2,9 +2,10 @@
 #include <assert.h>
 
 //#include "common.h"
-//include "trace.h"
+#include "trace.h"
 #include "list.h"
 #include "eloop.h"
+//#include "os.h"
 
 #if defined(CONFIG_ELOOP_POLL) && defined(CONFIG_ELOOP_EPOLL)
 #error Do not define both of poll and epoll
@@ -144,7 +145,7 @@ static void eloop_trace_sock_remove_ref(struct eloop_sock_table *table){
 
 int eloop_init(void) {
 	os_memset(&eloop, 0, sizeof(eloop));
-	dl_list_init(&eloop->timeout);
+	dl_list_init(&eloop.timeout);
 #ifdef CONFIG_ELOOP_EPOLL
 	eloop.epollfd = epoll_create1(0);
 	if(eloop.epollfd < 0) {
@@ -235,7 +236,7 @@ static int eloop_sock_table_add_sock(struct eloop_sock_table *table,
 #ifdef CONFIG_ELOOP_KQUEUE
 	struct kevent *temp_event;
 #endif /* CONFIG_ELOOP_KQUEUE */
-#if defind(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE)
+#if defined(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE)
 	struct eloop_sock *temp_table;
 	int next;
 #endif /* CONFIG_ELOOP_EPOLL || CONFIG_ELOOP_KQUEUE */
@@ -330,15 +331,15 @@ static int eloop_sock_table_add_sock(struct eloop_sock_table *table,
 	tmp[table->count].sock = sock;
 	tmp[table->count].eloop_data = eloop_data;
 	tmp[table->count].user_data = user_data;
-	tmp[table->conut].handler = handler;
-	wpa_trace_record(&tmp[table->count]);
+	tmp[table->count].handler = handler;
+	hack_trace_record(&tmp[table->count]);
 	table->count++;
 	table->table = tmp;
 	eloop.max_sock = new_max_sock;
 	eloop.count++;
 	table->changed =1;
 	eloop_trace_sock_add_ref(table);
-#if defined(CONFIG_ELOOP_EPOLL) || difned(CONFIG_ELOOP_KQUEUE)
+#if defined(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE)
 	if (eloop_sock_queue(sock, table->type) < 0)
 		return -1;
 	os_memcpy(&eloop.fd_table[sock], &table->table[table->count -1],
@@ -346,3 +347,76 @@ static int eloop_sock_table_add_sock(struct eloop_sock_table *table,
 #endif /*  CONFIG_ELOOP_EPOLL || CONFIG_ELOOP_KQUEUE */
 	return 0;
 }
+
+static void eloop_sock_table_remove_sock(struct eloop_sock_table *table,
+						int sock) {
+#ifdef CONFIG_ELOOP_KQUEUE
+	struct kevent ke;
+#endif /* CONFIG_ELOOP_KQUEUE */
+	int i;
+
+	if (!table || !table->table || !table->count)
+		return;
+	
+	for (i = 0; i < table->count; i++) {
+		if (table->table[i].sock == sock)
+			break;
+	}
+
+	if (i == table->count)
+		return;
+	eloop_trace_sock_remove_ref(table);
+	if (i != table->count -1) {
+		os_memmove(&table->table[i], &table->table[i + 1],
+				(table->count -i -1) * sizeof(struct eloop_sock));
+	}
+	table->count--;
+	eloop.count--;
+	table->changed = 1;
+	eloop_trace_sock_add_ref(table);
+#ifdef CONFIG_ELOOP_EPOLL
+	if (epoll_ctl(eloop.epollfd, EPOLL_CTL_DEL, sock, NULL) < 0) {
+		log_printf(MSG_ERROR, "%s: epoll_ctl(DEL) for fd=%d failed: %s", 
+				__func__,strerror(errno));
+		return;
+	}
+	os_memset(&eloop.fd_table[sock], 0, sizeof(struct eloop_sock));
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+	EV_SET(&ke, sock, 0, EV_DELETE, 0, 0, 0);
+	if (kevent(eloop.kqueuefd, &ke, 1, NULL, 0, NULL) < 0) {
+		log_printf(MSG_ERROR, "%s: kevent(DEL) for fd=%d failed: %s",
+				__func__, sock, strerror(errno));
+		return;
+	}
+	os_memset(&eloop.fd_table[sock], 0, sizeof(struct eloop_sock));
+#endif /* CONFIG_ELOOP_KQUEUE */
+}
+
+#ifdef CONFIG_ELOOP_POLL
+
+static struct pollfd * find_pollfd(struct pollfd **pollfds_map, int fd, int mx) {
+	if (fd < mx && fd >= 0)
+		return pollfds_map[fd];
+	return NULL;
+}
+
+static int eloop_sock_table_set_fds(struct eloop_sock_table *readers,
+					struct eloop_sock_table *writers,
+					struct eloop_sock_table *exceptions,
+					struct pollfd *pollfds,
+					struct pollfd **pollfds_map,
+					int max_pollfd_map) {
+	int i;
+	int nxt = 0;
+	int fd;
+	struct pollfd *pfd;
+
+
+	/* Clear pollfd lookup map, It will be re-populated below */
+	os_memset(pollfds_map, 0, sizeof(struct pollfd *) * max_pollfd_map);
+
+
+}
+
+#endif /* CONFIG_ELOOP_POLL */
