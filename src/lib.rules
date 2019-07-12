@@ -2,12 +2,12 @@ ifndef CC
 CC=gcc
 endif
 
-ifndef CFLAGs
+ifndef CFLAGS
 CFLAGS = -MMD -O2 -Wall -g
 endif
 
 CFLAGS += -I.. -I../utils
-
+CFLAGS += -DCONFIG_ELOOP_EPOLL
 Q=@
 E=echo
 ifeq ($(V), 1)

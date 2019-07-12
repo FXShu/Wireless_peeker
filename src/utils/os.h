@@ -65,4 +65,12 @@ static inline void * os_realloc_array(void *ptr, size_t nmemb, size_t size) {
 		return NULL;
 	return os_realloc(ptr, nmemb * size);
 }
+
+static inline int os_reltime_before(struct os_reltime *a,
+				struct os_reltime *b){
+	return (a->sec < b->sec) || 
+		(a->sec == b->sec && a->usec < b->usec);
+}
+
+int os_get_reltime(struct os_reltime *t);
 #endif /* OS_H */

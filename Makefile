@@ -17,6 +17,10 @@ BINALL=MITM
 ALL = $(BINALL)
 all: install $(ALL)
 
+#ifdef CONFIG_ELOOP_EPOLL
+CFLAGS += -DCONFIG_ELOOP_EPOLL
+#endif
+
 MITM : $(OBJS)	
 	$(CC) $(CFLAGS) $(OBJS) -o MITM  $(LIBS_c)
 
