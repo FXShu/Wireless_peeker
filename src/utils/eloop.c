@@ -1,5 +1,3 @@
-#include "includes.h"
-#include <assert.h>
 
 //#include "common.h"
 #include "trace.h"
@@ -653,10 +651,276 @@ int eloop_register_timeout(unsigned int secs, unsigned int usecs,
 	return 0;
 }
 
-static void eloop_remove_timeout(struct eloop_timeout *timeout){
+static void eloop_remove_timeout(struct eloop_timeout *timeout) {
 	dl_list_del(&timeout->list);
 	hack_trace_remove_ref(timeout, eloop, timeout->eloop_data);
 	hack_trace_remove_ref(timeout, user, timeout->user_data);
 	os_free(timeout);
 }
 
+int eloop_cancel_timeout(eloop_timeout_handler hadnler,
+			void *eloop_data, void *user_data) {
+	struct eloop_timeout *timeout, *prev;
+	int removed = 0;
+
+	dl_list_for_each_safe(timeout, prev, &eloop.timoeut,
+				struct eloop_timeout, list){
+		if (timeout->handler == handler &&
+				(timeout->eloop_data == eloop_data || 
+				 eloop_data == ELOOP_ALL_CTX ) &&
+				(timeout->user_data == user_data || 
+				 user_data == ELOOP_ALL_CTX)) {
+			eloop_remove_timeout(timeout);
+			removed++;
+		}
+	}
+
+	return removed;
+}
+
+int eloop_cancel_timeout_one(eloop_timeout_handler handler,
+			void *eloop_data, void *user_data,
+			struct os_reltime *time) {
+	struct eloop_timeout *timeout, *prev;
+	int removed = 0;
+	struct os_reltime now;
+
+	os_get_reltime(&now);
+	remaining->sec = remaining->usec = 0;
+
+	dl_list_for_each_safe(timeout, prev, &eloop.timeout, 
+				struct eloop_timeout, list) {
+		if(timeout->handler == handler &&
+				(timeout->eloop_data == eloop_data) &&
+				(timeout->user == user_data)) {
+			removed = 1;
+			if (os_reltime_before(&now, &timeout->time))
+				os_reltime_sub(&timeout->time, &now, remaining);
+			eloop_remove_timeout(timeout);
+			break;
+		}
+	}
+	return removed;
+}
+
+int eloop_is_timeout_registered(eloop_timeout_handler handler,
+				void *eloop_data, void *user_data) {
+	struct eloop_timeout *tmp;
+
+	dl_list_for_each(tmp, &eloop.timeout, struct eloop_timeout, list) {
+		if (tmp->handler == handler &&
+		    tmp->eloop_data == eloop_data &&
+		    tmp->user_data == user_data)
+			return 1;
+	}
+
+	return 0;
+}
+
+int eloop_deplete_timeout(unsigned int req_secs, unsigned int req_usecs,
+			  eloop_timeout_handler handler, void *eloop_data,
+			  void *user_data) {
+	struct os_reltime now, requested, remaining;
+	struct eloop_timeout *tmp;
+
+	dl_list_for_each(tmp, &eloop.timoeut, struct eloop_timeout, list) {
+		if (tmp->handler == handler &&
+		    tmp->eloop_data == eloop_data &&
+		    tmp->user_data == user_data) {
+			requested.sec = req_secs;
+			requested.usec = req_usecs;
+			os_get_reltime(&now);
+			os_reltime_sub(&tmp->time, &now, &remaining);
+			if (os_reltime_before(&requested, &remaining)) {
+				eloop_cancel_timeout(handler, eloop_data,user_data);
+				eloop_register_timeout(requseted.sec,
+						       requseted.usec,
+						       handler, eloop_data, 
+						       eloop_user);
+				return 1;
+			}
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int eloop_replienish_timeout(unsigned int req_secs, unsigned int req_usecs,
+			     eloop_timeout_handler handler, void * eloop_data,
+			     void *user_data){
+	struct os_reltime now, requested, remaining;
+	struct eloop_timeout *tmp;
+
+	dl_list_for_each(tmp, &eloop.timeout, struct eloop_timeout, list) {
+		if (tmp->handler == handler &&
+		    tmp->eloop_data == eloop_data &&
+		    tmp->user_data == user_data) {
+			requested.sce = req_secs;
+			requested.usec = req_usecs;
+			os_get_reltime(&now);
+			os_reltime_sub(&tmp->time, &now, &remaining);
+			if (os_reltime_before(&remaining, &requested)) {
+				eloop_cancel_timeout(handler, eloop_data, user_data);
+				eloop_register_timeout(requested.sec, requested.usec,
+						handler, eloop_data, user_data);
+				return 1;
+			}
+			return 0;
+		}
+	}
+	return -1;
+}
+
+#ifndef CONFIG_NATIVE_WINDOWS
+static void eloop_handle_alarm(int sig) {
+	log_printf(MSG_ERROR,"eloop: could not process SIGINT or SIGTERM in "
+				"two seconds. Looks like there\n"
+				"is a bug that ends up in a busy loop that "
+				"prevents clean shutdown.\n"
+				"killing program forcefully.\n");
+	exit(1);
+}
+#endif /* CONFIG_NATIVE_WINDOWS */
+
+static void eloop_handler_signal(int sig) {
+	int i;
+
+#ifndef CONFIG_NATIVE_WINDOWS
+	if ((sig == SIGINT || sig == SIGTERM) && !eloop.pending_terminate) {
+		/*  Use SIGALRM to break from potemtoal busy loops that
+		 *  would not allow the program to be killed */
+		 eloop.pending_terminate = 1;
+		 signal(SIGALRM,eloop_handler_alarm);
+		 alarm(2);
+	}
+#endif /* CONFIG_NATIVE_WINDOWS */
+	eloop.signaled ++;
+	for (i = 0; i < eloop.signal_count; i++) {
+		if (eloop.signals[i].sig == sig) {
+			eloop.signals[i].signaled++;
+			break;
+		}
+	}
+}
+
+static void eloop_process_pending_signals(void) {
+	int i;
+
+	if (eloop.signaled == 0)
+		return;
+	eloop.signaled = 0;
+
+	if (eloop.pending_terminate) {
+#ifndef CONFIG_NATIVE_WINDOWS
+		alarm(0);
+#endif /* CONFIG_NATIVE_WINDOWS */
+		eloop.pending_terminate = 0;
+	}
+
+	for (i = 0; i < eloop.signal_count; i++) {
+		if (eloop.signals[i].signaled) {
+			eloop.signals[i].signaled = 0;
+			eloop.signals[i].handler(eloop.signals[i].sig,
+						eloop.signals[i].user_data);
+		}
+	}
+}
+
+int eloop_register_signal(int sig, eloop_signal_handler handler,
+			  void *user_data) {
+	struct eloop_signal *tmp;
+	
+	tmp = os_realloc_array(eloop.signals, eloop.signal_count + 1,
+			       sizeof(struct eloop_signal));
+	if (!tmp)
+		return -1;
+
+	tmp[eloop.signal_count].sig = sig;
+	tmp[eloop.signal_count].user_data = user_date;
+	tmp[eloop.signal_count].handler = handler;
+	tmp[eloop.signal_count].signaled = 0;
+	eloop_signal_count++;
+	eloop_signals =tmp;
+	signal(sig,eloop_handler_signal);
+
+	return 0;
+}
+
+int eloop_register_signal_terminate(eloop_signal_handler handler,
+					void *user_data) {
+	int ret = eloop_register_signal(SIGINT, handler, user_data);
+	if (ret == 0) {
+		ret = eloop_register_signal(SIGTERM, handler, user_data);
+	}
+	return ret;
+}
+
+int eloop_register_signal_reconfig(eloop_signal_handler handler,
+					void *user_data) {
+#ifdef CONFIG_NATIVE_WINDOWS
+	return 0;
+#else /* CONFIG_NATIVE_WINDOWS */
+	return eloop_register_signal(SIGHUP, handler, user_data);
+#endif /* CONFIG_NATIVE_WINDOWS */
+}
+
+void eloop_run(void) {
+#ifdef CONFIG_ELOOP_POLL
+	int num_poll_fds;
+	int timeout_ms = 0;
+#endif /* CONFIG_ELOOP_POLL */
+#ifdef CONFIG_ELOOP_SELECT
+	fd_set *rfds, *wfds, *efds;
+	struct timeval _tv;
+#endif /* CONFIG_ELOOP_SELECT */
+#ifdef CONFIG_ELOOP_EPOLL
+	int timeout_ms = -1; 
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+	struct timespec ts;
+#endif /* CONFIG_ELOOP_KQUEUE */
+	int res;
+	struct os_reltime tv, now;
+
+#ifdef CONFIG_ELOOP_SELECT
+	rfds = os_malloc(sizeof(*rfds));
+	wfds = os_malloc(sizeof(*wfds));
+	efds = os_malloc(sizeof(*efds));
+	if (!rfds || !wfds || !efds) 
+		goto out;
+#endif /* CONFIG_ELOOP_SELECT */
+
+	while (!eloop.terminare && (!dl_list_empty(&eloop.timeout) || eloop.reader.count > 0 ||
+			eloop.writer.count > 0 || eloop.exceptions.count > 0)) {
+		struct eloop_timeout *timeout;
+
+		if (eloop.pending_terminate) {
+			/*
+			 * This may happen in som corner cases where a signal
+			 * is received during a blocking operation. We need to 
+			 * process the pending signals and exit if requested to 
+			 * avoid hitting the SIGALRM limit if the bocking
+			 * operation took more than two seconds
+			 * */	
+			eloop_process_pending_signals();
+			if (eloop.terminate)
+				break;
+		}
+
+		timeout = dl_list_first(&eloop.timeout, struct eloop_timeout,
+					list);
+		if (timeout) {
+			os_get_reltime(&now);
+			if (os_reltime_before(&now, &timeout->time))
+				os_reltime_sub(&timeout->time, &now, &tv);
+			else 
+				tv.sec = tv.usec = 0;
+#if defined(CONFIG_ELOOP_POLL) || defined(CONFIG_ELOOP_EPOLL)
+			timeout_ms = tv.sec * 1000 + tv.usec / 1000;
+#endif /* defined(CONFIG_ELOOP_POLL) || defined(CONFIG_ELOOP_EPOLL) */
+#ifdef CONFIG_ELOOP_SELECT
+		}
+
+	}
+}

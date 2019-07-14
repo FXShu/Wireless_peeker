@@ -72,5 +72,15 @@ static inline int os_reltime_before(struct os_reltime *a,
 		(a->sec == b->sec && a->usec < b->usec);
 }
 
+struct inline void os_reltime_sub(struct os_reltime *a, struct os_reltime *b,
+				  struct os_reltime *res) {
+	res->sec = a->sec - b ->sec;
+	res->usec = a->usec - b->usec;
+	if (res->usec < 0 ) {
+		res->sec--;
+		res->usec += 1000000;
+	}
+}
+
 int os_get_reltime(struct os_reltime *t);
 #endif /* OS_H */
