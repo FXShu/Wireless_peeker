@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 #include <string.h>
 #ifndef _WIN32_WCE
 #include <signal.h>

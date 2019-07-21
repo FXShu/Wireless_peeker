@@ -2,7 +2,8 @@
 #define CPMMON_H
 
 #include "os.h"
-
+#include "includes.h"
+#include "print.h"
 #if defined(__linux__) || defined(__GLIBC__)
 #include <endian.h>
 #include <byteswap.h>

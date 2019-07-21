@@ -1,6 +1,7 @@
 #ifndef OS_H
 #define OS_H
 
+#include "common.h"
 #ifdef WPA_TRACE
 void * os_malloc(size_t size);
 void * os_realloc(void *ptr, size_t size);
@@ -72,7 +73,7 @@ static inline int os_reltime_before(struct os_reltime *a,
 		(a->sec == b->sec && a->usec < b->usec);
 }
 
-struct inline void os_reltime_sub(struct os_reltime *a, struct os_reltime *b,
+static inline void os_reltime_sub(struct os_reltime *a, struct os_reltime *b,
 				  struct os_reltime *res) {
 	res->sec = a->sec - b ->sec;
 	res->usec = a->usec - b->usec;

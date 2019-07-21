@@ -1,6 +1,6 @@
 #ifndef LIST_H
 #define LIST_H
-
+#include "common.h"
 /**
  * struct dl_list - Doubly-linked list
  */
@@ -71,7 +71,7 @@ static inline unsigned int dl_list_len(struct dl_list *list){
 	for (item = dl_list_entry((list)->next, type, member), \
 			n = dl_list_entry(item->member.next, type, member); \
 		&item->member != (list); \
-		item = dl_list_entry(item->memver-prev, type, member))
+		item = dl_list_entry(item->member.prev, type, member))
 
 #define DEFINE_DL_LIST(name) \
 	struct dl_list name = { &(name), &(name) }
