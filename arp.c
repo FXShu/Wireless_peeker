@@ -1,5 +1,4 @@
 #include "arp.h"
-extern bool debug;
 int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_char* destIp,int op){
 	libnet_t *net_t = NULL;
 	static u_char padPtr[18];

@@ -14,8 +14,8 @@ CONFIG_ELOOP_EPOLL=y
 
 
 LIB_OBJS= \
-	  eloop.o \
-	  trace.o
+	  eloop.o print.o \
+	  trace.o os_internal.o
 
 libutils.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

@@ -525,7 +525,7 @@ static void eloop_sock_table_dispatch(struct eloop_sock_table *reader,
 
 #ifdef CONFIG_ELOOP_EPOLL
 
-static void eloop_sock_dispatch(struct epoll_event *events, int nfds){
+static void eloop_sock_table_dispatch(struct epoll_event *events, int nfds){
 	struct eloop_sock *table;
 	int i;
 
@@ -922,6 +922,191 @@ void eloop_run(void) {
 			_tv.tv_usec = tv.usec * 1000L;
 #endif /*  CONFIG_ELOOP_SELECT*/
 		}
+#ifdef CONFIG_ELOOP_POLL
+		num_poll_fds = eloop_sock_table_set_fds(&eloop.readers, &eloop.writers, &eloop.exceptions,
+							eloop.pollfds, eloop.pollfds_map, eloop.max_pollfds_map);
+		res = poll(eloop.pollfds, num_poll_fds, timeout ? timeout_ms : -1);
+#endif /* CONFIG_ELOOP_POLL */
+#ifdef CONFIG_ELOOP_SELECT 
+		eloop_sock_table_set_fds(&eloop.readers, rfds);
+		eloop_sock_table_set_fds(&eloop.writers, wfds);
+		eloop_sock_table_set_fds(&eloop.exceptions, efds);
+		res = select(eloop.max_sock + 1, rfds, wfds, efds, timoeut ? &_tv : NULL);
+#endif /* CONFIG_ELOOP_SELECT */
+#ifdef CONFIG_ELOOP_EPOLL
+		if(eloop.count == 0) {
+			res = 0;
+		} else {
+			res = epoll_wait(eloop.epollfd, eloop.epoll_events, eloop.count, timeout_ms);
+		}
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+		if (eloop.count == 0) {
+			res = 0;
+		} else {
+			res = kevent(eloop.kqueuefd,  NULL, 0, eloop.kqueue_events,
+				       	eloop.kqueue_nevents, timeout ? &ts : NULL);
+		}
+#endif /* CONFIG_ELOOP_KQUEUE */
+		if (res < 0 && errno != EINTR && errno != 0) {
+			log_printf(MSG_ERROR, "eloop: %s: %s",
+#ifdef CONFIG_ELOOP_POLL
+					"poll"
+#endif /* CONFIG_ELOOP_POLL */
+#ifdef CONFIG_ELOOP_SELECT
+					"select"
+#endif /* CONFIG_ELOOP_SELECT */
+#ifdef CONFIG_ELOOP_EPOLL
+					"epoll"
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+					"kqueue"
+#endif /* CONFIG_ELOOP_KQUEUE */
+					,strerror(errno));
+			goto out;
+		}
+		eloop.readers.changed = 0;
+		eloop.writers.changed = 0;
+		eloop.exceptions.changed = 0;
+
+		eloop_process_pending_signals();
+
+		/* check if some registeres timeouts haev occurred */
+		timeout = dl_list_first(&eloop.timeout, struct eloop_timeout, list);
+		if (timeout) {
+			os_get_reltime(&now);
+			if (!os_reltime_before(&now, &timeout->time)) {
+				void *eloop_data = timeout->eloop_data;
+				void *user_data = timeout->user_data;
+				eloop_timeout_handler handler = timeout->handler;
+				eloop_remove_timeout(timeout);
+				handler(eloop_data, user_data);
+			}
+		}
+
+		if (res <= 0)
+			continue;
+
+		if(eloop.readers.changed || eloop.writers.changed || eloop.exceptions.changed) {
+			continue;
+		}
+#ifdef CONFIG_ELOOP_POLL
+		eloop_sock_table_dispatch(&eloop.readers, &eloop.writers, &eloop.exceptions,
+			       	eloop.pollfds_map, eloop.max_pollfd_map);
+#endif /* CONFIG_ELOOP_POLL */
+#ifdef CONFIG_ELOOP_SELECT
+		eloop_sock_table_dispatch(&eloop.readers, rfds);
+		eloop_sock_table_dispatch(&eloop.writers, wfds);
+		eloop_sock_table_dispatch(&eloop.exceptions, efds);
+#endif /* CONFIG_ELOOP_SELECT */
+#ifdef CONFIG_ELOOP_EPOLL
+		eloop_sock_table_dispatch(eloop.epoll_events, res);
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+		eloop_socl_table_dispatch(eloop.kqueue_events, res);
+#endif /* CONFIG_ELOOP_KQUEUE */
+	}
+
+	eloop.terminate = 0;
+out:
+#ifdef CONFIG_ELOOP_SELECT
+	os_free(rfds);
+	os_free(wfds);
+	os_free(efds);
+#endif /* CONFIG_ELOOP_SELECT */
+	return;
+}
+
+void eloop_terminate(void) {
+	eloop.terminate = 1;
+}
+
+void eloop_destroy(void) {
+	struct eloop_timeout *timeout, *prev;
+	struct os_reltime now;
+
+	os_get_reltime(&now);
+	dl_list_for_each_safe(timeout, prev, &eloop.timeout, struct eloop_timeout, list) {
+		int sec, usec;
+		sec = timeout->time.sec - now.sec;
+		usec = timeout->time.usec - now.usec;
+		if (timeout->time.usec < now.usec) {
+			sec --;
+			usec += 1000000;
+		}
+		log_printf(MSG_INFO, "ELOOP: remaining timeout: %d.%06d"
+				"eloop_data=%p user_data=%p, handler=%p",
+				sec, usec, timeout->eloop_data, timeout->user_data, timeout->handler);
+//		wpa_trace_dump_funcname("eloop unrigstered timeout handler",timeout->handler);
+//		wpa_trace_dump("eloop timeout", timeout);
+		eloop_remove_timeout(timeout);
 
 	}
+	eloop_sock_table_destroy(&eloop.readers);
+	eloop_sock_table_destroy(&eloop.writers);
+	eloop_sock_table_destroy(&eloop.exceptions);
+
+#ifdef CONFIG_ELOOP_POLL
+	os_free(eloop.pollfds);
+	os_free(eloop.pillfds_map);
+#endif /* CONFIG_ELOOP_POLL */
+#if defined(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE)
+	os_free(eloop.fd_table);
+#endif /* defined(CONFIG_ELOOP_EPOLL) || defined(CONFIG_ELOOP_KQUEUE) */
+#ifdef CONFIG_ELOOP_EPOLL
+	os_free(eloop.epoll_events);
+	close(eloop.epollfd);
+#endif /* CONFIG_ELOOP_EPOLL */
+#ifdef CONFIG_ELOOP_KQUEUE
+	os_free(eloop.kqueue_events);
+	close(eloop.kqueuefd);
+#endif /* CONFIG_ELOOP_KQUEUE */
 }
+
+
+int eloop_terminated(void) {
+	return eloop.terminate || eloop.pending_terminate;
+}
+
+void eloop_wait_for_read_sock(int sock) {
+#ifdef CONFIG_ELOOP_POLL
+	struct pollfd pfd;
+
+	if (sock < 0) 
+		return;
+	os_memset(&pfd, 0, sizeof(pfd));
+	pfd.fd = sock;
+	pfd.events = POLLIN;
+
+	poll(&pfd, 1, -1);
+#endif /* CONFIG_ELOOP_POLL */
+#if defined(CONFIG_ELOOP_SELECT) || defined(CONFIG_ELOOP_EPOLL)
+	/*
+	 * We can use epoll() here.But epoll() requres 4 system calls.
+	 * epoll_create1(), epoll_ctl() for ADD, epoll_wait, and close() for
+	 * epoll fd. So select() is better for performance here.
+	 * */
+	fd_set rfds;
+
+	if (sock < 0) 
+		return;
+	FD_ZERO(&rfds);
+	FD_SET(sock, &rfds);
+	select(sock + 1, &rfds, NULL, NULL, NULL);
+#endif /* defined(CONFIG_ELOOP_SELECT) || defined(CONFIG_ELOOP_EPOLL) */
+#ifdef CONFIG_ELOOP_KQUEUE
+	int kfd;
+	struct kevent ke1, ke2;
+
+	kfd = kqueue();
+	if (kfd == -1) 
+		return;
+	EV_SET(&ke1, sock, EVFILT_READ, EV_ADD | EV_ONESHOT, 0, 0 ,0);
+	kevent(kfd, &ke1, &ke2, 1, NULL);
+	close(kfd);
+#endif /* CONFIG_ELOOP_KQUEUE */
+}
+
+#ifdef CONFIG_ELOOP_SELECT
+#undef CONFIG_ELOOP_SELECT
+#endif /* CONFIG_ELOOP_SELECT */

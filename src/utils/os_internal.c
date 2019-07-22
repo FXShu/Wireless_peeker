@@ -1,7 +1,7 @@
 #include "includes.h"
 #include <time.h>
 #include <sys/wait.h>
-
+#include "os.h"
 #undef OS_REJECT_LIB_FUNCTIONS
 #include "common.h"
 
@@ -20,3 +20,7 @@ int os_get_reltime(struct os_reltime *t) {
 	t->usec = tv.tv_usec;
 	return res;
 }
+
+void * os_zalloc(size_t size) {
+	return calloc(1, size);
+} 

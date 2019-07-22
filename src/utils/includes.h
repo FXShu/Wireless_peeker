@@ -5,7 +5,7 @@
  */
 
 #ifndef INCLUDES_H
-#define INCLUDEs_H
+#define INCLUDES_H
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -23,7 +23,6 @@
 #ifndef _MSC_VER  //use to define translater version in mircosoft 
 #include <unistd.h>
 #endif /* _MSC_VER */
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

@@ -82,6 +82,6 @@ static inline void os_reltime_sub(struct os_reltime *a, struct os_reltime *b,
 		res->usec += 1000000;
 	}
 }
-
+void * os_zalloc(size_t size);
 int os_get_reltime(struct os_reltime *t);
 #endif /* OS_H */

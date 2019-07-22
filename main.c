@@ -1,10 +1,10 @@
 #include<unistd.h>
 #include<pthread.h>
-#include"common.h"
 #include"arp.h"
 #include"sniffer.h"
 #include"getif.h"
-#include"print.h"
+#include"common.h"
+
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
 int debug_level;
@@ -70,6 +70,8 @@ int main(int argc,char* argv[]){
 		}
 	}
 	
+	eloop_init();
+
 	if(getifinfo(&if_buf,errbuf)){
 		exitcode = 10;
 		goto out;

@@ -4,6 +4,7 @@
 #include "os.h"
 #include "includes.h"
 #include "print.h"
+#include "head.h"
 #if defined(__linux__) || defined(__GLIBC__)
 #include <endian.h>
 #include <byteswap.h>

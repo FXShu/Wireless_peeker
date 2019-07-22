@@ -5,13 +5,12 @@ CFLAGS += -I$(abspath ../src/utils)
 LIBS_c=
 OBJS= 
 
-OBJS += main.o arp.o sniffer.o packet.o getif.o print.o hashtab.o parse.o
-OBJS_t = print.o packet.o test.o sniffer.o
+OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o
 
 LIBS_c += -lnet
 LIBS_c += -lpcap
 LIBS_c += -lpthread
-LIBS_t = -lpcap
+LIBS_c += -L ./src/utils -lutils
 
 BINALL=MITM
 ALL = $(BINALL)
@@ -27,9 +26,6 @@ MITM : $(OBJS)
 install: 
 	$(MAKE) -C src
 
-test : $(OBJS_t)
-	$(CC) $(CFLAGS) -o test $(OBJS_t) $(LIBS_t)
-
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c 
 
@@ -44,9 +40,6 @@ packet.o: packet.h packet.c
 
 getif.o: getif.h getif.c
 	$(CC) $(CFLAGS) -c getif.c 
-
-print.o: print.h print.c
-	$(CC) $(CFLAGS) -c print.c
 
 hashtab.o: hashtab.c hashtab.h
 	$(CC) $(CFLAGS) -c hashtab.c

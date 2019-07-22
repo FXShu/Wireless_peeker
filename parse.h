@@ -1,5 +1,6 @@
 #include"hashtab.h"
-#include"print.h"
+#include"common.h"
+
 struct http_resquest_type {
 	u_char* method;
 	u_char* URI;

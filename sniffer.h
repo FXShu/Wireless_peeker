@@ -12,11 +12,11 @@
 #include<signal.h>
 
 #include"getif.h"
-#include"head.h"
-#include"common.h"
-#include"print.h"
 #include"packet.h"
 #include"parse.h"
+#include"common.h"
+//#include"./src/utils/head.h"
+
 typedef enum {
 	FromVictim,
 	FromGateway

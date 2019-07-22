@@ -10,8 +10,6 @@
 #include<arpa/inet.h>
 
 #include"common.h"
-#include"head.h"
-#include"print.h"
 typedef unsigned short u_short;
 typedef unsigned char  u_char;
 
