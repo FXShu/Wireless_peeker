@@ -136,7 +136,7 @@ int main(int argc,char* argv[]){
 	} else {
 		eloop_register_read_sock(handler->fd, anlysis_packet, &info, handler);
 	}
-
+	eloop_run();
 	free(if_buf);	
 	free(handler);
 	return 0;

@@ -278,9 +278,12 @@ void anlysis_packet(int sock, void *eloop_ctx, void *sock_ctx) {
 struct packet_handler* pcap_fd_init(void* mitm_info){
 	struct packet_handler *handler;
 	handler = malloc(sizeof(struct packet_handler));
-	if(!handler) PRINTF_MALLOC_ERROR;
+	if(!handler) {
+		log_printf(MSG_ERROR, "malloc failed");
+	//	PRINTF_MALLOC_ERROR;
+		return NULL;
+	}
 
-	pcap_t* handle;
 	MITM_info* info = (MITM_info*)mitm_info;
 	struct bpf_program bpf;
 	u_int netNum;
@@ -290,18 +293,21 @@ struct packet_handler* pcap_fd_init(void* mitm_info){
 	handler->pcap_fd = pcap_open_live(info->dev, 65536, 1, 1000, errbuf);
 	if(!handler->pcap_fd){
 		log_printf(MSG_DEBUG, "Sniffer: %s", errbuf);
+		log_printf(MSG_ERROR, "get you");
 		pcap_close(handler->pcap_fd);
 		return NULL;
 	}
 
-	if(pcap_compile(handler->pcap_fd, &bpf,info->filter, 0, netmask)){
+	if(pcap_compile(handler->pcap_fd, &bpf,info->filter, 0, netmask) < 0){
 		log_printf(MSG_DEBUG,"Sniffer: %s", pcap_geterr(handle));
+		log_printf(MSG_ERROR, "get you2");
 		pcap_close(handler->pcap_fd);
 		return NULL;
 	}
-	if(pcap_setfilter(handle, &bpf)<0){
+	if(pcap_setfilter(handler->pcap_fd, &bpf) < 0){
 		log_printf(MSG_DEBUG, "Sniffer: %s", pcap_geterr(handle));
 		pcap_close(handler->pcap_fd);
+		log_printf(MSG_ERROR, "get you3");
 		return NULL;
 	}
 	log_printf(MSG_DEBUG, "init interface successful,start to capute package");
