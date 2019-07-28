@@ -43,8 +43,8 @@ int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_c
         libnet_destroy(net_t);
         return p_tag;	
 }
-void* arp_spoof(void* info){
-	MITM_info* m_info=(MITM_info*)info;
+void* arp_spoof(void *eloop_data,void* user_data){
+	MITM_info* m_info=(MITM_info*)user_data;
 	log_printf(MSG_INFO,"start arp spoof to both gateway and target");
 	int p_tag_target;
 	int p_tag_gateway;

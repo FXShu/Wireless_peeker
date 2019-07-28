@@ -26,33 +26,27 @@ MITM : $(OBJS)
 install: 
 	$(MAKE) -C src
 
-main.o: main.c
-	$(CC) $(CFLAGS) -c main.c 
+Q=@
+E=echo
+ifeq ($(V),1)
+Q=
+E=true
+endif
+ifeq ($(QUIET), 1)
+Q=@
+E=true
+endif
 
-arp.o: arp.c arp.h
-	$(CC) $(CFLAGS) -c arp.c
-
-sniffer.o: sniffer.c sniffer.h
-	$(CC) $(CFLAGS) -c sniffer.c 
-
-packet.o: packet.h packet.c
-	$(CC) $(CFLAGS) -c packet.c
-
-getif.o: getif.h getif.c
-	$(CC) $(CFLAGS) -c getif.c 
-
-hashtab.o: hashtab.c hashtab.h
-	$(CC) $(CFLAGS) -c hashtab.c
-
-parse.o: parse.c parse.h
-	$(CC) $(CFLAGS) -c parse.c
-
-test.o : test.c
-	$(CC) $(CFLAGS) -c test.c
+ifdef CONFIG_CODE_CEVERAGE
+%.o: %.c
+	@$(E) "	CC " $<
+	$(Q)cd $(dir $@); $(CC) -c -o $(notdir $@) $(CFLAGS) $(notdir $<)
+else
+%.o: %.c
+	$(Q)$(CC) -c -o $@ $(CFLAGS) $<
+	@$(E) "	CC " $<
+endif
 
 clean:
 	rm MITM *.o 
-	$(MAKE) -C src clean
-clean_test :
-	rm test $(OBJS_t)
 	$(MAKE) -C src clean

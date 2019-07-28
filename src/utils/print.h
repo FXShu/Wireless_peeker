@@ -19,6 +19,9 @@ enum {
 #define IPv42STR(a) (a)[0], (a)[1], (a)[2], (a)[3]
 #define IPv4STR "%d.%d.%d.%d"
 
+#define PRINTF_MALLOC_ERROR log_printf(MSG_ERROR, "%s,%d: malloc failed by %s", \
+					__func__, __LINE__, strerror(errno)); return NULL
+
 //typedef unsigned char u_char;
 char* ip4tostring(char*,unsigned char*);
 

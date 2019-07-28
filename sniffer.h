@@ -37,11 +37,19 @@ typedef struct {
 	unsigned char target_mac[6];
 }sni_info;
 
+
+struct packet_handler{
+	int fd;
+	pcap_t* pcap_fd;
+};
+
 int sniffer_init(sni_info* info,char* errbuf);
 
 void Sniffer(const char* filter_exp);
 
 int getPacket(u_char* arg,const struct pcap_pkthdr* hp,const u_char* packet,char* data);
 
-void* capute(void* mitm_info);
+struct packet_handler* pcap_fd_init(void* mitm_info);
+
+void anlysis_packet(int sock, void *eloop_ctx, void *sock_ctx);
 #endif

