@@ -20,6 +20,7 @@ void usage(){
 		"  -f <filter> set packet filter\n");
 }
 
+
 int main(int argc,char* argv[]){
 	bool filter_set = false;
 	int c ,exitcode;
@@ -136,6 +137,23 @@ int main(int argc,char* argv[]){
 	} else {
 		eloop_register_read_sock(handler->fd, anlysis_packet, &info, handler);
 	}
+	/*  test of eloop_register_read_sock  */
+/*	int sock_fd;
+	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	struct sockaddr_in sock_addr;
+	sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	sock_addr.sin_port = htons(80);
+	sock_addr.sin_family = AF_INET;
+	if((bind(sock_fd, (struct sockaddr*)&sock_addr, sizeof(struct sockaddr_in))) < 0) {
+		log_printf(MSG_ERROR, "bind socket to port %d failed", 80);
+	} else {
+		if(listen(sock_fd, 50) == -1) {
+			log_printf(MSG_ERROR, "listen port %d failed", 80);
+		}
+	}
+
+	eloop_register_read_sock(sock_fd, eloop_register_sock_test, NULL, NULL);
+*/
 	eloop_run();
 	free(if_buf);	
 	free(handler);

