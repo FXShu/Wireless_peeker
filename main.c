@@ -20,6 +20,10 @@ void usage(){
 		"  -f <filter> set packet filter\n");
 }
 
+void timer_test (void *eloop_data, void *user_ctx) {
+	printf("timeout!\n");
+	eloop_register_timeout(1, 5000, timer_test, NULL, NULL);
+}
 
 int main(int argc,char* argv[]){
 	bool filter_set = false;
@@ -129,7 +133,7 @@ int main(int argc,char* argv[]){
 	info.filter = user_filter;
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
 	//use eloop meshanism to replace create new thread
-	eloop_register_timeout(0, 500000, arp_spoof, NULL, &info);
+	eloop_register_timeout(1, 0, arp_spoof, NULL, &info);
 	handler = pcap_fd_init(&info);
 	if(!handler) {
 		log_printf(MSG_ERROR, "init pcap handler failed");
@@ -137,6 +141,7 @@ int main(int argc,char* argv[]){
 	} else {
 		eloop_register_read_sock(handler->fd, anlysis_packet, &info, handler);
 	}
+	//eloop_register_timeout(1, 5000 , timer_test, NULL, NULL) ;
 	/*  test of eloop_register_read_sock  */
 /*	int sock_fd;
 	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
