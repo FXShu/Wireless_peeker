@@ -20,10 +20,6 @@ void usage(){
 		"  -f <filter> set packet filter\n");
 }
 
-void timer_test (void *eloop_data, void *user_ctx) {
-	printf("timeout!\n");
-	eloop_register_timeout(1, 5000, timer_test, NULL, NULL);
-}
 
 int main(int argc,char* argv[]){
 	bool filter_set = false;
@@ -103,20 +99,20 @@ int main(int argc,char* argv[]){
 
 	eloop_init();
 	if(manual){
-		printf("type gateway's mac\n");
+		log_printf(MSG_INFO, "type gateway's mac");
 		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dev_info.gateway_mac[0],
 				&dev_info.gateway_mac[1], &dev_info.gateway_mac[2],
 				&dev_info.gateway_mac[3], &dev_info.gateway_mac[4],
 				&dev_info.gateway_mac[5]);
-		printf("type gateway's ip\n");
+		log_printf(MSG_INFO, "type gateway's ip");
 		scanf("%hhd.%hhd.%hhd.%hhd", &dev_info.gateway_ip[0], &dev_info.gateway_ip[1],
 					&dev_info.gateway_ip[2], &dev_info.gateway_ip[3]);
-		printf("type target's mac\n");
+		log_printf(MSG_INFO, "type target's mac");
 		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dev_info.target_mac[0],
 				&dev_info.target_mac[1], &dev_info.target_mac[2],
 				&dev_info.target_mac[3], &dev_info.target_mac[4],
 				&dev_info.target_mac[5]);
-		printf("type gateway's ip\n");
+		log_printf(MSG_INFO, "type gateway's ip");
 		scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1],
                                         &dev_info.target_ip[2],&dev_info.target_ip[3]);
 	}
@@ -141,24 +137,6 @@ int main(int argc,char* argv[]){
 	} else {
 		eloop_register_read_sock(handler->fd, anlysis_packet, &info, handler);
 	}
-	//eloop_register_timeout(1, 5000 , timer_test, NULL, NULL) ;
-	/*  test of eloop_register_read_sock  */
-/*	int sock_fd;
-	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	struct sockaddr_in sock_addr;
-	sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	sock_addr.sin_port = htons(80);
-	sock_addr.sin_family = AF_INET;
-	if((bind(sock_fd, (struct sockaddr*)&sock_addr, sizeof(struct sockaddr_in))) < 0) {
-		log_printf(MSG_ERROR, "bind socket to port %d failed", 80);
-	} else {
-		if(listen(sock_fd, 50) == -1) {
-			log_printf(MSG_ERROR, "listen port %d failed", 80);
-		}
-	}
-
-	eloop_register_read_sock(sock_fd, eloop_register_sock_test, NULL, NULL);
-*/
 	eloop_run();
 	free(if_buf);	
 	free(handler);
