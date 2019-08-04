@@ -1,4 +1,4 @@
-SUBDIRS=utils
+SUBDIRS=utils interface
 
 
 all:

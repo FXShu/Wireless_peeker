@@ -28,7 +28,9 @@ int main(int argc,char* argv[]){
 	sni_info dev_info;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t* if_buf;
+	pcap_if_t* monitor_buf;
 	char* usr_dev;
+	char* monitor_dev;
 	struct packet_handler* handler;
 	for(;;){
 		c=getopt(argc, argv,"i:hd:lmf:w:");
@@ -71,7 +73,31 @@ int main(int argc,char* argv[]){
 				goto out;	
 		}
 	}
-	
+create_monitor_interface:
+	log_printf(MSG_INFO, "If you are using wireless interface to capute traffic\n"
+				"that must to create a monitor mode interface\n"
+				"you can type (yes/no) to create interface or not\n"
+				"also you can key the device name"
+				", if you have already created a monitor mode interface:");
+
+	char create_interface[10];
+	scanf("%s", create_interface);
+	if (!strcmp(create_interface, "yes")) {
+		log_printf(MSG_DEBUG, "creating a monitor interface base on %s", usr_dev);
+	} else if (!strcmp(create_interface, "no")) {
+		log_printf(MSG_DEBUG, "seem you are a rebellious boy em....");
+	} else {
+		if(!getifinfo(&monitor_buf, errbuf)) {
+			if(!checkdevice(monitor_buf, create_interface)) {
+				log_printf(MSG_INFO, "can't find the device %s,"
+					       	"please check again!\n",create_interface);
+				goto create_monitor_interface;
+			} else {
+				//strcpy(monitor_dev, create_interface);
+				monitor_dev = create_interface;
+			}
+		}
+	}
 	if(getifinfo(&if_buf,errbuf)){
 		exitcode = 10;
 		goto out;
@@ -86,7 +112,7 @@ int main(int argc,char* argv[]){
 		strcpy(user_filter,"not arp");
 	}
 
-	printf("please type target's ip = ");
+	log_printf(MSG_INFO, "please type target's ip = ");
 	scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1], 
 			&dev_info.target_ip[2],&dev_info.target_ip[3]);
 

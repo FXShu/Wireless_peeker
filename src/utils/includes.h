@@ -16,6 +16,8 @@
 #ifndef _WIN32_WCE
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <errno.h>
 #endif /* _WIN_32_WCE */
 #include <ctype.h>
@@ -26,6 +28,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <net/if.h>
 
 #ifndef __vxworks
 #include <sys/uio.h>
