@@ -167,7 +167,9 @@ int sniffer_init(sni_info* info,char* errbuf){
 		alarm(2);
 		signal(SIGALRM,shutdown_pcap);
 		getGatewayIP(info->gateway_ip);
-		char* gatewayIp;
+		char gatewayIp[16];
+
+
 		sprintf(gatewayIp,"%d.%d.%d.%d",info->gateway_ip[0],info->gateway_ip[1],
 						info->gateway_ip[2],info->gateway_ip[3]);
 		ping(gatewayIp);
@@ -182,7 +184,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 			alarm(0);
 		}
 		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
-		char* target;
+		char target[14];
 		sprintf(target,"%d.%d.%d.%d",info->target_ip[0],info->target_ip[1],
 						info->target_ip[2],info->target_ip[3]);
 		alarm(1);
@@ -291,23 +293,21 @@ struct packet_handler* pcap_fd_init(void* mitm_info){
 	char errbuf[PCAP_ERRBUF_SIZE];
 	pcap_lookupnet(info->dev, &netNum, &netmask, errbuf);
 	handler->pcap_fd = pcap_open_live(info->dev, 65536, 1, 1000, errbuf);
+	log_printf(MSG_DEBUG, "deivce is %s", info->dev);
 	if(!handler->pcap_fd){
 		log_printf(MSG_DEBUG, "Sniffer: %s", errbuf);
-		log_printf(MSG_ERROR, "get you");
-		pcap_close(handler->pcap_fd);
+		//pcap_close(handler->pcap_fd);
 		return NULL;
 	}
 
 	if(pcap_compile(handler->pcap_fd, &bpf,info->filter, 0, netmask) < 0){
 		log_printf(MSG_DEBUG,"Sniffer: %s", pcap_geterr(handle));
-		log_printf(MSG_ERROR, "get you2");
 		pcap_close(handler->pcap_fd);
 		return NULL;
 	}
 	if(pcap_setfilter(handler->pcap_fd, &bpf) < 0){
 		log_printf(MSG_DEBUG, "Sniffer: %s", pcap_geterr(handle));
 		pcap_close(handler->pcap_fd);
-		log_printf(MSG_ERROR, "get you3");
 		return NULL;
 	}
 	log_printf(MSG_DEBUG, "init interface successful,start to capute package");

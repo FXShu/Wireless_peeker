@@ -127,6 +127,7 @@ create_monitor_interface:
 	}
 	log_printf(MSG_DEBUG, "sniffer init successful");
 
+
 	eloop_init();
 	if(manual){
 		log_printf(MSG_INFO, "type gateway's mac");
@@ -154,7 +155,7 @@ create_monitor_interface:
                 .TARGET_IP=dev_info.target_ip,
                 .GATEWAY_IP=dev_info.gateway_ip,
 	};
-
+	
         strcpy(info.dev,usr_dev);
 	info.filter = user_filter;
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
@@ -174,17 +175,20 @@ create_monitor_interface:
 
 out :
 	switch(exitcode){
+		case -1:
+			log_printf(MSG_ERROR, "unkonwn failure");
+		break;
 		case 10:
-			printf("can't find device info,please run by superuser again\n");
+			log_printf(MSG_ERROR, "can't find device info,please run by superuser again");
 		break;
 		case 11:
-			printf("can't find specify interface,please check by flag 'l'\n");
+			log_printf(MSG_ERROR, "can't find specify interface,please check by flag 'l'");
 		break;
 		case 12:
-			printf("gateway is not exist or reject ping packet\n");
+			log_printf(MSG_ERROR, "gateway is not exist or reject ping packet");
 		break;
 		case 13:
-			printf("target is not exist or reject ping packet\n");
+			log_printf(MSG_ERROR, "target is not exist or reject ping packet");
 		break;
 	}
 	return -1;
