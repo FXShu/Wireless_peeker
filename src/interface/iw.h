@@ -8,6 +8,23 @@
 #define ETH_ALEN 6
 #endif /* ETH_ALEN */
 
+#ifndef SOL_NETLINK
+#define SOL_NETLINK 270
+#endif /* SOL_NETLINK */
+
+#ifndef NETLINK_EXT_ACK
+#define NETLINK_EXT_ACK 11
+enum nlmsgerr_attrs {
+	NLMSGERR_ATTR_UNUSED,
+	NLMSGERR_ATTR_MSG,
+	NLMSGERR_ATTR_OFFS,
+	NLMSGERR_ATTR_COOKIE,
+
+	__NLMSGERR_ATTR_MAX,
+	NLMSGERR_ATTR_MAX = __NLMSGERR_ATTR_MAX - 1
+};
+#endif
+
 struct nl80211_state {
 	struct nl_sock *nl_sock;
 	int nl80211_id;	

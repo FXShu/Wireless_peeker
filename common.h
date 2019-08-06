@@ -11,6 +11,7 @@ typedef enum{
 #include "./src/utils/print.h"
 #include "./src/utils/head.h"
 #include "./src/utils/eloop.h"
+#include "./src/interface/iw_implement.h"
 
 #define MAX_IPV4_LEN 16
 #define MAX_MAC_LEN 17

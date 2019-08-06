@@ -1,12 +1,23 @@
 #include "interface_handle.h"
 
-static int get_if_type(char ***argv, enum nl80211_iftype *type, bool need_type) {
+static int get_if_type(char **argv, enum nl80211_iftype *type, bool need_type) {
 	char *tpstr;
-
-
+/*
 	if (need_type && strcmp((*argv)[0], "type"))
 		return -1;
 	tpstr = (*argv)[!!need_type];
+*/
+	log_printf(MSG_DEBUG, "%s,%d: %s", __func__, __LINE__, *argv);
+	if(need_type) {
+		if (strcmp(*argv++, "type")) {
+			return -1;
+		} else {
+			log_printf(MSG_DEBUG, "%s,%d: = %s", __func__, __LINE__, *argv);
+			tpstr = *argv;
+		}
+	} else {
+		tpstr = *argv;
+	}
 
 	if (!strcmp(tpstr, "adhoc")  ||!strcmp(tpstr, "ibss")) {
 		*type = NL80211_IFTYPE_ADHOC;
@@ -66,11 +77,12 @@ int handle_interface_add(struct nl80211_state *state, struct nl_msg *msg,
 	unsigned char mac_addr[ETH_ALEN];
 	int found_mac = 0;
 
+	log_printf(MSG_DEBUG, "%s,%d: new interface's name is %s", __func__, __LINE__, *command);
+
 	name = *command;
 	command ++;
-
-	if(get_if_type( &command, &type, true)) {
-		log_printf(MSG_ERROR, "Invaild interface type:%s", command);
+	if(get_if_type( command, &type, true)) {
+		log_printf(MSG_ERROR, "Invaild interface type:%s", *command);
 		return -1;	
 	}
 
@@ -78,4 +90,6 @@ int handle_interface_add(struct nl80211_state *state, struct nl_msg *msg,
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, type);
 	
 	return 0;
+nla_put_failure:
+	return -1;
 }

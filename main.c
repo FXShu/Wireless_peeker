@@ -84,6 +84,10 @@ create_monitor_interface:
 	scanf("%s", create_interface);
 	if (!strcmp(create_interface, "yes")) {
 		log_printf(MSG_DEBUG, "creating a monitor interface base on %s", usr_dev);
+		char* interface_add_command[6] = {"dev", "interface", "add", "mon0", "type", "monitor"};
+		if(!nl80211_init()) {
+			interface_handler(interface_add_command);
+		} 
 	} else if (!strcmp(create_interface, "no")) {
 		log_printf(MSG_DEBUG, "seem you are a rebellious boy em....");
 	} else {

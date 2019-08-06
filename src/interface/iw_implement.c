@@ -3,8 +3,48 @@ extern int debug_level;
 
 struct nl80211_state *state;
 
+
+#ifndef NETLINK_SOCKET_H_
+#define NETLINK_SOCKET_H_
+static inline int nl_socket_set_buffer_size(struct nl_sock *sk, int rxbuf, int txbuf) {
+	return nl_set_buffer_size(sk, rxbuf, txbuf);
+}
+#endif /* NETLINK_SOCKET_H_ */
+
 int nl80211_init(){
-	return -1;
+	int err;
+
+	state = malloc(sizeof(struct nl80211_state));
+
+	state->nl_sock = nl_socket_alloc();
+	if (!state->nl_sock) {
+		log_printf(MSG_ERROR, "Failed to allocate netlink socket");
+		return -1;
+	}
+
+	if (genl_connect(state->nl_sock)) {
+		log_printf(MSG_ERROR, "Failed to connect to generic netlink");
+		err = -1;
+		goto out_handle_destroy;
+	}
+
+	nl_socket_set_buffer_size(state->nl_sock, 8192, 8192);
+	err = 1;
+	/* try to set NETLINK_EXT_ACK to 1, ignoring errors*/
+	setsockopt(nl_socket_get_fd(state->nl_sock), SOL_NETLINK,
+		       	NETLINK_EXT_ACK, &err, sizeof(err));
+	state->nl80211_id = genl_ctrl_resolve(state->nl_sock, "nl80211");
+	if (state->nl80211_id < 0) {
+		log_printf(MSG_ERROR, "nl80211 not found");
+		err = -1;
+		goto out_handle_destroy;
+	}
+
+	return 0;
+out_handle_destroy:
+	nl_socket_free(state->nl_sock);
+	free(state);
+	return err;
 }
 
 static int phy_lookup(char *name) {
@@ -114,12 +154,17 @@ int interface_handler(char **command) {
 
 	if(!cb || !s_cb) {
 		log_printf(MSG_ERROR, "%s,%d:failed to alloc struct nl_cb", __func__, __LINE__);
-		return -1;
 		goto out;
 	}
 
-	genlmsg_put(msg, 0 ,0 ,state->nl80211_id, 0, cmd_ptr->nl_msg_flags, cmd_ptr->cmd, 0);
+	if (!state) {
+		log_printf(MSG_ERROR, "nl80211_state is no exist");
+		goto out;
+		return -1;
+	}
 
+	genlmsg_put(msg, 0 ,0 ,state->nl80211_id, 0, cmd_ptr->nl_msg_flags, cmd_ptr->cmd, 0);
+	
 	switch (cmd_ptr->idby) {
 	case CIB_PHY:
 		NLA_PUT_U32(msg, NL80211_ATTR_WIPHY, devidx);
@@ -152,6 +197,9 @@ out:
 	nl_cb_put(cb);
 	nl_cb_put(s_cb);
 	nlmsg_free(msg);
+	return -1;
+
+nla_put_failure:
 	return -1;
 
 }

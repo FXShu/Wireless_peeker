@@ -10,7 +10,10 @@ OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o
 LIBS_c += -lnet
 LIBS_c += -lpcap
 LIBS_c += -lpthread
+//LIBS_c += -lnl-3 -lnl-genl-3
 LIBS_c += -L ./src/utils -lutils
+LIBS_c += -L ./src/interface -liw
+LIBS_c += -lnl-3 -lnl-genl-3
 
 BINALL=MITM
 ALL = $(BINALL)
