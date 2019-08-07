@@ -74,22 +74,25 @@ int main(int argc,char* argv[]){
 		}
 	}
 create_monitor_interface:
-	log_printf(MSG_INFO, "If you are using wireless interface to capute traffic\n"
-				"that must to create a monitor mode interface\n"
-				"you can type (yes/no) to create interface or not\n"
-				"also you can key the device name"
-				", if you have already created a monitor mode interface:");
+	printf( "If you are using wireless interface to capute traffic\n"
+		"that must to create a monitor mode interface\n"
+		"you can type (yes/no) to create interface or not\n"
+		"also you can key the device name"
+		", if you have already created a monitor mode interface:");
 
 	char create_interface[10];
 	scanf("%s", create_interface);
 	if (!strcmp(create_interface, "yes")) {
 		log_printf(MSG_DEBUG, "creating a monitor interface base on %s", usr_dev);
-		char* interface_add_command[6] = {"dev", "interface", "add", "mon0", "type", "monitor"};
+		char* interface_add_command[6] = {"dev", "interface", "add",
+		       	"mon0","type", "monitor"};
 		if(!nl80211_init()) {
-			interface_handler(interface_add_command);
+			if(!interface_handler(interface_add_command)) {
+				if_up("mon0");
+			}
 		} 
 	} else if (!strcmp(create_interface, "no")) {
-		log_printf(MSG_DEBUG, "seem you are a rebellious boy em....");
+		log_printf(MSG_DEBUG, "seem you are a rebellious guy em....");
 	} else {
 		if(!getifinfo(&monitor_buf, errbuf)) {
 			if(!checkdevice(monitor_buf, create_interface)) {
@@ -116,7 +119,7 @@ create_monitor_interface:
 		strcpy(user_filter,"not arp");
 	}
 
-	log_printf(MSG_INFO, "please type target's ip = ");
+	printf("please type target's ip = ");
 	scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1], 
 			&dev_info.target_ip[2],&dev_info.target_ip[3]);
 

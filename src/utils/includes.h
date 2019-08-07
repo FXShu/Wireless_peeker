@@ -29,7 +29,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
-
+#include <sys/ioctl.h>
 #ifndef __vxworks
 #include <sys/uio.h>
 #include <sys/time.h>

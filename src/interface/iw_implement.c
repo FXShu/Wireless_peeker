@@ -192,7 +192,7 @@ int interface_handler(char **command) {
 	if(nl_send_auto_complete(state->nl_sock, msg) < 0) {
 		goto out;
 	}
-
+	return 0;
 out:
 	nl_cb_put(cb);
 	nl_cb_put(s_cb);
