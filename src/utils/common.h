@@ -134,5 +134,7 @@ static inline unsigned int hack_swap_32(unsigned int v)
 
 #define WPA_BYTE_SWAP_DEFINED
 
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define TEST_FAIL() 0
 #endif /* __CYGWIN__ || CONFIG_NATIVE_WINDOWS */
 #endif /* COMMON_H */
