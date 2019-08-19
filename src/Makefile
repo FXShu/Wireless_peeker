@@ -1,4 +1,4 @@
-SUBDIRS=utils interface
+SUBDIRS=utils interface l2_packet
 
 
 all:

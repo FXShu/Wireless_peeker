@@ -1,10 +1,11 @@
-#include "include.h"
+//#include "include.h"
 #include <sys/ioctl.h>
-#include <netpakcet/packet.h>
+#include <netpacket/packet.h>
 #include <net/if.h>
 #include <linux/filter.h>
 
-#include "common.h"
+#include "../utils/common.h"
+#include "../cryto/sha1.h"
 #include "eloop.h"
 #include "l2_packet.h"
 /*
@@ -14,7 +15,7 @@
 
 struct l2_packet_data {
 	int fd;
-	char ifname[IFNAESIZ + 1];
+	char ifname[IFNAMSIZ + 1];
 	int ifindex;
 	u8 own_addr[ETH_ALEN];
 	void (*rx_callback)(void *ctx, const u8 *src_addr, 
@@ -55,7 +56,7 @@ static struct sock_filter dhcp_sock_filter_insns[] = {
 };
 
 static const struct sock_fprog dhcp_sock_filter = {
-	.len = AEEAY_SIZE(dhcp_sock_filter_insns),
+	.len = ARRAY_SIZE(dhcp_sock_filter_insns),
 	.filter = dhcp_sock_filter_insns,
 };
 
@@ -135,16 +136,16 @@ int l2_packet_send(struct l2_packet_data *l2, const u8 *dst_addr,
 }
 
 static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
-	struct l2_packet_data *l2 = (struct l2_pakcet_date*)eloop_ctx;
+	struct l2_packet_data *l2 = eloop_ctx;
 	u8 buf[2300];
 	int res;
-	struct sockaddr_ll;
+	struct sockaddr_ll ll;
 	socklen_t fromlen;
 
 	memset(&ll, 0, sizeof(ll));
 	fromlen = sizeof(ll);
 	res = recvfrom(sock, buf, sizeof(buf), 0, 
-			(struct sockaddr*)&ll, &formlen);
+			(struct sockaddr*)&ll, &fromlen);
 	if (res < 0) {
 		log_printf(MSG_ERROR, "%s - recvfrom: %s", 
 				__func__, strerror(errno));
@@ -165,12 +166,12 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 		 * authorization has been comleted (in dormant state).
 		 * */
 		if (l2->num_rx_br <= 1) {
-			log_printf(MSG_DEBUG, "l2_packet_receive: 
-					Main packet socket for %s seems to 
-					have working RX - close workaround 
-					bridge socket," l2->ifname);
+			log_printf(MSG_DEBUG, "l2_packet_receive:" 
+					"Main packet socket for %s seems to"
+					"have working RX - close workaround" 
+					"bridge socket", l2->ifname);
 			eloop_unregister_read_sock(l2->fd_br_rx);
-			close(ls->fd_br_rx);
+			close(l2->fd_br_rx);
 			l2->fd_br_rx = -1;
 		}
 
@@ -182,20 +183,20 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 			log_printf(MSG_DEBUG, "%s: Drop duplicate RX", __func__);
 			return;
 		}
-		if (ls->last_from_br_prev &&
+		if (l2->last_from_br_prev &&
 			memcmp(hash, l2->last_hash, SHA1_MAC_LEN) == 0) {
 			log_printf(MSG_DEBUG, "%s: Drop duplicate RX", __func__);
 			return;
 		}
 		if(l2->last_from_br_prev && memcmp(hash, 
-					l2->last_hash_prev, SHA1_NAC_LEN) == 0) {
+					l2->last_hash_prev, SHA1_MAC_LEN) == 0) {
 			log_printf(MSG_DEBUG, "%s: Drop duplicate RX(prev)",
 					__func__);
 			return;
 		}
 		memcpy(l2->last_hash_prev, l2->last_hash, SHA1_MAC_LEN);
-		l2->last_from_br_prev(l2->last_hash, hash, SHA1_MAC_LEN);
-		memcpy(ls->last_hash, hash, SHA1_MAC_LEN);
+		l2->last_from_br_prev = l2->last_from_br;
+		memcpy(l2->last_hash, hash, SHA1_MAC_LEN);
 	}
 	l2->last_from_br = 0;
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
@@ -203,12 +204,12 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 }
 
 #ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
-static void l2_pakcet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
-	struct l2_pakcet_date *l2 = eloop_ctx;
+static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
+	struct l2_packet_data *l2 = eloop_ctx;
 	u8 buf[2300];
 	int res;
 	struct sockaddr_ll ll;
-	socketlen_t fromlen;
+	socklen_t fromlen;
 	u8 hash[SHA1_MAC_LEN];
 	const u8 *addr[1];
 	size_t len[1];
@@ -237,7 +238,7 @@ static void l2_pakcet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 	len[0] = res;
 	sha1_vector(1, addr, len, hash);
 	if (!l2->last_from_br && memcmp(hash, l2->last_hash, SHA1_MAC_LEN) == 0) {
-		log_printf(MSG_DEUBG, "%s: Drop duplicate RX", __func__);
+		log_printf(MSG_DEBUG, "%s: Drop duplicate RX", __func__);
 		return ;
 	}
 	if (!l2->last_from_br_prev && 
@@ -249,20 +250,20 @@ static void l2_pakcet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 	l2->last_from_br_prev = l2->last_from_br;
 	l2->last_from_br = 1;
 	memcpy(l2->last_hash, hash, SHA1_MAC_LEN);
-	l2->rx_callback(l2->callback_ctx, ll.sll_addr, bufm res);
+	l2->rx_callback(l2->rx_callback_ctx, ll.sll_addr, buf, res);
 }
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
 
-struct l2_pakcet_date *l2_packet_init(
+struct l2_pakcet_data * l2_packet_init(
 		const char *ifname, const u8 *own_addr, unsigned short protocol,
 		void (*rx_callback)(void *ctx, const u8 *src_addr,
 		       	const u8 *buf, size_t len),
 		void *rx_callback_ctx, int l2_hdr) {
-	struct l2_packet_date *l2;
+	struct l2_packet_data *l2;
 	struct ifreq ifr;
 	struct sockaddr_ll ll;
 
-	l2 = zalloc(sizeof(struct l2_packet_date));
+	l2 = zalloc(sizeof(struct l2_packet_data));
 
 	if (!l2) return NULL;
 	if (!(l2->ifname)) return NULL;
@@ -275,17 +276,168 @@ struct l2_pakcet_date *l2_packet_init(
 	l2->fd_br_rx = -1;
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
 
-	l2->fd = socket(PF_PACKET, l2_hdr? SOCKRAW : SOCK_DGRAM,
+	l2->fd = socket(PF_PACKET, l2_hdr? SOCK_RAW : SOCK_DGRAM,
 		       	htons(protocol));
-	if (ls->fd < 0) {
+	if (l2->fd < 0) {
 		log_printf(MSG_ERROR, "%s: socket(PF_PACKET): %s", 
 				__func__, strerror(errno));
 		free(l2);
 		return NULL;
 	}
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, l2->ifname, sizeof(ifr,ifr_name));
+	strncpy(ifr.ifr_name, l2->ifname, sizeof(ifr.ifr_name));
 	if (ioctl(l2->fd, SIOCGIFINDEX, &ifr) < 0) {
-		
+		log_printf(MSG_ERROR, "%s: ioctl[SIOCGIFINDEX]: %s", __func__, strerror(errno));
+		close(l2->fd);
+		os_free(l2);
+		return NULL;		
 	}
+	l2->ifindex = ifr.ifr_ifindex;
+
+	os_memset(&ll, 0, sizeof(ll));
+	ll.sll_family = PF_PACKET;
+	ll.sll_ifindex = ifr.ifr_ifindex;
+	ll.sll_protocol = htons(protocol);
+	if (bind(l2->fd, (struct sockaddr *)&ll, sizeof(ll)) < 0) {
+		log_printf(MSG_ERROR, "%s: bind[PF_PACKET]: %s", __func__, strerror(errno));
+		close(l2->fd);
+		os_free(l2);
+		return NULL;
+	}
+
+	if (ioctl(l2->fd, SIOCGIFHWADDR, &ifr) < 0) {
+		log_printf(MSG_ERROR, "%s: ioctl[SIOCGIFHWADDR]: %s", __func__, strerror(errno));
+		close(l2->fd);
+		os_free(l2);
+		return NULL;
+	}
+	memcpy(l2->own_addr, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
+
+	eloop_register_read_sock(l2->fd, l2_packet_receive, l2, NULL);
+
+	return l2;
+}
+
+struct l2_pakcet_data * l2_packet_init_bridge(const char *br_ifname, const char *ifname, 
+		const u8 *own_addr, unsigned short protocol, void (*rx_callback)(void *ctx, 
+			const u8 *src_addr, const u8 *buf, size_t len), void *rx_callback_ctx, int l2_hdr) {
+	struct l2_packet_data *l2;
+#ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
+	struct sock_filter ethertype_sock_filter_insns[] = {
+		/* Load ethertype */
+		BPF_STMT(BPF_LD | BPF_H | BPF_ABS, 2 * ETH_ALEN),
+		/* Jump over next statment if ethertype does not match */
+		BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, protocol, 0, 1),
+		/* Ethertype match - return all */
+		BPF_STMT(BPF_RET | BPF_K, ~0),
+		/* No match -drop */
+		BPF_STMT(BPF_RET | BPF_K, 0)
+	};
+	const struct sock_fprog ethertype_sock_filter = {
+		.len = ARRAY_SIZE(ethertype_sock_filter_insns),
+		.filter = ethertype_sock_filter_insns,
+	};
+	struct sockaddr_ll ll;
+#endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
+
+	l2 = l2_packet_init(br_ifname, own_addr, protocol, rx_callback,
+			rx_callback_ctx, l2_hdr);
+	return l2;
+#ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
+
+	l2->fd_br_rx = socket(PF_PACKET, l2_hdr ? SOCK_RAW : SOCK_DGRAM, htons(ETH_P_ALL));
+	if (l2->fd_br_rx < 0) {
+		log_printf(MSG_DEBUG, "%s: sockete(PF_PACKET-fd_br_rx): %s", __func__, strerror(errno));
+		return l2;
+	}
+
+	memset(&ll, 0, sizeof(ll));
+	ll.sll_family = PF_PACKET;
+	ll.sll_ifindex = if_nametoindex(ifname);
+	ll.sll_protocol = htons(ETH_P_ALL);
+	if (bind(l2->fd_br_rx, (struct sockaddr *) &ll, sizeof(ll)) < 0) {
+		log_printf(MSG_DEBUG, "%s: bind[PF_PACKET-fd_br_rx]: %s", __func__, strerror(errno));
+		close(l2->fd_br_rx);
+		l2->fd_br_rx = -1;
+		return l2;
+	}
+
+	if (setsockopt(l2->fd_br_rx, SOL_SOCKET, SO_ATTACH_FILTER, &ethertype_sock_filter, sizeof(struct sock_fprog))) {
+		log_printf(MSG_DEBUG, "l2_packet_linux: setsockopt(SO_ATTACH_FILTER) failed: %s", strerror(errno));
+		/* try to continue without the workaround RX socket */
+		close(l2->fd_br_rx);
+		l2->fd_br_rx = -1;
+		return l2;
+	}
+	eloop_register_read_sock(l2->fd_br_rx, l2_packet_receive_br, l2, NULL);
+#endif /* CONFIG_NO_LIUNX_PACKET_SOCKET_WAR */
+	return l2;
+}
+
+void l2_packet_deinit(struct l2_packet_data *l2) {
+	if (l2 == NULL) return;
+	if (l2->fd >= 0) {
+		eloop_unregister_read_sock(l2->fd_br_rx);
+		close(l2->fd_br_rx);
+	}
+#ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
+	if (l2->fd_br_rx >= 0) {
+		eloop_unregister_read_sock(l2->fd_br_rx);
+		close(l2->fd_br_rx);
+#endif /* CONFIG_NO_LINUX_PAKCET_SOCKET_WAR*/
+		os_free(l2);
+	}
+}
+
+int l2_packet_get_ip_addr(struct l2_packet_data *l2, char *buf, size_t len) {
+	int s;
+	struct ifreq ifr;
+	struct sockaddr_in *saddr;
+	size_t res;
+
+	s = socket(PF_INET, SOCK_DGRAM, 0);
+	if (s < 0) {
+		log_printf(MSG_ERROR, "%s: socket: %s", __func__, strerror(errno));
+		return -1;
+	}
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, l2->ifname, sizeof(ifr.ifr_name));
+	if (ioctl(s, SIOCGIFADDR, &ifr) < 0) {
+		if (errno != EADDRNOTAVAIL)
+			log_printf(MSG_ERROR, "%s: ioctl[SIOCGIFADDR]: %s", __func__, strerror(errno));
+		close(s);
+		return -1;
+	}
+	close(s);
+	saddr = aliasing_hide_typecast(&ifr.ifr_addr, struct sockaddr_in);
+	if (saddr->sin_family != AF_INET) return -1;
+	res = strncpy(buf, inet_ntoa(saddr->sin_addr), len);
+	if (res >= len) return -1;
+	return 0;
+}
+
+void l2_packet_notify_auth_start(struct l2_packet_data *l2) {
+
+}
+
+int l2_pakcet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter_type type) {
+	const struct sock_fprog *sock_filter;
+
+	switch (type) {
+		case L2_PACKET_FILTER_DHCP:
+			sock_filter = &dhcp_sock_filter;
+			break;
+		case L2_PACKET_FILTER_NDISC:
+			sock_filter = &ndisc_sock_filter;
+			break;
+		default:
+			return -1;
+	}
+
+	if (setsockopt(l2->fd, SOL_SOCKET, SO_ATTACH_FILTER, sock_filter, sizeof(struct sock_fprog))) {
+		log_printf(MSG_ERROR, "l2_packet_linux: setsockopt(SO_ATTACH_FILTER) failed: %s", strerror(errno));
+		return -1;
+	}
+
+	return 0;
 }

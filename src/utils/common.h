@@ -64,7 +64,8 @@ typedef int socklen_t;
 #undef close
 #define close closesocket
 #endif /* _MSC_VER */
-
+void * __hide_aliasing_typecast(void *foo);
+#define aliasing_hide_typecast(a,t) (t *) __hide_aliasing_typecast((a))
 
 /* Define platform specific integer types */
 
@@ -133,8 +134,18 @@ static inline unsigned int hack_swap_32(unsigned int v)
 #define host_to_be32(n) hack_swap_32(n)
 
 #define WPA_BYTE_SWAP_DEFINED
+#endif /* __CYGWIN__ || CONFIG_NATIVE_WINDOWS */
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #define TEST_FAIL() 0
-#endif /* __CYGWIN__ || CONFIG_NATIVE_WINDOWS */
+#ifndef IFNAMSIZ 
+#define IFNAMSIZ 16
+#endif /* IFNAMSIZ */
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif /* ETH_ALEN */
+void * zalloc(size_t size);
+#ifndef ETH_P_ALL
+#define ETH_P_ALL 0x0003
+#endif /* ETH_P_ALL */
 #endif /* COMMON_H */
