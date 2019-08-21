@@ -1,10 +1,10 @@
 #include<unistd.h>
 #include<pthread.h>
+#include "common.h"
 #include"arp.h"
 #include"sniffer.h"
 #include"getif.h"
-#include"common.h"
-
+//#include<linux/if_ether.h>
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
 int debug_level;
@@ -20,6 +20,9 @@ void usage(){
 		"  -f <filter> set packet filter\n");
 }
 
+static void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t *buf, size_t len) {
+	
+}
 
 int main(int argc,char* argv[]){
 	bool filter_set = false;
@@ -30,8 +33,9 @@ int main(int argc,char* argv[]){
 	pcap_if_t* if_buf;
 	pcap_if_t* monitor_buf;
 	char* usr_dev;
-	char* monitor_dev;
-	struct packet_handler* handler;
+	char* monitor_dev = "mon0";
+	struct packet_handler *handler;
+	struct l2_packet_data *l2_shakehand;
 	for(;;){
 		c=getopt(argc, argv,"i:hd:lmf:w:");
 		if(c < 0)break;
@@ -85,14 +89,17 @@ create_monitor_interface:
 	if (!strcmp(create_interface, "yes")) {
 		log_printf(MSG_DEBUG, "creating a monitor interface base on %s", usr_dev);
 		char* interface_add_command[6] = {"dev", "interface", "add",
-		       	"mon0","type", "monitor"};
+		       	monitor_dev,"type", "monitor"};
 		if(!nl80211_init()) {
 			if(!interface_handler(interface_add_command)) {
-				if_up("mon0");
+				if(if_up(monitor_dev) < 0) 
+					return -1;
+				log_printf(MSG_DEBUG, "hang up monitor interface %s successful", monitor_dev);
 			}
 		} 
 	} else if (!strcmp(create_interface, "no")) {
 		log_printf(MSG_DEBUG, "seem you are a rebellious guy em....");
+		return -1;
 	} else {
 		if(!getifinfo(&monitor_buf, errbuf)) {
 			if(!checkdevice(monitor_buf, create_interface)) {
@@ -105,6 +112,9 @@ create_monitor_interface:
 			}
 		}
 	}
+
+	l2_shakehand = l2_packet_init(monitor_dev, ETH_P_ALL, handle_four_way_shakehand, NULL, 1);
+
 	if(getifinfo(&if_buf,errbuf)){
 		exitcode = 10;
 		goto out;
@@ -174,6 +184,7 @@ create_monitor_interface:
 	eloop_run();
 	free(if_buf);	
 	free(handler);
+	l2_packet_deinit(l2_shakehand);
 	return 0;
 
 out :

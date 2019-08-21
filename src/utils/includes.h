@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
+#include <linux/if_ether.h>
 #ifndef _WIN32_WCE
 #include <signal.h>
 #include <sys/types.h>

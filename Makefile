@@ -13,6 +13,7 @@ LIBS_c += -lpthread
 LIBS_c += -L ./src/utils -lutils
 LIBS_c += -L ./src/interface -liw
 LIBS_c += -lnl-3 -lnl-genl-3
+LIBS_c += -L ./src/l2_packet -ll2_packet
 
 BINALL=MITM
 ALL = $(BINALL)
@@ -21,8 +22,6 @@ all: install $(ALL)
 #ifdef CONFIG_ELOOP_EPOLL
 CFLAGS += -DCONFIG_ELOOP_EPOLL
 #endif
-
-#OBJS += src/l2_packet/l2_packet_linux.o
 
 MITM : $(OBJS)	
 	$(CC) $(CFLAGS) $(OBJS) -o MITM  $(LIBS_c)
@@ -52,5 +51,6 @@ else
 endif
 
 clean:
-	rm MITM *.o 
 	$(MAKE) -C src clean
+	rm *.o
+	rm MITM

@@ -254,8 +254,8 @@ static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 }
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
 
-struct l2_pakcet_data * l2_packet_init(
-		const char *ifname, const u8 *own_addr, unsigned short protocol,
+struct l2_packet_data * l2_packet_init(
+		const char *ifname, unsigned short protocol,
 		void (*rx_callback)(void *ctx, const u8 *src_addr,
 		       	const u8 *buf, size_t len),
 		void *rx_callback_ctx, int l2_hdr) {
@@ -318,7 +318,7 @@ struct l2_pakcet_data * l2_packet_init(
 	return l2;
 }
 
-struct l2_pakcet_data * l2_packet_init_bridge(const char *br_ifname, const char *ifname, 
+struct l2_packet_data * l2_packet_init_bridge(const char *br_ifname, const char *ifname, 
 		const u8 *own_addr, unsigned short protocol, void (*rx_callback)(void *ctx, 
 			const u8 *src_addr, const u8 *buf, size_t len), void *rx_callback_ctx, int l2_hdr) {
 	struct l2_packet_data *l2;
@@ -340,7 +340,7 @@ struct l2_pakcet_data * l2_packet_init_bridge(const char *br_ifname, const char 
 	struct sockaddr_ll ll;
 #endif /* CONFIG_NO_LINUX_PACKET_SOCKET_WAR */
 
-	l2 = l2_packet_init(br_ifname, own_addr, protocol, rx_callback,
+	l2 = l2_packet_init(br_ifname, protocol, rx_callback,
 			rx_callback_ctx, l2_hdr);
 	return l2;
 #ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR

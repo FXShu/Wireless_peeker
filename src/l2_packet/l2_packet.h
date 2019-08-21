@@ -18,4 +18,30 @@ enum l2_packet_filter_type {
 	L2_PACKET_FILTER_DHCP,
 	L2_PACKET_FILTER_NDISC,
 };
+
+int l2_packet_get_own_addr(struct l2_packet_data *l2, u8 *addr);
+
+int l2_packet_send(struct l2_packet_data *l2, const u8 *dst_addr,
+	       	u16 protocol, const u8 *buf, size_t len);
+
+struct l2_packet_data * l2_packet_init(const char *ifname, 
+		unsigned short protocol, 
+		void (*rx_callback)(void *ctx, const u8 *src_addr,
+		       	const u8 *buf, size_t len),
+	       	void *rx_callback_ctx, int l2_hdr);
+
+struct l2_packet_data * l2_packet_init_bridge(const char *br_ifname, 
+		const char *ifname, const u8 *own_addr, unsigned short protocol,
+	       	void (*rx_callback)(void *ctx, const u8 *src_addr, const u8 *buf, size_t len), 
+		      void *rx_callback_ctx, int l2_hdr);
+
+void l2_packet_deinit(struct l2_packet_data *l2);
+
+int l2_packet_get_ip_addr(struct l2_packet_data *l2, char *buf, size_t len);
+
+void l2_packet_notify_auth_start(struct l2_packet_data *l2);
+
+int l2_packet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter_type type);
+
+
 #endif /* L2_PACKET_H */
