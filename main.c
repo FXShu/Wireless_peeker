@@ -4,7 +4,6 @@
 #include"arp.h"
 #include"sniffer.h"
 #include"getif.h"
-//#include<linux/if_ether.h>
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
 int debug_level;

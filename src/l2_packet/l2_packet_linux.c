@@ -5,7 +5,7 @@
 #include <linux/filter.h>
 
 #include "../utils/common.h"
-#include "../cryto/sha1.h"
+#include "../crypto/sha1.h"
 #include "eloop.h"
 #include "l2_packet.h"
 /*

@@ -1,4 +1,4 @@
-SUBDIRS=utils interface l2_packet
+SUBDIRS=utils interface l2_packet crypto
 
 
 all:

@@ -8,6 +8,8 @@ endif
 
 CFLAGS += -I.. -I../utils
 CFLAGS += -DCONFIG_ELOOP_EPOLL
+CFLAGS += -I.. -I../crypto
+CFLAGS += -DCONFIG_CRYPTO_INTERNAL
 Q=@
 E=echo
 ifeq ($(V), 1)

@@ -1,7 +1,8 @@
 CC=gcc 
 CFLAGS = -g -std=gnu99 -pedantic 
-CFLAGS += -I$(abspath ../src)
-CFLAGS += -I$(abspath ../src/utils)
+CFLAGS += -I$(abspath ./src)
+CFLAGS += -I$(abspath ./src/utils)
+CFLAGS += -I$(abspath ./src/crypto)
 LIBS_c=
 OBJS= 
 
@@ -10,17 +11,18 @@ OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o
 LIBS_c += -lnet
 LIBS_c += -lpcap
 LIBS_c += -lpthread
-LIBS_c += -L ./src/utils -lutils
+LIBS_c += -L ./src/l2_packet -ll2_packet
+LIBS_c += -L ./src/crypto -lcrypto
 LIBS_c += -L ./src/interface -liw
 LIBS_c += -lnl-3 -lnl-genl-3
-LIBS_c += -L ./src/l2_packet -ll2_packet
+LIBS_c += -L ./src/utils -lutils
 
 BINALL=MITM
 ALL = $(BINALL)
 all: install $(ALL)
 
 #ifdef CONFIG_ELOOP_EPOLL
-CFLAGS += -DCONFIG_ELOOP_EPOLL
+#CFLAGS += -DCONFIG_ELOOP_EPOLL -DCONFIG_CRYPTO_INTERNAL
 #endif
 
 MITM : $(OBJS)	

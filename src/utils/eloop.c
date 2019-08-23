@@ -571,6 +571,10 @@ int eloop_register_read_sock(int sock, eloop_sock_handler handler,
 					eloop_data, user_data);
 }
 
+void eloop_unregister_read_sock(int sock) {
+	eloop_unregister_sock(sock, EVENT_TYPE_READ);
+}
+
 static struct eloop_sock_table *eloop_get_sock_table(eloop_event_type type) {
 	switch(type) {
 		case EVENT_TYPE_READ:
