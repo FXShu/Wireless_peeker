@@ -13,6 +13,11 @@
 #include "crypto/crypto.h"
 */
 
+struct l2_packet {
+	struct ieee80211_radiotap_header *_rtheader;
+	struct ieee80211_radio_info
+};
+
 struct l2_packet_data {
 	int fd;
 	char ifname[IFNAMSIZ + 1];
@@ -434,10 +439,37 @@ int l2_pakcet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter
 			return -1;
 	}
 
-	if (setsockopt(l2->fd, SOL_SOCKET, SO_ATTACH_FILTER, sock_filter, sizeof(struct sock_fprog))) {
-		log_printf(MSG_ERROR, "l2_packet_linux: setsockopt(SO_ATTACH_FILTER) failed: %s", strerror(errno));
+	if (setsockopt(l2->fd, SOL_SOCKET, SO_ATTACH_FILTER,
+			       	sock_filter, sizeof(struct sock_fprog))) {
+		log_printf(MSG_ERROR, "l2_packet_linux: setsockopt(SO_ATTACH_FILTER) failed: %s",
+			       	strerror(errno));
 		return -1;
 	}
 
 	return 0;
 }
+
+void print_handshake_packet(struct WPA2_handshake_packet packet) {
+        printf("===================radiotap header====================\n");
+        printf("version:%d\n", packet.radiotap_hdr.it_version);
+        printf("pad:%d\n", packet.radiotap_hdr.it_pad);
+        printf("len:%d\n", packet.radiotap_hdr.it_len);
+        printf("present:%d\n", packet.radiotap_hdr.it_present);
+        printf("===================IEEE 802.11 Data===================\n");
+	switch (packet.type) {
+		case IEEE80211_DATA:;
+			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
+					 struct ieee80211_hdr_3addr, addr1)));
+			printf("source addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
+					 packet.ieee80211_data, struct ieee80211_hdr_3addr, addr2)));
+			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, 
+					packet.ieee80211_data, struct ieee80211_hdr_3addr, addr3)));
+			break;
+		case IEEE80211_QOS_DATA:;
+			break;
+	}
+        printf("======================LLC_header======================\n");
+	
+        printf("===========8021x authenticaion information============\n");
+}
+

@@ -14,6 +14,7 @@ typedef enum{
 #include "./src/utils/eloop.h"
 #include "./src/interface/iw_implement.h"
 #include "./src/crypto/crypto.h"
+#include "./src/l2_packet/l2_packet.h"
 
 #define MAX_IPV4_LEN 16
 #define MAX_MAC_LEN 17

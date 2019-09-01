@@ -192,8 +192,8 @@ static int eloop_sock_queue(int sock, eloop_event_type type) {
 	}
 	ev.data.fd = sock;
 	if (epoll_ctl(eloop.epollfd, EPOLL_CTL_ADD, sock, &ev) < 0){
-		log_printf(MSG_ERROR, "%s: epoll_ctl(ADD) for fd=%d failed: %s",
-					__func__, sock, strerror(errno));
+		log_printf(MSG_ERROR, "%s: epoll_ctl(ADD) for epollfd = %d, fd=%d failed: %s",
+					__func__, eloop.epollfd, sock, strerror(errno));
 		return -1;
 	}
 	return 0;

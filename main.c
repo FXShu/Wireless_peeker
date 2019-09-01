@@ -19,8 +19,48 @@ void usage(){
 		"  -f <filter> set packet filter\n");
 }
 
-static void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t *buf, size_t len) {
-	
+static void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr,
+	       	const uint8_t *buf, size_t len) {
+	uint32_t offset;
+	uint16_t ieee80211_type;
+	struct WPA2_handshake_packet packet;
+	struct ieee80211_radiotap_header radiotap_hdr = *(struct ieee80211_radiotap_header*) buf;
+	offset = sizeof(struct ieee80211_radiotap_header);
+	ieee80211_type = htons(*(uint16_t*) (buf + offset));
+	offset += 2;
+	switch (ieee80211_type) {
+		case 0x0020 :
+			packet.ieee80211_data = malloc(sizeof(struct ieee80211_hdr_3addr));
+			packet.ieee80211_data = (struct ieee80211_hdr_3addr*)(buf + offset);
+			offset += sizeof(struct ieee80211_hdr_3addr);
+			break;
+		case 0x0028 :
+			packet.ieee80211_data = malloc(sizeof(struct ieee80211_qos_hdr));
+			packet.ieee80211_data = (struct ieee80211_qos_hdr*)(buf + offset);
+			offset += sizeof(struct ieee80211_qos_hdr);
+			break;
+		default:
+			goto drop_packet;
+	}
+
+	packet.llc_hdr = *(struct llc_header*)(buf + offset);
+	offset += sizeof(struct llc_header);
+
+	packet.auth_data = *(struct ieee_8021x_authentication *) (buf + offset);
+	offset += sizeof(struct ieee_8021x_authentication);
+	packet.auth_data.data = malloc(packet.auth_data.data_len);
+
+	packet.auth_data.data = (buf + offset);
+
+	print_handshake_packet(packet);
+
+	if (packet.ieee80211_data) {
+		free(packet.ieee80211_data);
+	}
+
+	return 0;
+drop_packet:
+	return 1;
 }
 
 int main(int argc,char* argv[]){
@@ -111,8 +151,8 @@ create_monitor_interface:
 			}
 		}
 	}
-
-	l2_shakehand = l2_packet_init(monitor_dev, ETH_P_ALL, handle_four_way_shakehand, NULL, 1);
+	// use ETH_P_PAE protcol ID to capute wpa2 four-way shakehand
+	l2_shakehand = l2_packet_init(monitor_dev, ETH_P_PAE, handle_four_way_shakehand, NULL, 1);
 
 	if(getifinfo(&if_buf,errbuf)){
 		exitcode = 10;

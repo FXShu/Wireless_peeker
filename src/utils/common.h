@@ -5,6 +5,7 @@
 #include "includes.h"
 #include "print.h"
 #include "head.h"
+#include "list.h"
 #if defined(__linux__) || defined(__GLIBC__)
 #include <endian.h>
 #include <byteswap.h>
@@ -145,7 +146,13 @@ static inline unsigned int hack_swap_32(unsigned int v)
 #define ETH_ALEN 6
 #endif /* ETH_ALEN */
 void * zalloc(size_t size);
+
 #ifndef ETH_P_ALL
 #define ETH_P_ALL 0x0003
 #endif /* ETH_P_ALL */
+
+#ifndef ETH_P_PAE 
+#define ETH_P_PAE 0x888E
+#endif /* ETH_P_PAE */
+
 #endif /* COMMON_H */

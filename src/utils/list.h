@@ -51,6 +51,8 @@ static inline unsigned int dl_list_len(struct dl_list *list){
 #define offsetof(type, member)  ((long) &((type *) 0)->member)
 #endif
 
+#define LOCATE(conv, object, type, member) ((conv *) ((char *)object + offsetof(type, member)))
+
 #define dl_list_entry(item, type, member) \
 	((type *) ((char *) item - offsetof(type, member)))
 
