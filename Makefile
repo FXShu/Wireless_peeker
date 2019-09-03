@@ -1,4 +1,5 @@
-CC=gcc 
+CROSS=arm-openwrt-linux-
+CC=$(CROSS)gcc 
 CFLAGS = -g -std=gnu99 -pedantic 
 CFLAGS += -I$(abspath ./src)
 CFLAGS += -I$(abspath ./src/utils)

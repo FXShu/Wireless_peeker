@@ -454,8 +454,9 @@ void print_handshake_packet(struct WPA2_handshake_packet packet) {
         printf("version:%d\n", packet.radiotap_hdr.it_version);
         printf("pad:%d\n", packet.radiotap_hdr.it_pad);
         printf("len:%d\n", packet.radiotap_hdr.it_len);
-        printf("present:%d\n", packet.radiotap_hdr.it_present);
+        printf("present:%x\n", packet.radiotap_hdr.it_present);
         printf("===================IEEE 802.11 Data===================\n");
+	printf("type:%x\n", packet.type);
 	switch (packet.type) {
 		case IEEE80211_DATA:;
 			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
@@ -466,10 +467,29 @@ void print_handshake_packet(struct WPA2_handshake_packet packet) {
 					packet.ieee80211_data, struct ieee80211_hdr_3addr, addr3)));
 			break;
 		case IEEE80211_QOS_DATA:;
+			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
+					 struct ieee80211_qos_hdr, addr1)));
+			printf("source addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
+					packet.ieee80211_data, struct ieee80211_qos_hdr, addr2)));
+			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
+					packet.ieee80211_data, struct ieee80211_qos_hdr, addr3)));
 			break;
 	}
         printf("======================LLC_header======================\n");
-	
+	printf("DSAP:%x\n", packet.llc_hdr.DSAP);
+	printf("SSAP:%x\n", packet.llc_hdr.SSAP);
+	printf("type:%x\n", packet.llc_hdr.type);	
         printf("===========8021x authenticaion information============\n");
+	printf("version:%d\n", packet.auth_data.version);
+	printf("type:%d\n", packet.auth_data.type);
+	printf("len:%d\n", packet.auth_data.len);
+	printf("key_descr_type:%d\n", packet.auth_data.key_descriptor_type);
+	printf("============packet prin information done==============\n");
 }
 
+uint32_t parse_subtype(uint32_t value) {
+	uint32_t subtype = value & subtype_mask;
+	uint32_t type    = value & type_mask;
+	uint32_t version = value & version_mask;
+	return subtype >> 12 | type >> 6;
+}

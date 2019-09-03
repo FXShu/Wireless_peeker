@@ -47,4 +47,6 @@ void l2_packet_notify_auth_start(struct l2_packet_data *l2);
 int l2_packet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter_type type);
 
 void print_handshake_packet(struct WPA2_handshake_packet packet);
+
+uint32_t parse_subtype(uint32_t value);
 #endif /* L2_PACKET_H */

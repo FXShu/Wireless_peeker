@@ -19,6 +19,10 @@
 #define u64 uint64_t
 #endif /* u64 */
 
+#define subtype_mask 0xf000
+#define type_mask    0x0c00
+#define version_mask 0x0300
+
 enum ieee80211_type {
 	/* Management Type */
 	IEEE80211_ASSOCIATION_RESQUEST    =  0x0000,
@@ -133,3 +137,4 @@ struct WPA2_handshake_packet {
 	struct ieee_8021x_authentication auth_data;
 } __attribute((aligend(2)));
 #endif /* LINUX_IEEE80211_H */
+

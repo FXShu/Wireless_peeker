@@ -1,6 +1,4 @@
-ifndef CC
-CC=gcc
-endif
+CC=arm-openwrt-linux-gcc
 
 ifndef CFLAGS
 CFLAGS = -MMD -O2 -Wall -g -std=gnu99
