@@ -10,7 +10,6 @@
  * implementation.
  * */
 #include "ieee80211_data.h"
-
 #define GETTYPE(type, object) ((struct (type) *)object)
 
 struct l2_packet_data;
@@ -49,4 +48,7 @@ int l2_packet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter
 void print_handshake_packet(struct WPA2_handshake_packet packet);
 
 uint32_t parse_subtype(uint32_t value);
+
+void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t *buf, size_t len);
+
 #endif /* L2_PACKET_H */

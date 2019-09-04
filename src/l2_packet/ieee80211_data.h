@@ -3,6 +3,7 @@
 
 #include "radiotap.h"
 #include "stdint.h"
+#include "common.h"
 #define NONCE_LEN 32
 #define IEEE_8021X_MIC_LEN 16
 

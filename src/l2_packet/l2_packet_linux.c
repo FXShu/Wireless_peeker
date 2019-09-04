@@ -467,11 +467,11 @@ void print_handshake_packet(struct WPA2_handshake_packet packet) {
 					packet.ieee80211_data, struct ieee80211_hdr_3addr, addr3)));
 			break;
 		case IEEE80211_QOS_DATA:;
-			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
+			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
 					 struct ieee80211_qos_hdr, addr1)));
 			printf("source addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
 					packet.ieee80211_data, struct ieee80211_qos_hdr, addr2)));
-			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
+			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
 					packet.ieee80211_data, struct ieee80211_qos_hdr, addr3)));
 			break;
 	}
@@ -484,7 +484,7 @@ void print_handshake_packet(struct WPA2_handshake_packet packet) {
 	printf("type:%d\n", packet.auth_data.type);
 	printf("len:%d\n", packet.auth_data.len);
 	printf("key_descr_type:%d\n", packet.auth_data.key_descriptor_type);
-	printf("============packet prin information done==============\n");
+	printf("============packet print information done==============\n");
 }
 
 uint32_t parse_subtype(uint32_t value) {

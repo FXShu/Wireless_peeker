@@ -11,7 +11,6 @@ OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o
 
 LIBS_c += -lnet
 LIBS_c += -lpcap
-LIBS_c += -lpthread
 LIBS_c += -L ./src/l2_packet -ll2_packet
 LIBS_c += -L ./src/crypto -lcrypto
 LIBS_c += -L ./src/interface -liw

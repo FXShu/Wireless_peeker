@@ -8,7 +8,7 @@ install:
 	
 include ../lib.rules
 
-LIB_OBJS = l2_packet_linux.o
+LIB_OBJS = l2_packet_linux.o l2_packet_internal.o
 
 libl2_packet.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
