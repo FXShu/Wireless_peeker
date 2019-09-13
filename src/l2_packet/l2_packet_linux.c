@@ -449,41 +449,42 @@ int l2_pakcet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter
 	return 0;
 }
 
-void print_handshake_packet(struct WPA2_handshake_packet packet) {
+void print_handshake_packet(struct WPA2_handshake_packet *packet) {
+	if (!packet) return;
         printf("===================radiotap header====================\n");
-        printf("version:%d\n", packet.radiotap_hdr.it_version);
-        printf("pad:%d\n", packet.radiotap_hdr.it_pad);
-        printf("len:%d\n", packet.radiotap_hdr.it_len);
-        printf("present:%x\n", packet.radiotap_hdr.it_present);
+        printf("version:%d\n", packet->radiotap_hdr.it_version);
+        printf("pad:%d\n", packet->radiotap_hdr.it_pad);
+        printf("len:%d\n", packet->radiotap_hdr.it_len);
+        printf("present:%x\n", packet->radiotap_hdr.it_present);
         printf("===================IEEE 802.11 Data===================\n");
 	printf("type:%x\n", packet.type);
 	switch (packet.type) {
 		case IEEE80211_DATA:;
-			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
+			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet->ieee80211_data,
 					 struct ieee80211_hdr_3addr, addr1)));
 			printf("source addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
-					 packet.ieee80211_data, struct ieee80211_hdr_3addr, addr2)));
+					 packet->ieee80211_data, struct ieee80211_hdr_3addr, addr2)));
 			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, 
-					packet.ieee80211_data, struct ieee80211_hdr_3addr, addr3)));
+					packet->ieee80211_data, struct ieee80211_hdr_3addr, addr3)));
 			break;
 		case IEEE80211_QOS_DATA:;
-			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet.ieee80211_data,
+			printf("dest addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet->ieee80211_data,
 					 struct ieee80211_qos_hdr, addr1)));
 			printf("source addr:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
-					packet.ieee80211_data, struct ieee80211_qos_hdr, addr2)));
+					packet->ieee80211_data, struct ieee80211_qos_hdr, addr2)));
 			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t,
-					packet.ieee80211_data, struct ieee80211_qos_hdr, addr3)));
+					packet->ieee80211_data, struct ieee80211_qos_hdr, addr3)));
 			break;
 	}
         printf("======================LLC_header======================\n");
-	printf("DSAP:%x\n", packet.llc_hdr.DSAP);
-	printf("SSAP:%x\n", packet.llc_hdr.SSAP);
-	printf("type:%x\n", packet.llc_hdr.type);	
+	printf("DSAP:%x\n", packet->llc_hdr.DSAP);
+	printf("SSAP:%x\n", packet->llc_hdr.SSAP);
+	printf("type:%x\n", packet->llc_hdr.type);	
         printf("===========8021x authenticaion information============\n");
-	printf("version:%d\n", packet.auth_data.version);
-	printf("type:%d\n", packet.auth_data.type);
-	printf("len:%d\n", packet.auth_data.len);
-	printf("key_descr_type:%d\n", packet.auth_data.key_descriptor_type);
+	printf("version:%d\n", packet->auth_data.version);
+	printf("type:%d\n", packet->auth_data.type);
+	printf("len:%d\n", packet->auth_data.len);
+	printf("key_descr_type:%d\n", packet->auth_data.key_descriptor_type);
 	printf("============packet print information done==============\n");
 }
 

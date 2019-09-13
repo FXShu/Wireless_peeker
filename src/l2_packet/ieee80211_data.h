@@ -73,6 +73,24 @@ enum ieee80211_type {
 	IEEE80211_DMG_BEACON              = 0x0030,
 };
 
+enum beacon_param {
+	BEACON_SSID              = 0x00,
+	BEACON_SUPPORT_RATE      = 0x01,
+	BEACON_DS                = 0x03,
+	BEACON_TIM               = 0x05, // Traffic Indication Map
+	BEACON_COUNTRY_INFO      = 0x07,
+	BEACON_HT_CAP            = 0x2d, // HT capabilties
+	BEACON_SUPPORT_Operating = 0x3b,
+      	BEACON_HT_INFO	         = 0x3d,
+	BEACON_RM                = 0x46, // Radio Management
+	BEACON_EXTENDED          = 0x7f,
+	BEACON_VHT_CAP           = 0xbf,
+	BEACON_VHT_OPERATION     = 0xc0,
+	BEACON_VHT_TX_POWER      = 0xc3,
+	BEACON_VENDOR            = 0xdd,
+
+};
+
 struct ieee80211_hdr {
 	u16 frame_control;
 	u16 duration_id;
@@ -130,12 +148,37 @@ struct ieee_8021x_authentication {
 	u8 *data;
 } __attribute__((aligend(2)));
 
+struct beacon_fix_params {
+	u8  timestamp[8];
+	u8  interval[2]; //double
+	u16 capabilities;
+} __attribute__((packed));
+
+struct beacon_tag_params {
+	u8 tag_name;
+	u8 tag_len;
+	u8 *data;
+	struct beacon_tag_params *next;
+	struct beacon_tag_params *head;
+} __attribute__((packed));
+
+struct ieee80211_beacon {
+	beacon_fix_params fix_param;
+	beacon_tag_params *tag_param;
+} __attribute__((packed));
+
 struct WPA2_handshake_packet {
-	struct ieee80211_radiotap_header radiotap_hdr;
-	enum ieee80211_type type;
+	//struct ieee80211_radiotap_header radiotap_hdr;
+	//enum ieee80211_type type;
 	void *ieee80211_data;
 	struct llc_header llc_hdr;
 	struct ieee_8021x_authentication auth_data;
 } __attribute((aligend(2)));
+
+struct beacon_packet {
+	//struct ieee80211_radiotap_header radiotap_hdr;
+	struct ieee80211_hdr_3addr frame;
+	struct ieee80211_beacon body;
+} __attribute__((packed));
 #endif /* LINUX_IEEE80211_H */
 
