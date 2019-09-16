@@ -4,14 +4,6 @@
 #include "include.h"
 #include "common.h"
 
-struct ap_list {
-	struct ap_list *next;
-	struct ap_list *prev;
-	char *BSSID;
-	u8 MAC[ETH_ALEN];
-	u8 channel;
-};
-
 /***
  * struct MITM
  * the structure is used to stored the glabal data
@@ -31,7 +23,7 @@ struct MITM {
 	pcap_if_t* if_buf;
 	pcap_if_t* monitor_buf;
 	struct l2_packet_data *l2_packet;
-	struct ap_list *ap_list;
+	struct hash_table ap_list;
 };
 
 int MITM_init(struct MITM *MITM);

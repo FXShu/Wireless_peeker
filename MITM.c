@@ -20,7 +20,7 @@ int MITM_init(struct MITM *MITM) {
 
 	log_printf(MSG_DEBUG, "sniffer inti successful");
 
-	if(init_hashtable(MITM->ap_list, 100)) {
+	if(init_hashtable(&MITM->ap_list, 100)) {
 		log_printf(MSG_ERROR, "ap list init failed!");
 		return -1;
 	}

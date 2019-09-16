@@ -17,6 +17,13 @@ void usage(){
 		"  -f <filter> set packet filter\n");
 }
 
+void print_ap_list(void *eloop_data, void *user_ctx) {
+	struct MITM* MITM = (struct MITM*) user_ctx;
+	if (!MITM) return;
+	
+	print_hashtable(&MITM->ap_list);
+}
+
 int main(int argc,char* argv[]){
 
 	struct MITM *MITM;
@@ -115,6 +122,8 @@ create_monitor_interface:
 	// use ETH_P_PAE protcol ID to capute wpa2 four-way shakehand
 	//l2_shakehand = l2_packet_init(monitor_dev, ETH_P_ALL, handle_four_way_shakehand, NULL, 1); //ETH_P_PAE
 	MITM_init(MITM);
+	//just test ap list function, one day will implement in cli
+	eloop_register_timeout(5, 0, print_ap_list, NULL, &MITM);
 /*
 	if (!MITM.l2_shakehand) {
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");

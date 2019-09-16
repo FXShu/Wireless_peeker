@@ -1,5 +1,6 @@
 #include "ieee80211_data.h"
 #include "l2_packet.h"
+#include "../../MITM.h"
 
 static int parse_llc_header(u8* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
@@ -58,9 +59,9 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 					//key = BSSID
 					ap_info.key = tmp->body.tag_param->data;
 					//value = MAC address
-					ap_info.value = tmp->frame->addr1;
+					ap_info.value = tmp->frame.addr1;
 
-					MITM->ap_list->insert(&MITM->ap_list, &ap_info);
+					MITM->ap_list.insert(&MITM->ap_list, &ap_info);
 				}
 				tmp->body.tag_param = tmp->body.tag_param->next;
 			}

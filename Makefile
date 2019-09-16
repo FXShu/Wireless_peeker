@@ -1,4 +1,4 @@
-CROSS=
+CROSS=arm-openwrt-linux-
 CC=$(CROSS)gcc 
 CFLAGS = -g -std=gnu99 -pedantic 
 CFLAGS += -I$(abspath ./src)
@@ -7,7 +7,7 @@ CFLAGS += -I$(abspath ./src/crypto)
 LIBS_c=
 OBJS= 
 
-OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o \
+OBJS += main.o arp.o sniffer.o packet.o getif.o parse.o \
 	MITM.o
 
 LIBS_c += -lnet
