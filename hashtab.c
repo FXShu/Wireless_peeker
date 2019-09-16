@@ -29,7 +29,6 @@ int malloc_and_copy_node(struct node* dst,struct node* src){
         return 0;
 }
 
-
 int hash(struct hash_table* table,char* key){
 	int len, hash_index, char_sum =0;
 	char c;

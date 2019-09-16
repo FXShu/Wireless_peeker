@@ -99,7 +99,7 @@ struct ieee80211_hdr {
 	u8  addr3[ETH_ALEN];
 	u16 seq_ctrl;
 	u8  addr4[ETH_ALEN];
-} __packed __attribute__((aligend(2)));
+}__attribute__((packed));
 
 /* Type: Data = 0x00020 */
 struct ieee80211_hdr_3addr {
@@ -109,7 +109,7 @@ struct ieee80211_hdr_3addr {
         u8  addr2[ETH_ALEN];
         u8  addr3[ETH_ALEN];
         u16 seq_ctrl;
-} __attribute__((aligend(2)));
+} __attribute__((packed));
 /* Type: Qos Data = 0x0028 */
 struct ieee80211_qos_hdr {
         u16 frame_control;
@@ -119,7 +119,7 @@ struct ieee80211_qos_hdr {
         u8  addr3[ETH_ALEN];
         u16 seq_ctrl;
 	u16 qos_ctrl;
-} __attribute__((aligend(2)));
+} __attribute__((packed));
 
 
 struct llc_header {
@@ -128,7 +128,7 @@ struct llc_header {
 	u8  control_field;
 	u8  code[3];
 	u16 type;
-} __attribute__((aligend(2)));
+} __attribute__((packed));
 
 
 struct ieee_8021x_authentication {
@@ -146,7 +146,7 @@ struct ieee_8021x_authentication {
 	u8  MIC[IEEE_8021X_MIC_LEN];
 	u16 data_len;
 	u8 *data;
-} __attribute__((aligend(2)));
+} __attribute__((packed));
 
 struct beacon_fix_params {
 	u8  timestamp[8];
@@ -163,20 +163,21 @@ struct beacon_tag_params {
 } __attribute__((packed));
 
 struct ieee80211_beacon {
-	beacon_fix_params fix_param;
-	beacon_tag_params *tag_param;
+	struct beacon_fix_params fix_param;
+	struct beacon_tag_params *tag_param;
 } __attribute__((packed));
 
 struct WPA2_handshake_packet {
 	//struct ieee80211_radiotap_header radiotap_hdr;
-	//enum ieee80211_type type;
+	enum ieee80211_type type;
 	void *ieee80211_data;
 	struct llc_header llc_hdr;
 	struct ieee_8021x_authentication auth_data;
-} __attribute((aligend(2)));
+} __attribute((packed));
 
 struct beacon_packet {
 	//struct ieee80211_radiotap_header radiotap_hdr;
+	enum ieee80211_type type;
 	struct ieee80211_hdr_3addr frame;
 	struct ieee80211_beacon body;
 } __attribute__((packed));

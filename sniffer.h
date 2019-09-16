@@ -1,5 +1,6 @@
 #ifndef SNIFFER_H
 #define SNIFFER_H
+/*
 #include<unistd.h>
 #include<linux/netlink.h>
 #include<linux/rtnetlink.h>
@@ -10,7 +11,8 @@
 #include<string.h>
 #include<stdlib.h>
 #include<signal.h>
-
+*/
+#include "include.h"
 #include"getif.h"
 #include"packet.h"
 #include"parse.h"

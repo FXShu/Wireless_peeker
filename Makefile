@@ -7,7 +7,8 @@ CFLAGS += -I$(abspath ./src/crypto)
 LIBS_c=
 OBJS= 
 
-OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o
+OBJS += main.o arp.o sniffer.o packet.o getif.o hashtab.o parse.o \
+	MITM.o
 
 LIBS_c += -lnet
 LIBS_c += -lpcap

@@ -451,14 +451,9 @@ int l2_pakcet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter
 
 void print_handshake_packet(struct WPA2_handshake_packet *packet) {
 	if (!packet) return;
-        printf("===================radiotap header====================\n");
-        printf("version:%d\n", packet->radiotap_hdr.it_version);
-        printf("pad:%d\n", packet->radiotap_hdr.it_pad);
-        printf("len:%d\n", packet->radiotap_hdr.it_len);
-        printf("present:%x\n", packet->radiotap_hdr.it_present);
         printf("===================IEEE 802.11 Data===================\n");
-	printf("type:%x\n", packet.type);
-	switch (packet.type) {
+	printf("type:%x\n", packet->type);
+	switch (packet->type) {
 		case IEEE80211_DATA:;
 			printf("BSS ID:" MACSTR"\n", MAC2STR(LOCATE(uint8_t, packet->ieee80211_data,
 					 struct ieee80211_hdr_3addr, addr1)));

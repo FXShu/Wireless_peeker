@@ -1,3 +1,5 @@
+#ifndef PARSE_H
+#define PARSE_H
 #include"hashtab.h"
 #include"common.h"
 
@@ -64,3 +66,5 @@ typedef struct{
 int parse_http_request(const u_char* data,http_resquest_payload* payload);
 
 int parse_http_reply(const u_char* data,http_reply_payload* payload);
+
+#endif /* PARSE_H */

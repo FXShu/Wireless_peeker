@@ -3,10 +3,11 @@
 #include<string.h>
 #include<stdlib.h>
 #include<stdio.h>
+#include<stdint.h>
 
 struct node{
-	char* key;
-	char* value;
+	char *key;
+	uint8_t *value;
 	struct node *next;
 };
 

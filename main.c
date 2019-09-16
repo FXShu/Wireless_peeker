@@ -1,9 +1,7 @@
 #include<unistd.h>
-#include<pthread.h>
 #include "common.h"
-#include"arp.h"
-#include"sniffer.h"
-#include"getif.h"
+#include "MITM.h"
+
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
 int debug_level;
@@ -20,17 +18,20 @@ void usage(){
 }
 
 int main(int argc,char* argv[]){
+
+	struct MITM *MITM;
+
 	bool filter_set = false;
 	int c ,exitcode;
 	char user_filter[100];
-	sni_info dev_info;
-	char errbuf[PCAP_ERRBUF_SIZE];
-	pcap_if_t* if_buf;
-	pcap_if_t* monitor_buf;
-	char* usr_dev;
-	char* monitor_dev = "mon0";
+	//sni_info dev_info;
+	//char errbuf[PCAP_ERRBUF_SIZE];
+	//pcap_if_t* if_buf;
+	//pcap_if_t* monitor_buf;
+	//char* usr_dev;
+	//char* monitor_dev = "mon0";
 	struct packet_handler *handler;
-	struct l2_packet_data *l2_shakehand;
+	//struct l2_packet_data *l2_shakehand;
 	for(;;){
 		c=getopt(argc, argv,"i:hd:lmf:w:");
 		if(c < 0)break;
@@ -43,17 +44,17 @@ int main(int argc,char* argv[]){
 				debug_level = atoi(optarg);
 			break;
 			case 'i':
-				usr_dev = optarg;
+				MITM->usr_dev = optarg;
 			break;
 			case 'l':
-				if(getifinfo(&if_buf,errbuf)){
+				if(getifinfo(&MITM->if_buf,MITM->errbuf)){
                                         exitcode = 10;
 					goto out;
 				}
 				
-				while(if_buf->next){
-                                                printf("%s\n",if_buf->name);
-                                                if_buf = if_buf->next;
+				while(MITM->if_buf->next){
+                                                printf("%s\n",MITM->if_buf->name);
+                                                MITM->if_buf = MITM->if_buf->next;
 				}
 				return 0;
 			break;
@@ -82,28 +83,29 @@ create_monitor_interface:
 	char create_interface[10];
 	scanf("%s", create_interface);
 	if (!strcmp(create_interface, "yes")) {
-		log_printf(MSG_DEBUG, "creating a monitor interface base on %s", usr_dev);
+		log_printf(MSG_DEBUG, "creating a monitor interface base on %s", MITM->usr_dev);
 		char* interface_add_command[6] = {"dev", "interface", "add",
-		       	monitor_dev,"type", "monitor"};
+		       	MITM->monitor_dev,"type", "monitor"};
 		if(!nl80211_init()) {
 			if(!interface_handler(interface_add_command)) {
-				if(if_up(monitor_dev) < 0) 
+				if(if_up(MITM->monitor_dev) < 0) 
 					return -1;
-				log_printf(MSG_DEBUG, "hang up monitor interface %s successful", monitor_dev);
+				log_printf(MSG_DEBUG, 
+						"hang up monitor interface %s successful", MITM->monitor_dev);
 			}
 		} 
 	} else if (!strcmp(create_interface, "no")) {
 		log_printf(MSG_DEBUG, "seem you are a rebellious guy em....");
 		return -1;
 	} else {
-		if(!getifinfo(&monitor_buf, errbuf)) {
-			if(!checkdevice(monitor_buf, create_interface)) {
+		if(!getifinfo(&MITM->monitor_buf, MITM->errbuf)) {
+			if(!checkdevice(MITM->monitor_buf, create_interface)) {
 				log_printf(MSG_INFO, "can't find the device %s,"
 					       	"please check again!\n",create_interface);
 				goto create_monitor_interface;
 			} else {
 				//strcpy(monitor_dev, create_interface);
-				monitor_dev = create_interface;
+				MITM->monitor_dev = create_interface;
 			}
 		}
 	}
@@ -111,8 +113,10 @@ create_monitor_interface:
 	eloop_init();
 
 	// use ETH_P_PAE protcol ID to capute wpa2 four-way shakehand
-	l2_shakehand = l2_packet_init(monitor_dev, ETH_P_ALL, handle_four_way_shakehand, NULL, 1); //ETH_P_PAE
-	if (!l2_shakehand) {
+	//l2_shakehand = l2_packet_init(monitor_dev, ETH_P_ALL, handle_four_way_shakehand, NULL, 1); //ETH_P_PAE
+	MITM_init(MITM);
+/*
+	if (!MITM.l2_shakehand) {
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
 		goto out;
 	}
@@ -126,53 +130,54 @@ create_monitor_interface:
 		exitcode = 11;
 		goto out;
 	}
-	if(filter_set) {
+*/	if(filter_set) {
 		strcat(user_filter," && not arp");
 	} else {
 		strcpy(user_filter,"not arp");
 	}
-
+/*
 	printf("please type target's ip = ");
 	scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1], 
 			&dev_info.target_ip[2],&dev_info.target_ip[3]);
 
-	/* sniffer init */
 	dev_info.dev=usr_dev;
 	if(exitcode = sniffer_init(&dev_info,errbuf)){
 		goto out;
 	}
 	log_printf(MSG_DEBUG, "sniffer init successful");
-
+*/
 
 //	eloop_init();
 	if(manual){
 		log_printf(MSG_INFO, "type gateway's mac");
-		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dev_info.gateway_mac[0],
-				&dev_info.gateway_mac[1], &dev_info.gateway_mac[2],
-				&dev_info.gateway_mac[3], &dev_info.gateway_mac[4],
-				&dev_info.gateway_mac[5]);
+		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.gateway_mac[0],
+				&MITM->dev_info.gateway_mac[1], &MITM->dev_info.gateway_mac[2],
+				&MITM->dev_info.gateway_mac[3], &MITM->dev_info.gateway_mac[4],
+				&MITM->dev_info.gateway_mac[5]);
 		log_printf(MSG_INFO, "type gateway's ip");
-		scanf("%hhd.%hhd.%hhd.%hhd", &dev_info.gateway_ip[0], &dev_info.gateway_ip[1],
-					&dev_info.gateway_ip[2], &dev_info.gateway_ip[3]);
+		scanf("%hhd.%hhd.%hhd.%hhd", &MITM->dev_info.gateway_ip[0], 
+				&MITM->dev_info.gateway_ip[1], &MITM->dev_info.gateway_ip[2],
+			       	&MITM->dev_info.gateway_ip[3]);
 		log_printf(MSG_INFO, "type target's mac");
-		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dev_info.target_mac[0],
-				&dev_info.target_mac[1], &dev_info.target_mac[2],
-				&dev_info.target_mac[3], &dev_info.target_mac[4],
-				&dev_info.target_mac[5]);
+		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.target_mac[0],
+				&MITM->dev_info.target_mac[1], &MITM->dev_info.target_mac[2],
+				&MITM->dev_info.target_mac[3], &MITM->dev_info.target_mac[4],
+				&MITM->dev_info.target_mac[5]);
 		log_printf(MSG_INFO, "type gateway's ip");
-		scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1],
-                                        &dev_info.target_ip[2],&dev_info.target_ip[3]);
+		scanf("%hhd.%hhd.%hhd.%hhd",&MITM->dev_info.target_ip[0], 
+				&MITM->dev_info.target_ip[1], &MITM->dev_info.target_ip[2],
+				&MITM->dev_info.target_ip[3]);
 	}
 
         MITM_info info={
-                .TARGET_MAC=dev_info.target_mac,
-                .ATTACKER_MAC=dev_info.attacker_mac,
-                .GATEWAY_MAC=dev_info.gateway_mac,
-                .TARGET_IP=dev_info.target_ip,
-                .GATEWAY_IP=dev_info.gateway_ip,
+                .TARGET_MAC=MITM->dev_info.target_mac,
+                .ATTACKER_MAC=MITM->dev_info.attacker_mac,
+                .GATEWAY_MAC=MITM->dev_info.gateway_mac,
+                .TARGET_IP=MITM->dev_info.target_ip,
+                .GATEWAY_IP=MITM->dev_info.gateway_ip,
 	};
 	
-        strcpy(info.dev,usr_dev);
+        strcpy(info.dev,MITM->usr_dev);
 	info.filter = user_filter;
 	/* init fake arp and the return value should be the next input to send_fake_arp op */
 	//use eloop meshanism to replace create new thread
@@ -185,9 +190,10 @@ create_monitor_interface:
 		eloop_register_read_sock(handler->fd, anlysis_packet, &info, handler);
 	}
 	//eloop_run();
-	free(if_buf);	
-	free(handler);
-	l2_packet_deinit(l2_shakehand);
+	//free(if_buf);	
+	//free(handler);
+	//l2_packet_deinit(l2_shakehand);
+	MITM_deinit(MITM);
 	return 0;
 
 out :
@@ -208,8 +214,9 @@ out :
 			log_printf(MSG_ERROR, "target is not exist or reject ping packet");
 		break;
 	}
-	free(if_buf);
-	free(handler);
-	l2_packet_deinit(l2_shakehand);
+//	free(if_buf);
+//	free(handler);
+//	l2_packet_deinit(l2_shakehand);
+	MITM_deinit(MITM);
 	return -1;
 }
