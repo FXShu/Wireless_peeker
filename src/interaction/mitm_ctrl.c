@@ -6,7 +6,7 @@
 
 #include "mitm_ctrl.h"
 
-#if defined(CONFIG_CTRL_IFACE_UNIX)
+#define CONFIG_CTRL_IFACE_UNIX y
 
 struct mitm_ctrl {
 #ifdef CONFIG_CTRL_IFACE_UDP
@@ -32,7 +32,6 @@ struct mitm_ctrl {
 #endif /* CONFIG_CTRL_IFACE_NAMED_PIPE */
 };
 
-#ifdef CONFIG_CTRL_IFACE_UNIX
 
 #ifndef CONFIG_CTRL_IFACE_CLIENT_DIR
 #define CONFIG_CTRL_IFACE_CLIENT_DIR "/tmp"
@@ -46,7 +45,7 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 	return mitm_ctrl_open2(ctrl_path, NULL);
 }
 
-struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
+static struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
 	       			const char *cli_path) {
 	struct mitm_ctrl *ctrl;
 	static int counter = 0;
@@ -185,8 +184,10 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 
 #ifdef CONFIG_CTRL_IFACE_UDP_IPV6
 	ctrl->local.sin6_family = AF_INET6;
+#endif /* CONFIG_CTRL_IFACE_UDP_IPV6 */
 #ifdef CONFIG_CTRL_IFACE_UDP_REMOTE
 	ctrl->local.sin6_addr = in6addr_any;
+#endif /* CONFIG_CTRL_IFACE_UDP_REMOTE */
 }
 
 int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len,
@@ -216,9 +217,22 @@ retry_send:
 		//EWOULDBLOCK: Operation would block
 		if (errno == EAGAIN || errno == EBUSY || errno == EWOULDBLOCK) {
 			if (started_at.sec == 0) {
-				get_reltime()
+				os_get_reltime(&start_at);
+			} else {
+				struct timeval n;
+				os_get_reltime(&n);
+				/* Try for a few seconds. */
+				if (os_reltime_expired(&start_at, &n, 5, 0)) {
+					goto send_err;
+				}
+				sleep(1);
+				goto retry_send;
 			}
 		}
+send_err:
+		free(cmd_buf);
+	       	// free(void *pointer) - if pointer point to a NULL memery address, do nothing
+		return -1;
 	} 
 
 
@@ -227,19 +241,68 @@ retry_send:
 		return -1;
 	}
 
-	tv.sec = 10;
-	tv.usec = 0;
-	FD_SET(ctrl->s, &rfds);
+	for(;;) {
+		tv.sec = 10;
+		tv.usec = 0;
+		FD_SET(ctrl->s, &rfds);
 
-	if (select(ctrl->s + 1, &rfds, NULL, NULL, &tv) < 0) {
-		log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
-		return -1;
-	}
-
-	if (FD_ISSET(ctrl->s, &rfds)) {
-		if(recv(ctrl->s, msg_buf, reply, *reply_len, flags) < 0) {
+		if (select(ctrl->s + 1, &rfds, NULL, NULL, &tv) < 0) {
 			log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
+			return -1;
+		}
+
+		if (FD_ISSET(ctrl->s, &rfds)) {
+			if (recv(ctrl->s, msg_buf, reply, *reply_len, flags) < 0) {
+				log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
+				return res;
+			}
+			if (res > 0 && reply[0] == '<') {
+				/* This is an unsolicited message from MITM, not the reply to the request.
+			 	 * Use msg_cb to report this to the caller.
+			 	 */
+				if(msg_cb) {
+					// Make sure the message is nul terminated.
+					if ((size_t)res == *reply_len) 
+						res = (*reply_len ) -1;
+					reply[res] = '\0';
+					msg_cb(reply, res);
+				}
+				continue;
+			}
+			*reply_len = res;
+			break;
+		} else {
+			return -2;
 		}
 	}
+	return 0;
 }
 
+int mitm_ctrl_recv(struct mitm_ctrl *ctrl, char *reply, size_t *reply_len) {
+	int res;
+	int flags;
+
+	res = recv(ctrl->s, reply, *reply_len, flags);
+	if (res < 0) {
+		log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
+		return -1 ;
+	}
+	*reply_len = res;
+	return 0;
+}
+
+int mitm_ctrl_pending(struct mitm_ctrl *ctrl) {
+	struct timeval tv;
+	fd_set rfds;
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	FD_ZERO(&rfds);
+	FD_SET(&rfds, ctrl->s);
+	select(ctrl->s + 1, &rfds, NULL, NULL, &tv);
+	return FD_ISSET(ctrl->s, &rfds);
+}
+
+int mitm_ctrl_get_fd(struct mitm_ctrl *ctrl) {
+	return ctrl->s;
+}
+#endif /* CONFIG_CTRL_IFACE_UDP */
