@@ -98,7 +98,8 @@ create_monitor_interface:
 				if(if_up(MITM->monitor_dev) < 0) 
 					return -1;
 				log_printf(MSG_DEBUG, 
-						"hang up monitor interface %s successful", MITM->monitor_dev);
+						"hang up monitor interface %s successful", 
+						MITM->monitor_dev);
 			}
 		} 
 	} else if (!strcmp(create_interface, "no")) {
@@ -119,27 +120,15 @@ create_monitor_interface:
 
 	eloop_init();
 
-	// use ETH_P_PAE protcol ID to capute wpa2 four-way shakehand
-	//l2_shakehand = l2_packet_init(monitor_dev, ETH_P_ALL, handle_four_way_shakehand, NULL, 1); //ETH_P_PAE
 	MITM_init(MITM);
-	//just test ap list function, one day will implement in cli
-	eloop_register_timeout(5, 0, print_ap_list, NULL, &MITM);
-/*
+
 	if (!MITM.l2_shakehand) {
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
 		goto out;
 	}
 	eloop_run();
 
-	if(getifinfo(&if_buf,errbuf)){
-		exitcode = 10;
-		goto out;
-	}
-	if(!checkdevice(if_buf,usr_dev)){
-		exitcode = 11;
-		goto out;
-	}
-*/	if(filter_set) {
+	if(filter_set) {
 		strcat(user_filter," && not arp");
 	} else {
 		strcpy(user_filter,"not arp");
@@ -156,7 +145,6 @@ create_monitor_interface:
 	log_printf(MSG_DEBUG, "sniffer init successful");
 */
 
-//	eloop_init();
 	if(manual){
 		log_printf(MSG_INFO, "type gateway's mac");
 		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.gateway_mac[0],

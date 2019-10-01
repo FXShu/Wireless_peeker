@@ -4,6 +4,10 @@
 #include "include.h"
 #include "common.h"
 
+enum usr_dev_type {
+	ethernet,
+	wireless,
+};
 /***
  * struct MITM
  * the structure is used to stored the glabal data
@@ -19,6 +23,7 @@ struct MITM {
 	sni_info dev_info;
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char* usr_dev;
+	enum usr_dev_type dev_type;
 	char* monitor_dev;
 	pcap_if_t* if_buf;
 	pcap_if_t* monitor_buf;

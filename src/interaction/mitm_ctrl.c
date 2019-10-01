@@ -45,7 +45,7 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 	return mitm_ctrl_open2(ctrl_path, NULL);
 }
 
-static struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
+struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
 	       			const char *cli_path) {
 	struct mitm_ctrl *ctrl;
 	static int counter = 0;
@@ -119,7 +119,7 @@ try_again:
 		}
 	}
 
-	if (connect(ctrl->s, (struct sockaddr *) &ctrl-dest, sizeof(ctrl->dest)) < 0) {
+	if (connect(ctrl->s, (struct sockaddr *) &ctrl->dest, sizeof(ctrl->dest)) < 0) {
 		close(ctrl->s);
 		unlink(ctrl->local.sun_path);
 		free(ctrl);
@@ -192,6 +192,7 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 
 int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len,
 	       	char *reply, size_t *reply_len, void (*msg_cd)(char *msg, size_t len)) {
+	if (!ctrl || ctrl->s < 0) return -1;
 	struct timeval tv;
 	struct os_reltime started_at;
 	int res;

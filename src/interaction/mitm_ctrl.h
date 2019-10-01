@@ -2,8 +2,11 @@
 #define MITM_CTRL_H
 
 #include "common.h"
+#include "command.h"
 
 struct mitm_ctrl * mitm_ctrl_open(const char *ctrl_path);
+
+struct mitm_ctrl * mitm_ctrl_open2(const char *ctrl_path, const char *cli_path);
 
 void mitm_ctrl_close(struct mitm_ctrl *ctrl);
 
