@@ -24,6 +24,10 @@ void print_ap_list(void *eloop_data, void *user_ctx) {
 	print_hashtable(&MITM->ap_list);
 }
 
+static void mitm_eloop_terminate(int sig, void *signal_ctx) {
+	eloop_terminate();
+}
+
 int main(int argc,char* argv[]){
 
 	struct MITM *MITM;
@@ -186,7 +190,8 @@ create_monitor_interface:
 	} else {
 		eloop_register_read_sock(handler->fd, anlysis_packet, &info, handler);
 	}
-	//eloop_run();
+	eloop_register_signal_terminate(mitm_eloop_terminate, NULL);
+	eloop_run();
 	//free(if_buf);	
 	//free(handler);
 	//l2_packet_deinit(l2_shakehand);

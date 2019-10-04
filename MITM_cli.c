@@ -61,6 +61,6 @@ int main(int argc, char **argv) {
 
 	eloop_init();
 	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, NULL, NULL);
-
+	eloop_run();
 	int sockfd;
 }
