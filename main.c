@@ -126,7 +126,7 @@ create_monitor_interface:
 
 	MITM_init(MITM);
 
-	if (!MITM.l2_shakehand) {
+	if (!MITM->l2_packet) {
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
 		goto out;
 	}

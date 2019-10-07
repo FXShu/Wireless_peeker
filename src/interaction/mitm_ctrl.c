@@ -103,7 +103,7 @@ try_again:
 		return NULL;
 	}
 
-	ctrl->dest.sun.family = AF_UNIX;
+	ctrl->dest.sun_family = AF_UNIX;
 	if (strncmp(ctrl_path, "@abstract:", 10) == 0) {
 		ctrl->dest.sun_path[0] = '\0';
 		os_strlcpy(ctrl->dest.sun_path + 1, ctrl_path + 10,
@@ -158,7 +158,6 @@ void mitm_ctrl_close(struct mitm_ctrl *ctrl) {
 	free(ctrl);
 }
 
-#else /* CONFIG_CTRL_IFACE_UNIX */
 
 #ifdef CONFIG_CTRL_IFACE_UDP
 
