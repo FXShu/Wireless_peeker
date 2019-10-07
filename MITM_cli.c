@@ -1,7 +1,9 @@
-#include "./src/utils/common.h"
 #include "MITM_cli.h"
 
 #define MITM_CTRL_DIR "/tmp/MITM/"
+#define MITM_CLI_DIR ""
+
+int debug_level;
 
 static void mitm_client_terminate(int sig, void *signal_ctx) {
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)signal_ctx;
@@ -10,7 +12,7 @@ static void mitm_client_terminate(int sig, void *signal_ctx) {
 	log_printf(MSG_INFO, "thanks for using mitm_cli");
 }
 static int mitm_client_connect(const char *ctrl_path, const char *cli_path) {
-	ctrl = mitm_ctrl_open2(ctrl_path, cli_path);
+	struct mitm_ctrl *ctrl = mitm_ctrl_open2(ctrl_path, cli_path);
 	if (!ctrl) return -1;
 	return 0;
 }
@@ -25,13 +27,13 @@ static void register_command_sock(){
 
 static void usage(void) {
 	log_printf(MSG_INFO, "mitm_ctrl v1.0\n"
-		       	     "usage: mitm_ctrl [-p<path>] [-G<keep alive interval>]\n")
+		       	     "usage: mitm_ctrl [-p<path>] [-G<keep alive interval>]\n");
 }
 
 static void register_keep_alive(void *eloop_data, void *user_ctx) {
 	char reply[COMMAND_BUFFER_LEN];
 
-//	struct MITM_MSG *msg = (struct MITM_MSG *)user_ctx; 
+	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)user_ctx; 
 	mitm_ctrl_request(ctrl, MITM_KEEP_ALIVE_REQUSET, sizeof(MITM_KEEP_ALIVE_REQUSET),
 			reply, COMMAND_BUFFER_LEN, NULL);
 
@@ -59,17 +61,17 @@ int main(int argc, char **argv) {
 		c = getopt(argc, argv, "hp:G:i:");
 		if (c < 0) break;
 		switch(c) {
-		case h:
+		case 'h':
 			usage();
 			return 0;
 			break;
-		case p:
+		case 'p':
 			mitm_ctrl_path = strdup(optarg);
 			break;
-		case G:
+		case 'G':
 			keep_alive_interval = atoi(optarg);
 			break;
-		case i:
+		case 'i':
 			ctrl_ifname = strdup(optarg);
 			break;
 		}

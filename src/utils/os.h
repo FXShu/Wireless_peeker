@@ -84,5 +84,5 @@ static inline void os_reltime_sub(struct os_reltime *a, struct os_reltime *b,
 }
 void * os_zalloc(size_t size);
 int os_get_reltime(struct os_reltime *t);
-size_t os_strlcpy(char *dest, char *src, size_t siz);
+size_t os_strlcpy(char *dest,const char *src, size_t siz);
 #endif /* OS_H */

@@ -11,7 +11,7 @@ void os_sleep(os_time_t sec, os_time_t usec) {
 	if (usec)
 		usleep(usec);
 }
-
+/*
 int os_get_reltime(struct os_reltime *t) {
 	int res;
 	struct timeval tv;
@@ -20,7 +20,7 @@ int os_get_reltime(struct os_reltime *t) {
 	t->usec = tv.tv_usec;
 	return res;
 }
-
+*/
 void * os_zalloc(size_t size) {
 	return calloc(1, size);
 } 

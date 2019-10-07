@@ -1,4 +1,4 @@
-#ifdef  INTERCATION_COMMAN_H
+#ifndef  INTERCATION_COMMAN_H
 #define INTERCATION_COMMAN_H
 
 #define COMMAND_BUFFER_LEN 50
@@ -24,7 +24,7 @@
 
 
 struct MITM_MSG{
-	enum MITM_COMMAND commnad;
+	char* command;
 	char* data;
 	size_t data_len;
 };

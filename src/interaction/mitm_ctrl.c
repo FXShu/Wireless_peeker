@@ -189,8 +189,9 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 #endif /* CONFIG_CTRL_IFACE_UDP_REMOTE */
 }
 
+#endif /* CONFIG_CTRL_IFACE_UDP */
 int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len,
-	       	char *reply, size_t *reply_len, void (*msg_cd)(char *msg, size_t len)) {
+	       	char *reply, size_t *reply_len, void (*msg_cb)(char *msg, size_t len)) {
 	if (!ctrl || ctrl->s < 0) return -1;
 	struct timeval tv;
 	struct os_reltime started_at;
@@ -201,7 +202,7 @@ int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len,
 	size_t _cmd_len;
 	int flags = 0;
 
-	FD_ZERO(rfds);
+	FD_ZERO(&rfds);
 
 	FD_SET(ctrl->s, &rfds);
 
@@ -217,12 +218,12 @@ retry_send:
 		//EWOULDBLOCK: Operation would block
 		if (errno == EAGAIN || errno == EBUSY || errno == EWOULDBLOCK) {
 			if (started_at.sec == 0) {
-				os_get_reltime(&start_at);
+				os_get_reltime(&started_at);
 			} else {
 				struct timeval n;
 				os_get_reltime(&n);
 				/* Try for a few seconds. */
-				if (os_reltime_expired(&start_at, &n, 5, 0)) {
+				if (os_reltime_expired(&started_at, &n, 5, 0)) {
 					goto send_err;
 				}
 				sleep(1);
@@ -242,8 +243,8 @@ send_err:
 	}
 
 	for(;;) {
-		tv.sec = 10;
-		tv.usec = 0;
+		tv.tv_sec = 10;
+		tv.tv_usec = 0;
 		FD_SET(ctrl->s, &rfds);
 
 		if (select(ctrl->s + 1, &rfds, NULL, NULL, &tv) < 0) {
@@ -252,7 +253,7 @@ send_err:
 		}
 
 		if (FD_ISSET(ctrl->s, &rfds)) {
-			if (recv(ctrl->s, msg_buf, reply, *reply_len, flags) < 0) {
+			if (recv(ctrl->s, reply, *reply_len, flags) < 0) {
 				log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
 				return res;
 			}
@@ -297,7 +298,7 @@ int mitm_ctrl_pending(struct mitm_ctrl *ctrl) {
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
 	FD_ZERO(&rfds);
-	FD_SET(&rfds, ctrl->s);
+	FD_SET(ctrl->s, &rfds);
 	select(ctrl->s + 1, &rfds, NULL, NULL, &tv);
 	return FD_ISSET(ctrl->s, &rfds);
 }
@@ -305,4 +306,3 @@ int mitm_ctrl_pending(struct mitm_ctrl *ctrl) {
 int mitm_ctrl_get_fd(struct mitm_ctrl *ctrl) {
 	return ctrl->s;
 }
-#endif /* CONFIG_CTRL_IFACE_UDP */

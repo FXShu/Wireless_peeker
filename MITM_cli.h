@@ -1,10 +1,10 @@
 #ifndef MITM_CLI_H
 #define MITM_CLI_H
 
-#include "src/utils/common.h"
-#include "src/interaction/mtim_ctrl.h"
+#include "common.h"
+#include "./src/interaction/mitm_ctrl.h"
 
-typedef void (*command)(struct *MITM, void *user_ctx);
+typedef void (*command)(struct MITM *mitm, void *user_ctx);
 struct MITM_link_ops {
 	char *kind;
 	command cmd;

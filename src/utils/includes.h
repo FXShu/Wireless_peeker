@@ -33,6 +33,7 @@
 #ifndef __vxworks
 #include <sys/uio.h>
 #include <sys/time.h>
+#include <time.h>
 #endif /* __vxworks */
 
 #endif /* INCLUDES_H */

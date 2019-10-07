@@ -1,6 +1,6 @@
 #include "os.h"
 
-size_t os_strlcpy(char *dest, const char *src, size_t siz) {
+size_t os_strlcpy(char *dest, const char *src, size_t size) {
 	const char *s = src;
 	size_t left = size;
 
@@ -23,10 +23,10 @@ size_t os_strlcpy(char *dest, const char *src, size_t siz) {
 	return s - src -1;
 }
 
-int os_get_reltime(struct timeval *t) {
-#if define(CLOCK_BOOTTIME)
+int os_get_reltime(struct os_reltime *t) {
+#if defined(CLOCK_BOOTTIME)
 	static clockid_t clock_id = CLOCK_BOOTTIME;
-#elif defiend(CLOCK_MONOTONIC)
+#elif defined(CLOCK_MONOTONIC)
 	static clockid_t clock_id = CLOCK_MONOTONIC;
 #else
 	static clockid_t clock_id = CLOCK_REALTIME;
@@ -63,13 +63,13 @@ int os_get_reltime(struct timeval *t) {
  * next: target time
  * Return: nonzero for true, zero for false
  * */
-int os_reltime_expired (struct *timeval prev, struct *timeval next,
+int os_reltime_expired (struct timeval *prev, struct timeval *next,
 	       	time_t sec, suseconds_t usec) {
 	struct timeval tmp;
-	tmp.sec  = sec;
-	tmp.usec = usec;
+	tmp.tv_sec  = sec;
+	tmp.tv_usec = usec;
 
 	timeradd(prev, &tmp, &tmp);
 
-	return timercmp(next, tmp, >);	
+	return timercmp(next, &tmp, >);	
 }

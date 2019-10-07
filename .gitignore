@@ -1,7 +1,9 @@
 tags
 *.o
 MITM
+MITM_cli
 *.b
 *.a
 *.so
 *.d
+*.swp
