@@ -22,10 +22,18 @@
 #define	MITM_KEEP_ALIVE_REPLY "MITM-KEEP-ALIVE-REPLY"
 #define	MITM_INVAILD_MESSAGE_FORMAT "MITM-INVAILD-MESSAGE-FORMAT"
 
+typedef (*msg_handle) (void *action_data, void *usr_data);
+
+struct MITM_ctrl_msg {
+	char *command;
+//	msg_handle action;
+	void (*action) (void *action_data, void *usr_data);
+	void *usr_data;
+};
 
 struct MITM_MSG{
 	char* command;
 	char* data;
 	size_t data_len;
 };
-#endif /* INTERACTION_COMMAN_H */
+#endif /* INTERACTION;_COMMAN_H */

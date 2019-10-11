@@ -7,6 +7,7 @@ char mac_s[MAX_MAC_LEN];
 int debug_level;
 char *wfile;
 bool manual=false;
+
 void usage(){
 	printf("MITM usage:\n"
 		"  -h = show this help test\n"
@@ -126,6 +127,10 @@ create_monitor_interface:
 
 	MITM_init(MITM);
 
+	if (!MITM) {
+		log_printf(MSG_ERROR, "initialize global MITM failed");
+		return -1;
+	}
 	if (!MITM->l2_packet) {
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
 		goto out;
