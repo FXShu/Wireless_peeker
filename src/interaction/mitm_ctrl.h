@@ -4,6 +4,8 @@
 #include "common.h"
 #include "command.h"
 
+struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path);
+
 struct mitm_ctrl * mitm_ctrl_open(const char *ctrl_path);
 
 struct mitm_ctrl * mitm_ctrl_open2(const char *ctrl_path, const char *cli_path);

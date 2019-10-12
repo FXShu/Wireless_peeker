@@ -1,7 +1,6 @@
 #include"MITM.h"
 
 int MITM_init(struct MITM *MITM) {
-	MITM = malloc(sizeof(struct MITM));
 	int exitcode;
 	switch (MITM->dev_type) {
 	case ethernet :
@@ -14,7 +13,6 @@ int MITM_init(struct MITM *MITM) {
 	if(getifinfo(&(MITM->if_buf), MITM->errbuf)) return 10;
 	if(!checkdevice(MITM->if_buf, MITM->usr_dev)) return 11;
 
-	//printf("please type target's ip = ");
 	log_printf(MSG_INFO, "please type target's IP = ");
 	scanf("%hhd.%hhd.%hhd.%hhd", &(MITM->dev_info.target_ip[0]), &(MITM->dev_info.target_ip[1]),
 			&(MITM->dev_info.target_ip[2]), &(MITM->dev_info.target_ip[3]));
@@ -23,7 +21,7 @@ int MITM_init(struct MITM *MITM) {
 
 	if(exitcode = sniffer_init(&(MITM->dev_info), MITM->errbuf)) return exitcode;
 
-	log_printf(MSG_DEBUG, "sniffer inti successful");
+	log_printf(MSG_DEBUG, "sniffer init successful");
 
 	if(init_hashtable(&MITM->ap_list, 100)) {
 		log_printf(MSG_ERROR, "ap list init failed!");
@@ -31,6 +29,7 @@ int MITM_init(struct MITM *MITM) {
 	} else {
 		log_printf(MSG_DEBUG, "ap list init successful");
 	}
+	printf("\n");
 }
 
 int MITM_deinit(struct MITM *MITM) {

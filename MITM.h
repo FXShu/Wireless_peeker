@@ -4,6 +4,8 @@
 #include "include.h"
 #include "common.h"
 
+#define MITM_CTRL_IFNAME "/tmp/MITM/MITM_server_local"
+
 enum usr_dev_type {
 	ethernet,
 	wireless,

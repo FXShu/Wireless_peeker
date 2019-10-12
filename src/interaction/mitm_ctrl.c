@@ -96,33 +96,35 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
 	int flags;
 	int ret;
 
+	unlink(ctrl_path);
 	msg_handler_init(MITM);
 	struct mitm_ctrl *ctrl;
-	if (!ctrl_path) 
+	if (!ctrl_path) { 
+		log_printf(MSG_ERROR, "no control interface path specify");
 		return NULL;
+	}
 	ctrl = malloc(sizeof(struct mitm_ctrl));
-	if (!ctrl) 
+	if (!ctrl) {
+		log_printf(MSG_ERROR, "malloc ctrl failed");
 		return NULL;
-
+	}
 	ctrl->s = socket(AF_UNIX, SOCK_DGRAM, 0);
 	if (ctrl->s < 0) {
 		log_printf(MSG_ERROR, "%s:create socket failed, with error:%s",
 			       	__func__, strerror(errno));
 		goto OPEN_SERVER_FAIL;
 	}
-
 	memset(&ctrl->local, 0, sizeof(struct sockaddr_un));
 	ctrl->local.sun_family = AF_UNIX;
 	strncpy(ctrl->local.sun_path, ctrl_path, sizeof(ctrl->local.sun_path) - 1);
 	ret = bind(ctrl->s, (const struct sockaddr *)&(ctrl->local), sizeof(struct sockaddr_un));
-
 	if (ret < 0) {
 		log_printf(MSG_ERROR, "%s:bind socket to local file failed, with error:%s",
 			       	__func__, strerror(errno));
 		goto OPEN_SERVER_FAIL;
 	}
-
 	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, NULL, (void*)ctrl);
+	return ctrl;
 OPEN_SERVER_FAIL:
 	free(ctrl);
 	return NULL;

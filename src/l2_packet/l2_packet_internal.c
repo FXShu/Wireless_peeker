@@ -82,18 +82,18 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 
 		break;}
 		
-		case IEEE80211_QOS_DATA :;
-			struct WPA2_handshake_packet *packet;
-			packet->type = type;
-			packet->ieee80211_data = (struct ieee80211_qos_hdr *)(buf + offset);
+		case IEEE80211_QOS_DATA :{
+			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
+			tmp->type = type;
+			tmp->ieee80211_data = (struct ieee80211_qos_hdr *)(buf + offset);
 			offset += sizeof(struct ieee80211_qos_hdr);
 			
 			parse_llc_header(buf, len , &offset, packet);
 
-			if (packet->llc_hdr.type == 0x888e)
+			if (tmp->llc_hdr.type == 0x888e)
 				parse_auth_data(buf, len, &offset, packet);
 		
-		break;
+		break;}
 
 		default:
 			return;

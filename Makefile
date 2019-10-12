@@ -23,6 +23,7 @@ LIBS_c += -L ./src/l2_packet -ll2_packet
 LIBS_c += -L ./src/crypto -lcrypto
 LIBS_c += -L ./src/interface -liw
 LIBS_c += -lnl-3 -lnl-genl-3
+LIBS_c += -L ./src/interaction -lctrl
 LIBS_c += -L ./src/utils -lutils
 
 LIBS_CLI_c += -L ./src/interaction -lctrl
@@ -68,4 +69,5 @@ endif
 clean:
 	$(MAKE) -C src clean
 	rm *.o
-	rm MITM
+	rm $(ALL)
+
