@@ -41,7 +41,8 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 
 	switch (type) {
 		case IEEE80211_BEACON :; 
-			struct beacon_packet *tmp = (struct beacon_packet *)packet;
+			packet = malloc(sizeof(struct beacon_packet));
+	       		struct beacon_packet *tmp = (struct beacon_packet *)packet;
 			tmp->type =type;
 			tmp->frame = *(struct ieee80211_hdr_3addr *)(buf + offset);
 			offset += sizeof(struct ieee80211_hdr_3addr);
@@ -69,6 +70,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 		break;
 
 		case IEEE80211_DATA : {
+			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
 		       	tmp->type = type;	
 			tmp->ieee80211_data = (struct ieee80211_hdr_3addr *)(buf + offset);
@@ -83,6 +85,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 		break;}
 		
 		case IEEE80211_QOS_DATA :{
+			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
 			tmp->type = type;
 			tmp->ieee80211_data = (struct ieee80211_qos_hdr *)(buf + offset);
@@ -117,6 +120,6 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 		print_handshake_packet(packet)
 	}
 
-*/	//free(packet);
+*/	free(packet);
 	return;
 }

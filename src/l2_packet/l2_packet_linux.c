@@ -157,8 +157,6 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 		return;
 	}
 
-	log_printf(MSG_DEBUG, "%s: src = " MACSTR" len=%d", 
-			__func__, MAC2STR(ll.sll_addr), (int)res);
 #ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
 	if (l2->fd_br_rx >= 0) {
 		u8 hash[SHA1_MAC_LEN];
@@ -231,9 +229,6 @@ static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 		return;
 	}
 
-	log_printf(MSG_DEBUG, "%s:src =" MACSTR "len=%d",
-		       	__func__, MAC2STR(ll.sll_addr), (int)res);
-	
 	if (memcmp(ll.sll_addr, l2->own_addr, ETH_ALEN) == 0) {
 		log_printf(MSG_DEBUG, "%s: Drop RX of own frame, __func__");
 		//here will drop all the packet which is unqual to own_addr??
