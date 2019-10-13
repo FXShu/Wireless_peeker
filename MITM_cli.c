@@ -31,19 +31,25 @@ static void usage(void) {
 }
 
 static void register_keep_alive(void *eloop_data, void *user_ctx) {
+
+	int interval = *(int *)user_ctx;
 	char reply[COMMAND_BUFFER_LEN];
 
-	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)user_ctx; 
+	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)eloop_data; 
 	mitm_ctrl_request(ctrl, MITM_KEEP_ALIVE_REQUSET, sizeof(MITM_KEEP_ALIVE_REQUSET),
 			reply, COMMAND_BUFFER_LEN, NULL);
 
+	log_printf(MSG_DEBUG, "get a command:%s", reply);
+
 	if (!strncmp(reply, MITM_KEEP_ALIVE_REPLY, sizeof(MITM_KEEP_ALIVE_REPLY))) {
 		log_printf(MSG_DEBUG, "[keep alive]get the server answer");
+		eloop_register_timeout(interval, 0, register_keep_alive, NULL, &interval);
 		return;
 	}
 	else {
 		/* mitm_reconnet(); */
 		log_printf(MSG_INFO, "Disconnect with MITM binary\n");
+		eloop_register_timeout(interval, 0, register_keep_alive, NULL, &interval);
 	}
 
 }
@@ -52,7 +58,7 @@ int main(int argc, char **argv) {
 
 	struct mitm_ctrl *ctrl;
 	char *mitm_ctrl_path;
-	int keep_alive_interval;
+	int keep_alive_interval = 5;
 	/* used to communicate with UI(web, cli...) */
 	char *ctrl_ifname = NULL;
 	/* if true, use terminal to control MITM binary */
@@ -60,7 +66,7 @@ int main(int argc, char **argv) {
 
 
 	for (;;) {
-		c = getopt(argc, argv, "hp:G:i:");
+		c = getopt(argc, argv, "hp:G:i:d:");
 		if (c < 0) break;
 		switch(c) {
 		case 'h':
@@ -76,6 +82,11 @@ int main(int argc, char **argv) {
 		case 'i':
 			ctrl_ifname = strdup(optarg);
 			break;
+		case 'd':
+			debug_level = atoi(optarg);
+			break;
+		default:
+			usage();
 		}
 	}
 
@@ -84,10 +95,12 @@ int main(int argc, char **argv) {
 	if (eloop_init())  
 		return -1;
 
-	ctrl = mitm_ctrl_open2((mitm_ctrl_path ? mitm_ctrl_path : MITM_CTRL_IFNAME), MITM_CLI_DIR);
-	if (ctrl) 
+	ctrl = mitm_ctrl_open2((MITM_CTRL_IFNAME), MITM_CLI_DIR);
+	if (!ctrl) { 
+		log_printf(MSG_ERROR, "init control interface client failed");
 		return -ENOMEM;
-	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, NULL, NULL);
+	}
+	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, ctrl, &keep_alive_interval);
 	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
 	eloop_run();
 /*	for(;;) {

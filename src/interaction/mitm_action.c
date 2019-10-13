@@ -16,6 +16,7 @@ void mitm_start_attack_request (void *action_data, void *usr_data) {}
 void mitm_start_attack_reply (void *action_data, void *usr_data) {}
 void mitm_keep_alive_request_action (void *action_data, void *usr_data) {
 	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
+	log_printf(MSG_DEBUG, "get a keep alive request from client");
 	ret = sendto(recv_info.sock_fd, MITM_KEEP_ALIVE_REPLY, sizeof(MITM_KEEP_ALIVE_REPLY), 
 			recv_info.send_flags, recv_info.recv_from, recv_info.length);
 	if (ret) {

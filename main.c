@@ -157,6 +157,8 @@ create_monitor_interface:
 	if (!ctrl) {
 		log_printf(MSG_ERROR, "control server open failed");
 		goto out;
+	}else {
+		log_printf(MSG_DEBUG, "control server is ready");
 	}
 
 	eloop_run();

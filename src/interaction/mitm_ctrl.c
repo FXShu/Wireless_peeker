@@ -70,6 +70,7 @@ static struct MITM_ctrl_msg* msg_handler_init(void* global) {
 }
 
 void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
+	log_printf(MSG_DEBUG, "server local file can read!");
 	struct mitm_recv_info info;
 	int ret;
 	int flags;
@@ -142,13 +143,19 @@ struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
 	int tries = 0;
 	int flags;
 
-	if (!ctrl_path) return NULL;
-
+	if (!ctrl_path){
+		log_printf(MSG_ERROR, "no control file path specify!");       
+		return NULL;
+	}
 	ctrl = malloc(sizeof(struct mitm_ctrl));
-	if (!ctrl) return NULL;
+	if (!ctrl){
+		log_printf(MSG_ERROR, "alloc memory failed, please check memory left");
+		return NULL;
+	}
 
 	ctrl->s = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (ctrl->s < 0) {
+		printf(MSG_ERROR, "%s:socket failed, with error:%s", __func__, strerror(errno));
 		free(ctrl);
 		return NULL;
 	}
@@ -167,6 +174,7 @@ try_again:
 			      	(int) getpid(), counter);
 	}
 	if (ret < 0 || (ret >= ctrl->local.sun_path)) {
+		log_printf(MSG_ERROR, "copy cil address failed");
 		close(ctrl->s);
 		free(ctrl);
 		return NULL;
@@ -185,7 +193,7 @@ try_again:
 			//unlikn, linlinkat - delete a name and possibly the file it regers to
 			goto try_again;
 		}
-
+		log_printf("bind socket to local file failed, with error: %s", strerror(errno));
 		close(ctrl->s);
 		free(ctrl);
 		return NULL;
@@ -208,6 +216,7 @@ try_again:
 	}
 
 	if (connect(ctrl->s, (struct sockaddr *) &ctrl->dest, sizeof(ctrl->dest)) < 0) {
+		log_printf(MSG_ERROR, "connect to server failed, with error:%s", strerror(errno));
 		close(ctrl->s);
 		unlink(ctrl->local.sun_path);
 		free(ctrl);
