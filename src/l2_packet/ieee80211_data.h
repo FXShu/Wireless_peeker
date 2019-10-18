@@ -159,7 +159,7 @@ struct beacon_tag_params {
 	u8 tag_len;
 	u8 *data;
 	struct beacon_tag_params *next;
-	struct beacon_tag_params *head;
+	struct beacon_tag_params *prev;
 } __attribute__((packed));
 
 struct ieee80211_beacon {

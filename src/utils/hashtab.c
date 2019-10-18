@@ -3,7 +3,7 @@
 int malloc_and_copy_string(char** dst, char* src){
         int len;
 
-        if(*dst || src){
+        if(*dst || !src){
                 return -1;
         }
         len = strlen(src);
@@ -16,15 +16,17 @@ int malloc_and_copy_string(char** dst, char* src){
 
 int malloc_and_copy_node(struct node* dst,struct node* src){
         int len;
-        if(dst || src){
+	if(!dst || !src){
                 return -1;
         }
-        if((-1 == malloc_and_copy_string(&dst->key,src->key)) ||
+	printf("%s:%d\n", __func__, __LINE__);
+	if((-1 == malloc_and_copy_string(&dst->key,src->key)) ||
                         (-1 == malloc_and_copy_string(&dst->value,src->value))){
                 if(dst->key) free(dst->key);
                 if(dst->value) free(dst->value);
                 return -1;
         }
+	printf("%s:%d\n", __func__, __LINE__);
         dst->next = NULL;
         return 0;
 }
@@ -77,6 +79,7 @@ int compare_node(struct node* dst,struct node* src){
 	if(!dst || !src){
 		return -1;
 	}
+
 	if(!strcmp(dst->key,src->key) && !strcmp(dst->value,src->value)){
 		return 0;
 	}
@@ -108,7 +111,6 @@ int insert(struct hash_table* table,struct node* node){
 	if(hash_index == -1){
 		return -1;
 	}
-
 	cur = &table->nodes[hash_index];
 	while(*cur){
 		if(!compare_node(*cur,node)){
@@ -116,7 +118,6 @@ int insert(struct hash_table* table,struct node* node){
 		}
 		cur = &((*cur)->next);
 	}
-
 	*cur = malloc(sizeof(struct node));
 	memset(*cur,0,sizeof(struct node));
 

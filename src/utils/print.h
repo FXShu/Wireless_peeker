@@ -1,8 +1,9 @@
 #ifndef PRINTF_H
 #define PRINTF_H
-#include<stdio.h>
-#include<stdarg.h>
-#include"head.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <stdarg.h>
+#include "head.h"
 
 enum {
 	MSG_EXCESSIVE,
@@ -12,6 +13,10 @@ enum {
 	MSG_WARNING,
 	MSG_ERROR
 };
+
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif /* ETH_ALEN */
 
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -40,4 +45,6 @@ void print_type(unsigned short type);
 void print_protocol(unsigned char protocol_type);
 
 void log_printf(int level,char* format,...);
+
+void copy_mac_address(uint8_t *src, uint8_t *dst);
 #endif

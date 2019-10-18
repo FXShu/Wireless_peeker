@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef MITM_COMMON_H
+#define MITM_COMMON_H
 #define FAIL -1
 #define SUCCESS 0
 
@@ -22,4 +22,4 @@ typedef enum{
 
 #define MAX_IPV4_LEN 16
 #define MAX_MAC_LEN 17
-#endif
+#endif /* MITM_COMMON_H */

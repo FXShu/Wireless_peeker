@@ -168,7 +168,8 @@ create_monitor_interface:
 	} else {
 		strcpy(user_filter,"not arp");
 	}
-/*
+/***
+ * after control interface function test, here should be uncommit.
 	printf("please type target's ip = ");
 	scanf("%hhd.%hhd.%hhd.%hhd",&dev_info.target_ip[0],&dev_info.target_ip[1], 
 			&dev_info.target_ip[2],&dev_info.target_ip[3]);
@@ -178,7 +179,7 @@ create_monitor_interface:
 		goto out;
 	}
 	log_printf(MSG_DEBUG, "sniffer init successful");
-*/
+****/
 
 	if(manual){
 		log_printf(MSG_INFO, "type gateway's mac");

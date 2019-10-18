@@ -2,6 +2,24 @@
 #include "l2_packet.h"
 #include "../../MITM.h"
 
+struct access_point_info{
+	struct dl_list ap_node;
+	char *SSID;
+	int channel;
+	char *country;
+	u8 BSSID[ETH_ALEN];
+	/***
+	 * support rate
+	 * Traffic indication
+	 * RSN information
+	 * vendor specific
+	 * HT capabilities
+	 * HT information
+	 * extended capabilies
+	 * vendor specific
+	 ***/
+};
+
 static int parse_llc_header(u8* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	if (*offset > len) return -1;
@@ -32,6 +50,8 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 	uint32_t offset;
 	uint16_t type;
 	void *packet;
+	char* mac_s;
+	mac_s = malloc(20);
 
 	offset = ((struct ieee80211_radiotap_header *)buf)->it_len;
 
@@ -40,33 +60,53 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 	type = parse_subtype(ntohs(*(uint32_t *)(buf + offset)));
 
 	switch (type) {
-		case IEEE80211_BEACON :; 
-			packet = malloc(sizeof(struct beacon_packet));
-	       		struct beacon_packet *tmp = (struct beacon_packet *)packet;
-			tmp->type =type;
-			tmp->frame = *(struct ieee80211_hdr_3addr *)(buf + offset);
+		case IEEE80211_BEACON :;
+			struct ieee80211_hdr_3addr frame;
+			frame = *(struct ieee80211_hdr_3addr *)(buf + offset);
 			offset += sizeof(struct ieee80211_hdr_3addr);
 
-			tmp->body.fix_param = *((struct beacon_fix_params *)(buf + offset));
+			struct beacon_fix_params fix_param;
+			fix_param = *((struct beacon_fix_params *)(buf + offset));
 			offset += sizeof(struct beacon_fix_params);
 
-			struct node ap_info;
+			struct access_point_info *ap_info;
+			ap_info = malloc(sizeof(struct access_point_info));
+			//ap_info->BSSID = mactostring(mac_s, frame.addr2);
+			copy_mac_address(frame.addr2, ap_info->BSSID);
+			int i = 0;
 			for (;offset + 2 < len ;) {
-				tmp->body.tag_param->tag_name = *(buf + (offset++));
-				tmp->body.tag_param->tag_len  = *(buf + (offset++));
-				tmp->body.tag_param->data     = (buf + offset);
-				offset += tmp->body.tag_param->tag_len;
-				if(tmp->body.tag_param->tag_name == BEACON_SSID) {
-					//key = BSSID
-					ap_info.key = tmp->body.tag_param->data;
-					//value = MAC address
-					ap_info.value = tmp->frame.addr1;
-
-					MITM->ap_list.insert(&MITM->ap_list, &ap_info);
+				enum beacon_param tag_name = *(buf + (offset++));
+				uint8_t tag_len = *(buf + (offset++));
+				switch(tag_name) {
+				case BEACON_SSID :
+					ap_info->SSID = strndup(buf + offset, tag_len);
+					break;
+				case BEACON_COUNTRY_INFO :
+					ap_info->country = strndup(buf + offset, tag_len);
+					break;
+				case BEACON_DS :
+					ap_info->channel = atoi(strndup(buf + offset, tag_len));
 				}
-				tmp->body.tag_param = tmp->body.tag_param->next;
+				offset += tag_len;
 			}
 
+			struct access_point_info *tmp;
+			dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
+				if (!strcmp(tmp->SSID, ap_info->SSID)) {
+					log_printf(MSG_DEBUG, "find a same ap information");
+					tmp->country = ap_info->country;
+					tmp->channel = ap_info->channel;
+					/* maybe call the strcpy() is a good ideal? */
+					free(ap_info);
+					goto printf_ap;
+				}
+			}
+			log_printf(MSG_DEBUG, "add new ap to ap_list");
+			dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
+printf_ap:
+			dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
+				log_printf(MSG_DEBUG, "[access point] SSID:%s, BSSID" MACSTR, tmp->SSID, MAC2STR(tmp->BSSID));
+			}	
 		break;
 
 		case IEEE80211_DATA : {
@@ -101,25 +141,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 		default:
 			return;
 	}
-/*	if (offset > len) return;
-
-	packet->llc_hdr = *(struct llc_header*)(buf + offset);
-	packet->llc_hdr.type = ntohs(packet->llc_hdr.type);
-	offset += sizeof(struct llc_header);
-
-	if (offset > len) return;
-
-	if (packet->llc_hdr.type == 0x888e) {
-		packet->auth_data = *(struct ieee_8021x_authentication *) (buf + offset);
-		offset += sizeof(struct ieee_8021x_authentication);
-
-		if (offset > len) return;
-
-		packet->auth_data.data = (buf + offset);
-		packet->auth_data.len = ntohs(packet->auth_data.len);
-		print_handshake_packet(packet)
-	}
-
-*/	free(packet);
+	free(mac_s);
+	free(packet);
 	return;
 }

@@ -30,7 +30,7 @@ struct MITM {
 	pcap_if_t* if_buf;
 	pcap_if_t* monitor_buf;
 	struct l2_packet_data *l2_packet;
-	struct hash_table ap_list;
+	struct dl_list ap_list;
 };
 
 int MITM_init(struct MITM *MITM);

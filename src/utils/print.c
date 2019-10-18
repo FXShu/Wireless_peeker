@@ -71,3 +71,9 @@ void log_printf(int level,char* format,...){
 	}
 	va_end(ap);
 }
+
+void copy_mac_address(uint8_t *src, uint8_t *dst) {
+	for(int i = 0; i < ETH_ALEN; i++) {
+		dst[i] = src[i];
+	}
+}
