@@ -1,7 +1,12 @@
 #include "MITM_cli.h"
 
+#ifndef MITM_CTRL_DIR
 #define MITM_CTRL_DIR "/tmp/MITM/"
+#endif
+
+#ifndef MITM_CLI_DIR
 #define MITM_CLI_DIR ""
+#endif
 
 int debug_level;
 
@@ -95,7 +100,7 @@ int main(int argc, char **argv) {
 	if (eloop_init())  
 		return -1;
 
-	ctrl = mitm_ctrl_open2((MITM_CTRL_IFNAME), MITM_CLI_DIR);
+	ctrl = mitm_ctrl_open2((MITM_CTRL_PATH), MITM_CLI_DIR);
 	if (!ctrl) { 
 		log_printf(MSG_ERROR, "init control interface client failed");
 		return -ENOMEM;

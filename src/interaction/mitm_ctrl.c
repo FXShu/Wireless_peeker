@@ -77,13 +77,21 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 	char buffer[COMMAND_BUFFER_LEN];
 
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl*) sock_ctx;
-	
+
+	info.length = sizeof(info.recv_from);
+
 	ret = recvfrom(ctrl->s, buffer, COMMAND_BUFFER_LEN, flags,
-		       	(const struct sockaddr*)info.recv_from,&info.length);
-	if (ret < 0) 
+		       	(struct sockaddr*)info.recv_from, &info.length);
+	if (ret < 0) { 
+		log_printf(MSG_DEBUG, "[command]recvfrom client failed, with error:%s",
+				strerror(errno));
 		return;
+	}
 	info.sock_fd = ctrl->s;
+
+	log_printf(MSG_DEBUG, "[command]%s", buffer);
 	for (int i = 0; i < COUNT_OF_MSG; i++) {
+		log_printf(MSG_DEBUG, "compare with %s", msg_handler[i].command);
 		if (!strcmp(msg_handler[i].command, buffer)) {
 			msg_handler[i].action(&info, msg_handler[i].usr_data);
 			break;
@@ -120,8 +128,8 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
 	strncpy(ctrl->local.sun_path, ctrl_path, sizeof(ctrl->local.sun_path) - 1);
 	ret = bind(ctrl->s, (const struct sockaddr *)&(ctrl->local), sizeof(struct sockaddr_un));
 	if (ret < 0) {
-		log_printf(MSG_ERROR, "%s:bind socket to local file failed, with error:%s",
-			       	__func__, strerror(errno));
+		log_printf(MSG_ERROR, "%s:bind socket to local file failed,\nwith error:%s %s",
+			       	__func__,errno == ENOENT ? ctrl_path : "" ,strerror(errno));
 		goto OPEN_SERVER_FAIL;
 	}
 	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, NULL, (void*)ctrl);

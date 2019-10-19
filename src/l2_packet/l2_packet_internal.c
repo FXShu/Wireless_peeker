@@ -105,7 +105,8 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 			dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
 printf_ap:
 			dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-				log_printf(MSG_DEBUG, "[access point] SSID:%s, BSSID" MACSTR, tmp->SSID, MAC2STR(tmp->BSSID));
+				log_printf(MSG_DEBUG, "[access point] SSID:%s, BSSID" MACSTR,
+					       	tmp->SSID, MAC2STR(tmp->BSSID));
 			}	
 		break;
 

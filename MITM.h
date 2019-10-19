@@ -4,8 +4,16 @@
 #include "include.h"
 #include "common.h"
 
-#define MITM_CTRL_IFNAME "/tmp/MITM/MITM_server_local"
+#ifndef MITM_CTRL_DIR
+#define MITM_CTRL_DIR "/tmp/MITM/"
+#endif /* MITM_CTRL_DIR */
+#ifndef MITM_CTRL_IFNAME
+#define MITM_CTRL_IFNAME "MITM_server_local"
+#endif /* MITM_CTRL_IFNAME */
 
+#ifndef MITM_CTRL_PATH
+#define MITM_CTRL_PATH MITM_CTRL_DIR "/" MITM_CTRL_IFNAME
+#endif /* MITM_CTRL_PATH */
 enum usr_dev_type {
 	ethernet,
 	wireless,
