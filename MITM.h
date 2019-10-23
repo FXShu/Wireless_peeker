@@ -16,6 +16,9 @@
 #define MITM_CTRL_PATH MITM_CTRL_DIR "/" MITM_CTRL_IFNAME
 #endif /* MITM_CTRL_PATH */
 
+#ifndef MITM_CTRL_PATH
+#define MITM_CTRL_PATH MITM_CTRL_DIR "/" MITM_CTRL_IFNAME
+#endif /* MITM_CTRL_PATH */
 enum usr_dev_type {
 	ethernet,
 	wireless,

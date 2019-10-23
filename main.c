@@ -20,13 +20,6 @@ void usage(){
 		"  -t <device_type(wireless/ethernet)> set the device type\n");
 }
 
-void print_ap_list(void *eloop_data, void *user_ctx) {
-	struct MITM* MITM = (struct MITM*) user_ctx;
-	if (!MITM) return;
-	
-	print_hashtable(&MITM->ap_list);
-}
-
 static void mitm_eloop_terminate(int sig, void *signal_ctx) {
 	eloop_terminate();
 }
