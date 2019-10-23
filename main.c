@@ -153,7 +153,7 @@ create_monitor_interface:
 		goto out;
 	}
 
-	ctrl = mitm_server_open(MITM, MITM_CTRL_IFNAME);
+	ctrl = mitm_server_open(MITM, MITM_CTRL_PATH);
 	if (!ctrl) {
 		log_printf(MSG_ERROR, "control server open failed");
 		goto out;

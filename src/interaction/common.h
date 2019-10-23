@@ -5,7 +5,7 @@
 struct mitm_recv_info {
 	int sock_fd;
 	int send_flags;
-	struct sockaddr_un *recv_from;
+	struct sockaddr_un recv_from;
 	socklen_t length;
 };
 #endif /* INTERACTION_COMMON_H */

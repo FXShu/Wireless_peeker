@@ -1,7 +1,13 @@
 #include "MITM_cli.h"
+#include "/home/mark/anytest/C_test/communicate/connection.h"
 
-#define MITM_CTRL_DIR "/tmp/MITM/"
-#define MITM_CLI_DIR ""
+#ifndef MITM_CTRL_DIR
+#define MITM_CTRL_DIR "/tmp/MITM"
+#endif /* MITM_CTRL_DIR */
+
+#ifndef MITM_CLI_DIR
+#define MITM_CLI_DIR "/tmp/MITM"
+#endif /* MITM_CLI_DIR */
 
 int debug_level;
 
@@ -32,24 +38,24 @@ static void usage(void) {
 
 static void register_keep_alive(void *eloop_data, void *user_ctx) {
 
-	int interval = *(int *)user_ctx;
+//	int interval = *(int *)user_ctx;
 	char reply[COMMAND_BUFFER_LEN];
-
+	size_t len = COMMAND_BUFFER_LEN;
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)eloop_data; 
 	mitm_ctrl_request(ctrl, MITM_KEEP_ALIVE_REQUSET, sizeof(MITM_KEEP_ALIVE_REQUSET),
-			reply, COMMAND_BUFFER_LEN, NULL);
+			reply, &len, NULL);
 
 	log_printf(MSG_DEBUG, "get a command:%s", reply);
 
 	if (!strncmp(reply, MITM_KEEP_ALIVE_REPLY, sizeof(MITM_KEEP_ALIVE_REPLY))) {
 		log_printf(MSG_DEBUG, "[keep alive]get the server answer");
-		eloop_register_timeout(interval, 0, register_keep_alive, NULL, &interval);
+		eloop_register_timeout(5, 0, register_keep_alive, ctrl, NULL);
 		return;
 	}
 	else {
 		/* mitm_reconnet(); */
 		log_printf(MSG_INFO, "Disconnect with MITM binary\n");
-		eloop_register_timeout(interval, 0, register_keep_alive, NULL, &interval);
+		eloop_register_timeout(5, 0, register_keep_alive, ctrl, NULL);
 	}
 
 }
@@ -95,7 +101,7 @@ int main(int argc, char **argv) {
 	if (eloop_init())  
 		return -1;
 
-	ctrl = mitm_ctrl_open2((MITM_CTRL_IFNAME), MITM_CLI_DIR);
+	ctrl = mitm_ctrl_open2((MITM_CTRL_PATH), MITM_CLI_DIR);
 	if (!ctrl) { 
 		log_printf(MSG_ERROR, "init control interface client failed");
 		return -ENOMEM;
@@ -103,7 +109,5 @@ int main(int argc, char **argv) {
 	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, ctrl, &keep_alive_interval);
 	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
 	eloop_run();
-/*	for(;;) {
 			
-	}*/
 }

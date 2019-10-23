@@ -1,4 +1,4 @@
-CROSS=arm-openwrt-linux-
+CROSS=
 CC=$(CROSS)gcc 
 CFLAGS = -g -std=gnu99 -pedantic 
 CFLAGS += -I$(abspath ./src)

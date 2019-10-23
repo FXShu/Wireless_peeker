@@ -7,7 +7,7 @@ install:
 
 include ../lib.rules
 
-LIB_OBJS = mitm_ctrl.o terminal.o
+LIB_OBJS = mitm_ctrl.o terminal.o mitm_action.o
 
 libctrl.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

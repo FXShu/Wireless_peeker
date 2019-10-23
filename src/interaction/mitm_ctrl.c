@@ -41,51 +41,53 @@ struct mitm_ctrl {
 #define CONFIG_CTRL_IFACE_CLIENT_PREFIX "mitm_ctrl_"
 #endif /* CONFIG_CTRL_IFACE_CLIENT_PREFIX */
 
-struct MITM_ctrl_msg *msg_handler;
 
 #define COUNT_OF_MSG 50
+	
+struct MITM_ctrl_msg msg_handler[] = {
+	{MITM_CTRL_CONNECT_REQUEST, mitm_ctrl_connect_request_action},
+        {MITM_CTRL_CONNECT_REPLY, mitm_ctrl_connect_reply_action},
+        {MITM_CTRL_DISCONNECT_REQUEST, mitm_ctrl_disconnect_request_action},
+        {MITM_CTRL_DISCONNECT_REPLY, mitm_ctrl_disconnect_reply_action},
+        {MITM_GET_AP_LIST_REQUEST, mitm_get_ap_list_request_action},
+        {MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action},
+       	{MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action},
+        {MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action},
+        {MITM_GET_STATUS_REQUEST, mitm_get_status_request_action},
+        {MITM_GET_STATUS_REPLY, mitm_get_status_reply_action},
+        {MITM_STATUS_CHANGED, mitm_status_change_action},
+        {MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
+        {MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action},
+        {MITM_KEEP_ALIVE_REQUSET, mitm_keep_alive_request_action},
+        {MITM_KEEP_ALIVE_REPLY, mitm_keep_alive_reply_action}
+};
 
-static struct MITM_ctrl_msg* msg_handler_init(void* global) {
-	struct MITM *MITM = (struct MITM*)global;
-
-	struct MITM_ctrl_msg handler[] = {
-		{MITM_CTRL_CONNECT_REQUEST, mitm_ctrl_connect_request_action, NULL},
-        	{MITM_CTRL_CONNECT_REPLY, mitm_ctrl_connect_reply_action, NULL},
-        	{MITM_CTRL_DISCONNECT_REQUEST, mitm_ctrl_disconnect_request_action, NULL},
-        	{MITM_CTRL_DISCONNECT_REPLY, mitm_ctrl_disconnect_reply_action, NULL},
-        	{MITM_GET_AP_LIST_REQUEST, mitm_get_ap_list_request_action, &MITM->ap_list},
-        	{MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action, NULL},
-       		{MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, MITM->dev_info.target_ip},
-        	{MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action, NULL},
-        	{MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, NULL},
-        	{MITM_GET_STATUS_REPLY, mitm_get_status_reply_action, NULL},
-        	{MITM_STATUS_CHANGED, mitm_status_change_action, MITM},
-        	{MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action, NULL},
-        	{MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action, NULL},
-        	{MITM_KEEP_ALIVE_REQUSET, mitm_keep_alive_request_action, NULL},
-        	{MITM_KEEP_ALIVE_REPLY, mitm_keep_alive_reply_action, NULL}
-	};
-
-	return handler;
-}
 
 void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
-	log_printf(MSG_DEBUG, "server local file can read!");
 	struct mitm_recv_info info;
 	int ret;
 	int flags;
 	char buffer[COMMAND_BUFFER_LEN];
 
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl*) sock_ctx;
-	
+	struct MITM *MITM = (struct MITM*) eloop_ctx;
+
+	info.length = sizeof(struct sockaddr_un);
+	memset(&info.recv_from, 0, sizeof(struct sockaddr_un));
+
 	ret = recvfrom(ctrl->s, buffer, COMMAND_BUFFER_LEN, flags,
-		       	(const struct sockaddr*)info.recv_from,&info.length);
-	if (ret < 0) 
+		       	(const struct sockaddr*)&info.recv_from,&info.length);
+	if (ret < 0) { 
+		log_printf(MSG_DEBUG, "[CTRL_COMMAND] recvfrom fail, with error:%s",
+			       	strerror(errno));
 		return;
+	} 
+
 	info.sock_fd = ctrl->s;
+
 	for (int i = 0; i < COUNT_OF_MSG; i++) {
 		if (!strcmp(msg_handler[i].command, buffer)) {
-			msg_handler[i].action(&info, msg_handler[i].usr_data);
+			msg_handler[i].action(&info, MITM);
 			break;
 		}
 		/* maybe can send the MITM_INVAILD_MESSAGE_FORMAT here. */
@@ -98,7 +100,6 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
 	int ret;
 
 	unlink(ctrl_path);
-	msg_handler_init(MITM);
 	struct mitm_ctrl *ctrl;
 	if (!ctrl_path) { 
 		log_printf(MSG_ERROR, "no control interface path specify");
@@ -111,7 +112,7 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
 	}
 	ctrl->s = socket(AF_UNIX, SOCK_DGRAM, 0);
 	if (ctrl->s < 0) {
-		log_printf(MSG_ERROR, "%s:create socket failed, with error:%s",
+		log_printf(MSG_ERROR, "[%s]:create socket failed, with error:%s",
 			       	__func__, strerror(errno));
 		goto OPEN_SERVER_FAIL;
 	}
@@ -120,11 +121,11 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
 	strncpy(ctrl->local.sun_path, ctrl_path, sizeof(ctrl->local.sun_path) - 1);
 	ret = bind(ctrl->s, (const struct sockaddr *)&(ctrl->local), sizeof(struct sockaddr_un));
 	if (ret < 0) {
-		log_printf(MSG_ERROR, "%s:bind socket to local file failed, with error:%s",
-			       	__func__, strerror(errno));
+		log_printf(MSG_ERROR, "[%s]:bind socket to local file failed, with error:\"%s\" %s",
+			       	__func__, (errno == ENOENT) ? MITM_CTRL_DIR : "",strerror(errno));
 		goto OPEN_SERVER_FAIL;
 	}
-	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, NULL, (void*)ctrl);
+	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, MITM, ctrl);
 	return ctrl;
 OPEN_SERVER_FAIL:
 	free(ctrl);
@@ -155,7 +156,7 @@ struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
 
 	ctrl->s = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (ctrl->s < 0) {
-		printf(MSG_ERROR, "%s:socket failed, with error:%s", __func__, strerror(errno));
+		printf(MSG_ERROR, "[%s]:socket failed, with error:%s", __func__, strerror(errno));
 		free(ctrl);
 		return NULL;
 	}
@@ -197,6 +198,8 @@ try_again:
 		close(ctrl->s);
 		free(ctrl);
 		return NULL;
+	} else {
+		log_printf(MSG_DEBUG, "[%s]:bind local file to socket successful", __func__);
 	}
 
 	ctrl->dest.sun_family = AF_UNIX;
@@ -309,7 +312,8 @@ int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len,
 	started_at.sec = 0;
 	started_at.usec = 0;
 retry_send:
-	if (send(ctrl->s, _cmd, _cmd_len, flags) < 0) {
+	//if (send(ctrl->s, _cmd, _cmd_len, flags) < 0) {
+	if (write(ctrl->s, _cmd, _cmd_len) < 0) {
 		//EAGAIN : Resource temporarily unavailable
 		//EBUSY:Device or Resource busy
 		//EWOULDBLOCK: Operation would block
