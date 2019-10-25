@@ -1,5 +1,4 @@
 #include "MITM_cli.h"
-#include "/home/mark/anytest/C_test/communicate/connection.h"
 
 #ifndef MITM_CTRL_DIR
 #define MITM_CTRL_DIR "/tmp/MITM"
@@ -57,10 +56,21 @@ static void register_keep_alive(void *eloop_data, void *user_ctx) {
 		log_printf(MSG_INFO, "Disconnect with MITM binary\n");
 		eloop_register_timeout(5, 0, register_keep_alive, ctrl, NULL);
 	}
+	return;
 
 }
+
+static void get_ap_list(struct mitm_ctrl *ctrl) {
+	char reply[COMMAND_BUFFER_LEN];
+	size_t len = COMMAND_BUFFER_LEN;
+	mitm_ctrl_request(ctrl, MITM_GET_AP_LIST_REQUEST, sizeof(MITM_GET_AP_LIST_REQUEST),
+			reply, &len, NULL);
+
+	log_printf(MSG_INFO,"%s\n", reply);
+	return;
+}
 int main(int argc, char **argv) {
-	char c;
+	int c;
 
 	struct mitm_ctrl *ctrl;
 	char *mitm_ctrl_path;
@@ -78,7 +88,6 @@ int main(int argc, char **argv) {
 		case 'h':
 			usage();
 			return 0;
-			break;
 		case 'p':
 			mitm_ctrl_path = strdup(optarg);
 			break;
@@ -93,6 +102,7 @@ int main(int argc, char **argv) {
 			break;
 		default:
 			usage();
+			return 0;
 		}
 	}
 
@@ -106,8 +116,9 @@ int main(int argc, char **argv) {
 		log_printf(MSG_ERROR, "init control interface client failed");
 		return -ENOMEM;
 	}
-	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, ctrl, &keep_alive_interval);
-	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
-	eloop_run();
+//	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, ctrl, &keep_alive_interval);
+//	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
+//	eloop_run();
+	get_ap_list(ctrl);
 			
 }

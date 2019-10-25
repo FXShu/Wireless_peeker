@@ -1,14 +1,14 @@
 #include "ieee80211_data.h"
 #include "l2_packet.h"
 #include "../../MITM.h"
-
+/*
 struct access_point_info{
 	struct dl_list ap_node;
 	char *SSID;
 	int channel;
 	char *country;
 	u8 BSSID[ETH_ALEN];
-	/***
+	***
 	 * support rate
 	 * Traffic indication
 	 * RSN information
@@ -17,9 +17,9 @@ struct access_point_info{
 	 * HT information
 	 * extended capabilies
 	 * vendor specific
-	 ***/
+	 ***
 };
-
+*/
 static int parse_llc_header(u8* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	if (*offset > len) return -1;
@@ -93,7 +93,6 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 			struct access_point_info *tmp;
 			dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
 				if (!strcmp(tmp->SSID, ap_info->SSID)) {
-					log_printf(MSG_DEBUG, "find a same ap information");
 					tmp->country = ap_info->country;
 					tmp->channel = ap_info->channel;
 					/* maybe call the strcpy() is a good ideal? */
@@ -101,13 +100,8 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 					goto printf_ap;
 				}
 			}
-			log_printf(MSG_DEBUG, "add new ap to ap_list");
 			dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
 printf_ap:
-			dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-				log_printf(MSG_DEBUG, "[access point] SSID:%s, BSSID" MACSTR,
-					       	tmp->SSID, MAC2STR(tmp->BSSID));
-			}	
 		break;
 
 		case IEEE80211_DATA : {

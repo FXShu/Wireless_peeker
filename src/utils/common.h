@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define CPMMON_H
+#ifndef UTILS_COMMON_H
+#define UTILS_CPMMON_H
 
 #include "os.h"
 #include "includes.h"
@@ -156,4 +156,4 @@ void * zalloc(size_t size);
 #define ETH_P_PAE 0x888E
 #endif /* ETH_P_PAE */
 
-#endif /* COMMON_H */
+#endif /* UTILS_COMMON_H */

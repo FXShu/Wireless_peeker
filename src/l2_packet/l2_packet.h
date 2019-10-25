@@ -16,7 +16,23 @@ struct l2_packet_data;
 
 struct l2_ethhdr;
 
-struct access_point_info;
+struct access_point_info{
+	struct dl_list ap_node;
+	char *SSID;
+	int channel;
+	char *country;
+	u8 BSSID[ETH_ALEN];
+	/***
+	 * support rate
+	 * Traffic indication
+	 * RSN information
+	 * vendor specific
+	 * HT capabilities
+	 * HT information
+	 * extended capabilies
+	 * vendor specific
+	 ***/
+};
 
 enum l2_packet_filter_type {
 	L2_PACKET_FILTER_DHCP,
