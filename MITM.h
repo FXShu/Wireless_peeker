@@ -23,6 +23,17 @@ enum usr_dev_type {
 	ethernet,
 	wireless,
 };
+
+enum MITM_state {
+	MITM_state_idle,
+	MITM_state_ap_search,  /* Only use when device type is wireless. */
+	MITM_state_crash_password, /* Only use when device type is wireless. */
+	MITM_state_ready,
+	MITM_state_sniffer,
+	MITM_state_crash_PTK, /* Only use when device type is wireless. */
+	MITM_state_spoofing,
+};
+
 /***
  * struct MITM
  * the structure is used to stored the glabal data
@@ -43,7 +54,8 @@ struct MITM {
 	pcap_if_t* if_buf;
 	pcap_if_t* monitor_buf;
 	struct l2_packet_data *l2_packet;
-	struct dl_list ap_list;
+	struct dl_list ap_list;  //used to foreach access_point_info array.
+	enum MITM_state state;
 };
 
 int MITM_init(struct MITM *MITM);

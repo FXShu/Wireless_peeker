@@ -2,12 +2,14 @@
 
 int MITM_init(struct MITM *MITM) {
 	int exitcode;
+	MITM->state = MITM_state_idle;
 	switch (MITM->dev_type) {
 	case ethernet :
 		break;
 	case wireless :
 		MITM->l2_packet = l2_packet_init(MITM->monitor_dev, ETH_P_ALL,
 						 handle_four_way_shakehand, MITM, 1);
+		MITM->state = MITM_state_ap_search;
 		break;
 	}
 	if(getifinfo(&(MITM->if_buf), MITM->errbuf)) return 10;

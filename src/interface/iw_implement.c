@@ -115,7 +115,7 @@ int interface_handler(char **command) {
 		break;
 	case II_WDEV:
 		devidx = strtoll(*command, &tmp, 0);
-		if (*tmp != '/0') return -1;
+		if (*tmp != '\0') return -1;
 		id_tmp = II_WDEV;
 		command++;
 		break;
@@ -197,9 +197,6 @@ out:
 	nl_cb_put(cb);
 	nl_cb_put(s_cb);
 	nlmsg_free(msg);
-	return -1;
-
-nla_put_failure:
 	return -1;
 
 }

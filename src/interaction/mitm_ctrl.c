@@ -86,8 +86,8 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 	info.sock_fd = ctrl->s;
 	info.send_flags = 0;
 	for (int i = 0; i < COUNT_OF_MSG; i++) {
-		if (!strcmp(msg_handler[i].command, buffer)) {
-			msg_handler[i].action(&info, MITM);
+		if (!strncmp(msg_handler[i].command, buffer, sizeof(msg_handler[i].command))) {
+			msg_handler[i].action(&info, MITM, buffer);
 			break;
 		}
 		/* maybe can send the MITM_INVAILD_MESSAGE_FORMAT here. */

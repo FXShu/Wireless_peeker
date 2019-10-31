@@ -1,11 +1,11 @@
-CROSS=arm-openwrt-linux-
+CROSS=
 CC=$(CROSS)gcc 
 CFLAGS = -g -std=gnu99 -pedantic 
 CFLAGS += -I$(abspath ./src)
 CFLAGS += -I$(abspath ./src/utils)
 CFLAGS += -I$(abspath ./src/crypto)
 
-CFLAGS_CLI = -g -std=gnu99 -pedantic
+CFLAGS_CLI = -g -std=gnu99
 
 LIBS_c=
 LIBS_CLI_c=

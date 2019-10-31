@@ -15,7 +15,7 @@
 
 struct l2_packet {
 	struct ieee80211_radiotap_header *_rtheader;
-	struct ieee80211_radio_info
+	struct ieee80211_radio_info;
 };
 
 struct l2_packet_data {
@@ -393,7 +393,7 @@ int l2_packet_get_ip_addr(struct l2_packet_data *l2, char *buf, size_t len) {
 	int s;
 	struct ifreq ifr;
 	struct sockaddr_in *saddr;
-	size_t res;
+	char* res;
 
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s < 0) {
@@ -412,7 +412,7 @@ int l2_packet_get_ip_addr(struct l2_packet_data *l2, char *buf, size_t len) {
 	saddr = aliasing_hide_typecast(&ifr.ifr_addr, struct sockaddr_in);
 	if (saddr->sin_family != AF_INET) return -1;
 	res = strncpy(buf, inet_ntoa(saddr->sin_addr), len);
-	if (res >= len) return -1;
+	if (!res) return -1;
 	return 0;
 }
 
@@ -481,6 +481,6 @@ void print_handshake_packet(struct WPA2_handshake_packet *packet) {
 uint32_t parse_subtype(uint32_t value) {
 	uint32_t subtype = value & subtype_mask;
 	uint32_t type    = value & type_mask;
-	uint32_t version = value & version_mask;
+//	uint32_t version = value & version_mask;
 	return subtype >> 12 | type >> 6;
 }

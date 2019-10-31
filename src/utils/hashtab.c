@@ -1,6 +1,6 @@
 #include"hashtab.h"
 
-int malloc_and_copy_string(char** dst, char* src){
+int malloc_and_copy_string(unsigned char** dst,unsigned char* src){
         int len;
 
         if(*dst || !src){

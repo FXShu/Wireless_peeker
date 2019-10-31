@@ -72,10 +72,10 @@ static int get_if_type(char **argv, enum nl80211_iftype *type, bool need_type) {
 int handle_interface_add(struct nl80211_state *state, struct nl_msg *msg, 
 			int argc, char **command, enum id_input id) {
 	char *name;
-	char *mesh_id = NULL;
+	//char *mesh_id = NULL;
 	enum nl80211_iftype type;
-	unsigned char mac_addr[ETH_ALEN];
-	int found_mac = 0;
+	//unsigned char mac_addr[ETH_ALEN];
+	//int found_mac = 0;
 
 	log_printf(MSG_DEBUG, "%s,%d: new interface's name is %s", __func__, __LINE__, *command);
 
@@ -90,6 +90,4 @@ int handle_interface_add(struct nl80211_state *state, struct nl_msg *msg,
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, type);
 	
 	return 0;
-nla_put_failure:
-	return -1;
 }

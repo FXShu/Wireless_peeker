@@ -26,6 +26,7 @@ typedef enum {
 
 typedef struct {
 	char* dev;
+	uint8_t ap_BSSID[ETH_ALEN]; /* only use when device type is wireless */
 	pcap_t* handle;
 	char* mask;
 	char* net;

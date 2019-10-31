@@ -15,6 +15,8 @@
 #define	MITM_SET_VICTIM_REPLY "MITM-SET-VICTIM-REPLY"
 #define	MITM_GET_STATUS_REQUEST "MITM-GET-STATUS-REQUEST"
 #define	MITM_GET_STATUS_REPLY "MITM-GET-STATUS-REPLY"
+#define MITM_SET_STATUS_REQUEST "MITM-SET-STATUS-REQUEST"
+#define MITM_SET_STATUS_REPLY "MITM-SET-STATUS-REPLY"
 #define	MITM_STATUS_CHANGED "MITM-STATUS-CHANGED"
 #define	MITM_START_ATTACK_REQUEST "MITM-START-ATTACK-REQUEST"
 #define	MITM_START_ATTACK_REPLY "MITM-START-ATTACK-REPLY"
@@ -27,7 +29,7 @@ typedef (*msg_handle) (void *action_data, void *usr_data);
 struct MITM_ctrl_msg {
 	char *command;
 //	msg_handle action;
-	void (*action) (void *action_data, void *usr_data);
+	void (*action) (void *action_data, void *usr_data, char *options);
 	void *usr_data;
 };
 
