@@ -2,6 +2,7 @@
 #define MITM_ACTION_H
 #include "common.h"
 #include "command.h"
+
 void mitm_ctrl_connect_request_action (void *action_data, void *usr_data, char *options);
 
 void mitm_ctrl_connect_reply_action (void *action_data, void *usr_data, char *options);
@@ -19,6 +20,8 @@ void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *opt
 void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options);
 
 void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options);
+
+void mitm_set_ap_request_action (void *action_data, void *usr_data, char *options);
 
 void mitm_get_status_request_action (void *action_data, void *usr_data, char *options);
 

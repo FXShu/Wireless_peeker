@@ -24,6 +24,10 @@ static char ** parse_command(char *line, int *count) {
         return options;
 }
 
+static int MITM_read_ap_search(struct MITM* MITM) {
+	MITM->state = MITM_state_ap_search;
+}
+
 void mitm_ctrl_connect_request_action (void *action_data, void *usr_data, char *options) {}
 
 void mitm_ctrl_connect_reply_action (void *action_data, void *usr_data, char *options) {}
@@ -65,6 +69,7 @@ void mitm_set_victim_request_action (void *action_data, void *usr_data, char *op
 
 void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options) {}
 
+// The request command should like `MITM-SET-AP-REQUEST?state=ap_search`.
 void mitm_set_status_request_action (void *action_data, void *usr_data, char *line) {
 	struct mitm_recv_info *recv_info = (struct mtim_recv_info *)action_data;
 	struct MITM *MITM = (struct MITM*)usr_data;
@@ -77,14 +82,14 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 	}
 	if (index == number_of_command) 
 		goto state_request_reject;
-	char *state = strrchr(options[index], "=");
+	char *state = strrchr(options[index], '=');
 	if (!state) 
 		goto state_request_reject;
 	state = state + 1;
 	switch(MITM->state) {
 	case MITM_state_idle:
 		if (!strcmp(state, "ap_search")) {
-			MITM->state = MITM_state_ap_search;
+			MITM_read_ap_search(MITM);
 		} else if(!strcmp(state, "sniffer") && (MITM->dev_type == ethernet)){
 			MITM->state = MITM_state_sniffer;
 		} else {
@@ -138,7 +143,7 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 			recv_info->send_flags, (const struct sockaddr *)&recv_info->recv_from,
 			recv_info->length);
 	if (ret < 0) {
-		log_printf(MSG_WARNING, "[%s] sendto failed, err:%s", __func__, strerror(errno));
+		log_printf(MSG_WARNING, "[CTRL] sendto failed, err:%s", strerror(errno));
 	}
 	return;
 state_request_reject:
@@ -149,6 +154,52 @@ state_request_reject:
 }
 
 void mitm_set_status_reply_action (void *action_data, void *usr_data, char *options) {}
+
+void mitm_set_ap_request_action (void *action_data, void *usr_data, char *line) {
+	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
+	struct MITM *MITM = (struct MITM*) usr_data;
+	int index, ret, match = 0, number_of_options;
+	char **options = parse_command(line, &number_of_options);
+	for (index = 0; index < number_of_options; index++) {
+		if (!strncmp(options[index], "ap", sizeof("ap"))) {
+			break;
+		}
+	}
+	if (index == number_of_options) 
+		goto ap_request_reject;
+	char *ap_SSID = strrchr(options[index], '=');
+	if (!ap_SSID)
+		goto ap_request_reject;
+	ap_SSID = ap_SSID + 1;
+	struct access_point_info *tmp;
+	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
+		if(!strcmp(tmp->SSID, ap_SSID)) {
+			for (int i = 0; i < ETH_ALEN; i++) {
+				MITM->dev_info.ap_BSSID[i] = tmp->BSSID[i];
+				MITM->state = MITM_state_crash_password;
+				match = 1;
+			}
+			break;
+		} 
+	}
+	char *feedback = match ? MITM_COMMAND_OK : "Secpify AP not found";
+	/* if the request command is right ,is it necessary to send the feedback? */
+	ret = sendto(recv_info->sock_fd, feedback, sizeof(feedback), recv_info->send_flags, 
+			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
+	if (ret < 0)
+		log_printf(MSG_WARNING, "[CTRL]sendto caller failed, err:%s", strerror(errno));
+	for (index = 0; index < number_of_options; index++) {
+		free(options[index]);
+	}
+	free(options);
+ap_request_reject:
+	for (index = 0; index < number_of_options; index++) {
+		free(options[index]);
+	}
+	free(options);
+	log_printf(MSG_WARNING, "[CTRL]ap set request reject, unsupport format");
+	/* Should I send something feedback to let caller know the format is wrong? */
+}
 
 void mitm_get_status_request_action (void *action_data, void *usr_data, char *options) {}
 
