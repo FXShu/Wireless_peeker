@@ -1,0 +1,14 @@
+PMK = PBKDF2(SHA1, Pre_share_key, SSID, 4096, 256)
+PTK is dependant on ANONCE, SNONCE, AP MAC, Station MAC, and PMK
+PTK is a 512bit hash which are treated as 5 separate keys.
+128 bits - key confirmation key(KCK) - used by during the creation of the MIC.
+128 bits - key encryption key (KEK) - used be the AP during data encrypiton.
+128 bits - Temporal Key(TK) - Used for the encryption and decryption of unicast packets.
+64  bits - MIC Authenticator Tx key (MIC Tx) - only used with TKIP configurations for unicast packets
+					       sent by access points.
+64  bits - MIC Authenticator Rx key (MIC Rx) - only used with TKIP configurations fot unicast packet
+					       send by station.
+
+KCK is MIC ?
+
+ 

@@ -113,7 +113,8 @@ printf_ap:
 
 			parse_llc_header(buf, len, &offset, packet);
 
-			if (tmp->llc_hdr.type == 0x888e) 
+			if (tmp->llc_hdr.type == 0x888e && 
+			   (MITM->state == MITM_state_crash_password)) 
 				parse_auth_data(buf, len, &offset, packet);
 
 
@@ -128,7 +129,8 @@ printf_ap:
 			
 			parse_llc_header(buf, len , &offset, packet);
 
-			if (tmp->llc_hdr.type == 0x888e)
+			if (tmp->llc_hdr.type == 0x888e &&
+			   (MITM->state == MITM_state_crash_password))
 				parse_auth_data(buf, len, &offset, packet);
 		
 		break;}

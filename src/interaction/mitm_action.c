@@ -74,7 +74,7 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 	struct mitm_recv_info *recv_info = (struct mtim_recv_info *)action_data;
 	struct MITM *MITM = (struct MITM*)usr_data;
 	int number_of_command;
-	int index, ret;
+	int index, ret = 0, match = 0;
 	char **options = parse_command(line, &number_of_command);
 	for(index = 0; index < number_of_command; index++) {
 		if(!strncmp(options[index],"state", sizeof("state")))
@@ -90,48 +90,55 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 	case MITM_state_idle:
 		if (!strcmp(state, "ap_search")) {
 			MITM_read_ap_search(MITM);
+			match = 1;
 		} else if(!strcmp(state, "sniffer") && (MITM->dev_type == ethernet)){
 			MITM->state = MITM_state_sniffer;
+			match = 1;
 		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in idle state", state);
-			goto state_request_reject;
 		}
 		break;
 	case MITM_state_ap_search:
-		if (strcmp(state, "crash_password")) {
+		if (!strcmp(state, "crash_password")) {
+			match = 1;
+			MITM->state = MITM_state_crash_password;
+		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in ap search state", state);
-			goto state_request_reject;
 		}
-		MITM->state = MITM_state_crash_password;
 		break;
 	case MITM_state_ready:
 		if (!strcmp(state, "sniffer")) {
+			match = 1;
 			MITM->state = MITM_state_sniffer;
 		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in ready state", state);
 		}
 	case MITM_state_sniffer:
-		if (strcmp(state, "crash_PTK")) {
+		if (!strcmp(state, "crash_PTK")) {
+			match = 1;
+			MITM->state = MITM_state_crash_PTK;
+		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in sniffer state", state);
-			goto state_request_reject;
 		}
-		MITM->state = MITM_state_crash_PTK;
 		break;
 	case MITM_state_crash_PTK:
-		if (strcmp(state, "spoofing")) {
+		if (!strcmp(state, "spoofing")) {
+			match = 1;
+			MITM->state = MITM_state_spoofing;
+		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in crash state", state);
 			goto state_request_reject;
 		}
-		MITM->state = MITM_state_spoofing;
 		break;
 	case MITM_state_spoofing:
 		if (!strcmp(state, "ap_search")) {
+			match = 1;
 			MITM->state = MITM_state_ap_search;
 		} else if (!strcmp(state, "idle")) {
+			match = 1;
 			MITM->state = MITM_state_idle;
 		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in spoof state", state);
-			goto state_request_reject;
 		}
 		break;
 	}
@@ -139,18 +146,13 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 		free(options[i]);
 	free(options);
 
-	ret = sendto(recv_info->sock_fd, MITM_SET_STATUS_REPLY, sizeof(MITM_SET_STATUS_REPLY), 
-			recv_info->send_flags, (const struct sockaddr *)&recv_info->recv_from,
-			recv_info->length);
+	char *reply = match ? MITM_COMMAND_OK : "Specify state unexpected."
+	ret = sendto(recv_info->sock_fd, reply, sizeof(reply), recv_info->send_flags, 
+			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0) {
 		log_printf(MSG_WARNING, "[CTRL] sendto failed, err:%s", strerror(errno));
 	}
 	return;
-state_request_reject:
-	for (int i = 0; i < number_of_command; i++)
-		free(options[i]);
-	free(options);
-	log_printf(MSG_WARNING, "[CTRL]state change request reject, unsupport format");
 }
 
 void mitm_set_status_reply_action (void *action_data, void *usr_data, char *options) {}
