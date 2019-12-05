@@ -90,4 +90,7 @@ int handle_interface_add(struct nl80211_state *state, struct nl_msg *msg,
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, type);
 	
 	return 0;
+nla_put_failure:
+	free(msg);
+	return -1;
 }

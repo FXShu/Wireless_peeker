@@ -47,12 +47,12 @@ int l2_packet_send(struct l2_packet_data *l2, const u8 *dst_addr,
 struct l2_packet_data * l2_packet_init(const char *ifname, 
 		unsigned short protocol, 
 		void (*rx_callback)(void *ctx, const u8 *src_addr,
-		       	const u8 *buf, size_t len),
+		       	const char *buf, size_t len),
 	       	void *rx_callback_ctx, int l2_hdr);
 
 struct l2_packet_data * l2_packet_init_bridge(const char *br_ifname, 
 		const char *ifname, const u8 *own_addr, unsigned short protocol,
-	       	void (*rx_callback)(void *ctx, const u8 *src_addr, const u8 *buf, size_t len), 
+	       	void (*rx_callback)(void *ctx, const u8 *src_addr, const char *buf, size_t len), 
 		      void *rx_callback_ctx, int l2_hdr);
 
 void l2_packet_deinit(struct l2_packet_data *l2);
@@ -67,6 +67,6 @@ void print_handshake_packet(struct WPA2_handshake_packet *packet);
 
 uint32_t parse_subtype(uint32_t value);
 
-void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t *buf, size_t len);
+void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len);
 
 #endif /* L2_PACKET_H */

@@ -24,7 +24,7 @@
 #define	MITM_KEEP_ALIVE_REPLY "MITM-KEEP-ALIVE-REPLY"
 #define	MITM_INVAILD_MESSAGE_FORMAT "MITM-INVAILD-MESSAGE-FORMAT"
 
-typedef (*msg_handle) (void *action_data, void *usr_data);
+typedef int (*msg_handle) (void *action_data, void *usr_data);
 
 struct MITM_ctrl_msg {
 	char *command;

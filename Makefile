@@ -5,7 +5,7 @@ CFLAGS += -I$(abspath ./src)
 CFLAGS += -I$(abspath ./src/utils)
 CFLAGS += -I$(abspath ./src/crypto)
 
-CFLAGS_CLI = -g -std=gnu99
+CFLAGS_CLI = -g -std=c99 -Wno-switch
 
 LIBS_c=
 LIBS_CLI_c=

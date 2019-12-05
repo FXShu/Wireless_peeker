@@ -9,9 +9,9 @@ void getAttackerInfo(char* dev,u_char* mac,u_char* ip){
 	/*for (int i=0;i<14;i++){
 		printf("%d ",req.ifr_addr.sa_data[i]);
 	}*/
-        strncpy(ip,req.ifr_addr.sa_data+2,4);
+        memcpy(ip,req.ifr_addr.sa_data+2,4);
 	ioctl(sockfd,SIOCGIFHWADDR,&req);
-	strncpy(mac,req.ifr_hwaddr.sa_data,6);
+	memcpy(mac,req.ifr_hwaddr.sa_data,6);
 	close(sockfd);
 }
 

@@ -42,7 +42,7 @@ int forword(char* dev,u_short pro_type, u_char* DST, u_char* SRC,
 	return 0;
 }
 
-int ping(unsigned char* dest_ip){
+int ping(char* dest_ip){
 	int sockfd;
 	struct icmphdr hdr;
 	struct sockaddr_in addr;

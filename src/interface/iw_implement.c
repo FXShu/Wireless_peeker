@@ -194,6 +194,7 @@ int interface_handler(char **command) {
 	}
 	return 0;
 out:
+nla_put_failure:
 	nl_cb_put(cb);
 	nl_cb_put(s_cb);
 	nlmsg_free(msg);

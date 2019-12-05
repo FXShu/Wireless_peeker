@@ -26,6 +26,7 @@ static char ** parse_command(char *line, int *count) {
 
 static int MITM_read_ap_search(struct MITM* MITM) {
 	MITM->state = MITM_state_ap_search;
+	return 0;
 }
 
 void mitm_ctrl_connect_request_action (void *action_data, void *usr_data, char *options) {}
@@ -71,7 +72,8 @@ void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *opti
 
 // The request command should like `MITM-SET-AP-REQUEST?state=ap_search`.
 void mitm_set_status_request_action (void *action_data, void *usr_data, char *line) {
-	struct mitm_recv_info *recv_info = (struct mtim_recv_info *)action_data;
+	char *reply;
+	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
 	struct MITM *MITM = (struct MITM*)usr_data;
 	int number_of_command;
 	int index, ret = 0, match = 0;
@@ -80,11 +82,15 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 		if(!strncmp(options[index],"state", sizeof("state")))
 			break;
 	}
-	if (index == number_of_command) 
-		goto state_request_reject;
+	if (index == number_of_command)  {
+		reply = "Unsupport request format.";
+		goto send_reply;
+	}
 	char *state = strrchr(options[index], '=');
-	if (!state) 
-		goto state_request_reject;
+	if (!state) {
+		reply = "Unsupport request format.";
+		goto send_reply;
+	}
 	state = state + 1;
 	switch(MITM->state) {
 	case MITM_state_idle:
@@ -127,7 +133,8 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 			MITM->state = MITM_state_spoofing;
 		} else {
 			log_printf(MSG_WARNING, "Unexpected state %s in crash state", state);
-			goto state_request_reject;
+			reply = "Unexpected state request";
+			goto send_reply;
 		}
 		break;
 	case MITM_state_spoofing:
@@ -142,16 +149,17 @@ void mitm_set_status_request_action (void *action_data, void *usr_data, char *li
 		}
 		break;
 	}
-	for (int i = 0; i < number_of_command; i++)
-		free(options[i]);
-	free(options);
+	reply = match ? MITM_COMMAND_OK : "Specify state unexpected";
 
-	char *reply = match ? MITM_COMMAND_OK : "Specify state unexpected."
+send_reply:	
 	ret = sendto(recv_info->sock_fd, reply, sizeof(reply), recv_info->send_flags, 
 			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0) {
 		log_printf(MSG_WARNING, "[CTRL] sendto failed, err:%s", strerror(errno));
-	}
+	}	
+	for (int i = 0; i < number_of_command; i++)
+		free(options[i]);
+	free(options);
 	return;
 }
 

@@ -7,7 +7,7 @@
 
 struct node{
 	char *key;
-	uint8_t *value;
+	char *value;
 	struct node *next;
 };
 

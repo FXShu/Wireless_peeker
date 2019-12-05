@@ -5,7 +5,7 @@
 #include <linux/filter.h>
 
 #include "../utils/common.h"
-#include "../crypto/sha1.h"
+#include "../crypto/crypto.h"
 #include "eloop.h"
 #include "l2_packet.h"
 /*
@@ -15,7 +15,7 @@
 
 struct l2_packet {
 	struct ieee80211_radiotap_header *_rtheader;
-	struct ieee80211_radio_info;
+//	struct ieee80211_radio_info info;
 };
 
 struct l2_packet_data {
@@ -24,7 +24,7 @@ struct l2_packet_data {
 	int ifindex;
 	u8 own_addr[ETH_ALEN];
 	void (*rx_callback)(void *ctx, const u8 *src_addr, 
-			const u8 *buf, size_t len);	
+			const char *buf, size_t len);	
 	void *rx_callback_ctx;
 	int l2_hdr; /* whether to include layer 2 (Ethernet) header date buffer*/
 	
@@ -142,7 +142,7 @@ int l2_packet_send(struct l2_packet_data *l2, const u8 *dst_addr,
 
 static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 	struct l2_packet_data *l2 = eloop_ctx;
-	u8 buf[2300];
+	char buf[2300];
 	int res;
 	struct sockaddr_ll ll;
 	socklen_t fromlen;
@@ -178,7 +178,7 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 			l2->fd_br_rx = -1;
 		}
 
-		addr[0] = buf;
+		addr[0] = (unsigned char *)buf;
 		len[0] = res;
 		sha1_vector(1, addr, len, hash);
 		if (l2->last_from_br && 
@@ -209,7 +209,7 @@ static void l2_packet_receive(int sock, void *eloop_ctx, void *sock_ctx) {
 #ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
 static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 	struct l2_packet_data *l2 = eloop_ctx;
-	u8 buf[2300];
+	char buf[2300];
 	int res;
 	struct sockaddr_ll ll;
 	socklen_t fromlen;
@@ -234,7 +234,7 @@ static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 		//here will drop all the packet which is unqual to own_addr??
 		return;
 	}
-	addr[0] = buf;
+	addr[0] = (unsigned char *)buf;
 	len[0] = res;
 	sha1_vector(1, addr, len, hash);
 	if (!l2->last_from_br && memcmp(hash, l2->last_hash, SHA1_MAC_LEN) == 0) {
@@ -257,7 +257,7 @@ static void l2_packet_receive_br(int sock, void *eloop_ctx, void *sock_ctx) {
 struct l2_packet_data * l2_packet_init(
 		const char *ifname, unsigned short protocol,
 		void (*rx_callback)(void *ctx, const u8 *src_addr,
-		       	const u8 *buf, size_t len),
+		       	const char *buf, size_t len),
 		void *rx_callback_ctx, int l2_hdr) {
 	struct l2_packet_data *l2;
 	struct ifreq ifr;
@@ -320,7 +320,7 @@ struct l2_packet_data * l2_packet_init(
 
 struct l2_packet_data * l2_packet_init_bridge(const char *br_ifname, const char *ifname, 
 		const u8 *own_addr, unsigned short protocol, void (*rx_callback)(void *ctx, 
-			const u8 *src_addr, const u8 *buf, size_t len), void *rx_callback_ctx, int l2_hdr) {
+			const u8 *src_addr, const char *buf, size_t len), void *rx_callback_ctx, int l2_hdr) {
 	struct l2_packet_data *l2;
 #ifndef CONFIG_NO_LINUX_PACKET_SOCKET_WAR
 	struct sock_filter ethertype_sock_filter_insns[] = {

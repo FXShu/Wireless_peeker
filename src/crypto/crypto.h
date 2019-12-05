@@ -2,6 +2,7 @@
 #define CRYPTO_H
 
 #include "common.h"
+#include "sha1.h"
 /**
  * sha1_vector - SHA-1 hash for data vector
  * @num_elem: Number of elements in the data vector

@@ -65,7 +65,7 @@ static void history_read(const char *history_file) {
 		return;
 	}
 
-	while(fgets(CMD_BUF_LEN, buf, history_f)) {
+	while(fgets(buf, CMD_BUF_LEN, history_f)) {
 		for(pos = buf; *pos; pos++) {
 			if(*pos == '\r' || *pos == '\n') {
 				*pos = '\0';
@@ -86,4 +86,5 @@ int terminal_init(void (*cmd_cd)(void *ctx, char *cmd),
 	history_curr = NULL;
 	if (history_file)
 		history_read(history_file);
+	return 0;
 }

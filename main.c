@@ -1,6 +1,7 @@
 #include<unistd.h>
 #include "common.h"
 #include "MITM.h"
+#include "./src/interaction/mitm_ctrl.h"
 
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
@@ -181,7 +182,7 @@ create_monitor_interface:
 				&MITM->dev_info.gateway_mac[3], &MITM->dev_info.gateway_mac[4],
 				&MITM->dev_info.gateway_mac[5]);
 		log_printf(MSG_INFO, "type gateway's ip");
-		scanf("%hhd.%hhd.%hhd.%hhd", &MITM->dev_info.gateway_ip[0], 
+		scanf("%hhu.%hhu.%hhu.%hhu", &MITM->dev_info.gateway_ip[0], 
 				&MITM->dev_info.gateway_ip[1], &MITM->dev_info.gateway_ip[2],
 			       	&MITM->dev_info.gateway_ip[3]);
 		log_printf(MSG_INFO, "type target's mac");
@@ -190,7 +191,7 @@ create_monitor_interface:
 				&MITM->dev_info.target_mac[3], &MITM->dev_info.target_mac[4],
 				&MITM->dev_info.target_mac[5]);
 		log_printf(MSG_INFO, "type gateway's ip");
-		scanf("%hhd.%hhd.%hhd.%hhd",&MITM->dev_info.target_ip[0], 
+		scanf("%hhu.%hhu.%hhu.%hhu",&MITM->dev_info.target_ip[0], 
 				&MITM->dev_info.target_ip[1], &MITM->dev_info.target_ip[2],
 				&MITM->dev_info.target_ip[3]);
 	}

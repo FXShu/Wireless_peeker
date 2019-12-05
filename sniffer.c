@@ -14,7 +14,7 @@ struct route_info{
 	char ifName[IF_NAMESIZE];
 };
 
-void spilt(char* str,char* delim,char* ip ,int ip_len){
+void spilt(char* str,char* delim,unsigned char* ip ,int ip_len){
         char* str_t = strdup(str);
 
         *ip++ = atoi(strtok(str_t,delim));
@@ -29,13 +29,13 @@ void spilt(char* str,char* delim,char* ip ,int ip_len){
 void getGatewayMAC(u_char* arg,const struct pcap_pkthdr* hp, const u_char* packet){
 	sni_info* sni = (sni_info*)arg;
 	ethernet_header* eth_header = (ethernet_header*)packet;
-	strcpy(sni->gateway_mac,eth_header->SRC_mac);
+	memcpy(sni->gateway_mac,eth_header->SRC_mac, ETH_ALEN);
 }
 
 void getTargetMAC(u_char* arg,const struct pcap_pkthdr* hp,const u_char* packet){
 	sni_info* sni = (sni_info*)arg;
 	ethernet_header* eth_header = (ethernet_header*)packet;
-	strcpy(sni->target_mac,eth_header->SRC_mac);
+	memcpy(sni->target_mac,eth_header->SRC_mac, ETH_ALEN);
 }
 
 int readNlSock(int sockfd,char* buf,int seqNum,int pid){
@@ -59,7 +59,7 @@ int readNlSock(int sockfd,char* buf,int seqNum,int pid){
 	while((nlHdr->nlmsg_seq != seqNum) || (nlHdr->nlmsg_pid != pid));
 	return msgLen;
 }
-void parseRoutes(struct nlmsghdr* nlHdr,struct route_info *rtInfo,char* gateway){
+void parseRoutes(struct nlmsghdr* nlHdr,struct route_info *rtInfo,unsigned char* gateway){
 	struct rtmsg* rtMsg;
 	struct rtattr* rtAttr;
 	int rtLen;
@@ -170,7 +170,7 @@ int sniffer_init(sni_info* info,char* errbuf){
 		char gatewayIp[16];
 
 
-		sprintf(gatewayIp,"%d.%d.%d.%d",info->gateway_ip[0],info->gateway_ip[1],
+		sprintf(gatewayIp,"%u.%u.%u.%u",info->gateway_ip[0],info->gateway_ip[1],
 						info->gateway_ip[2],info->gateway_ip[3]);
 		ping(gatewayIp);
 		if(pcap_dispatch(info->handle,1,getGatewayMAC,(u_char*)info)<0){
@@ -215,8 +215,8 @@ void anlysis_packet(int sock, void *eloop_ctx, void *sock_ctx) {
 	struct pcap_pkthdr hdr;
 	int header_len;
 
-	void *packet = pcap_next(handler->pcap_fd, &hdr);
-	if (!packet) return NULL;
+	u_char *packet = pcap_next(handler->pcap_fd, &hdr);
+	if (!packet) return;
 
 	ethernet_header* pEther = (ethernet_header*) packet;
 	header_len = sizeof(ethernet_header);

@@ -71,12 +71,13 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl*) sock_ctx;
 	struct MITM *MITM = (struct MITM*) eloop_ctx;
+	flags = 0;
 
 	info.length = sizeof(struct sockaddr_un);
 	memset(&info.recv_from, 0, sizeof(struct sockaddr_un));
 
 	ret = recvfrom(ctrl->s, buffer, COMMAND_BUFFER_LEN, flags,
-		       	(const struct sockaddr*)&info.recv_from,&info.length);
+		       	(struct sockaddr*)&info.recv_from,&info.length);
 	if (ret < 0) { 
 		log_printf(MSG_DEBUG, "[CTRL_COMMAND] recvfrom fail, with error:%s",
 			       	strerror(errno));
@@ -86,7 +87,7 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 	info.sock_fd = ctrl->s;
 	info.send_flags = 0;
 	for (int i = 0; i < COUNT_OF_MSG; i++) {
-		if (!strncmp(msg_handler[i].command, buffer, sizeof(msg_handler[i].command))) {
+		if (!strncmp(msg_handler[i].command, buffer, strlen(msg_handler[i].command))) {
 			msg_handler[i].action(&info, MITM, buffer);
 			break;
 		}
@@ -96,7 +97,6 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 }
 
 struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
-	int flags;
 	int ret;
 
 	unlink(ctrl_path);
@@ -156,7 +156,7 @@ struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
 
 	ctrl->s = socket(PF_UNIX, SOCK_DGRAM, 0);
 	if (ctrl->s < 0) {
-		printf(MSG_ERROR, "[%s]:socket failed, with error:%s", __func__, strerror(errno));
+		log_printf(MSG_ERROR, "[%s]:socket failed, with error:%s", __func__, strerror(errno));
 		free(ctrl);
 		return NULL;
 	}
@@ -174,7 +174,7 @@ try_again:
 				CONFIG_CTRL_IFACE_CLIENT_PREFIX "%d-%d",
 			      	(int) getpid(), counter);
 	}
-	if (ret < 0 || (ret >= ctrl->local.sun_path)) {
+	if (ret < 0 || (ret >= strlen(ctrl->local.sun_path))) {
 		log_printf(MSG_ERROR, "copy cil address failed");
 		close(ctrl->s);
 		free(ctrl);
@@ -194,7 +194,7 @@ try_again:
 			//unlikn, linlinkat - delete a name and possibly the file it regers to
 			goto try_again;
 		}
-		log_printf("bind socket to local file failed, with error: %s", strerror(errno));
+		log_printf(MSG_WARNING, "bind socket to local file failed, with error: %s", strerror(errno));
 		close(ctrl->s);
 		free(ctrl);
 		return NULL;
@@ -321,10 +321,10 @@ retry_send:
 			if (started_at.sec == 0) {
 				os_get_reltime(&started_at);
 			} else {
-				struct timeval n;
+				struct os_reltime n;
 				os_get_reltime(&n);
 				/* Try for a few seconds. */
-				if (os_reltime_expired(&started_at, &n, 5, 0)) {
+				if (os_reltime_expired(&started_at, &n, 5)) {
 					goto send_err;
 				}
 				sleep(1);
@@ -337,12 +337,6 @@ send_err:
 		return -1;
 	} 
 
-
-	if (res < 0) {
-		log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
-		return -1;
-	}
-
 	for(;;) {
 		tv.tv_sec = 10;
 		tv.tv_usec = 0;
@@ -354,9 +348,10 @@ send_err:
 		}
 
 		if (FD_ISSET(ctrl->s, &rfds)) {
-			if (recv(ctrl->s, reply, *reply_len, flags) < 0) {
+			res = recv(ctrl->s, reply, *reply_len, flags);
+		       	if (res	< 0) {
 				log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
-				return res;
+				return -1;
 			}
 			if (res > 0 && reply[0] == '<') {
 				/* This is an unsolicited message from MITM, not the reply to the request.
@@ -383,7 +378,7 @@ send_err:
 int mitm_ctrl_recv(struct mitm_ctrl *ctrl, char *reply, size_t *reply_len) {
 	int res;
 	int flags;
-
+	flags = 0;
 	res = recv(ctrl->s, reply, *reply_len, flags);
 	if (res < 0) {
 		log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));

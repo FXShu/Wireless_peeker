@@ -82,6 +82,17 @@ static inline void os_reltime_sub(struct os_reltime *a, struct os_reltime *b,
 		res->usec += 1000000;
 	}
 }
+
+static inline int os_reltime_expired(struct os_reltime *now, 
+		struct os_reltime *ts, os_time_t timeout_secs)
+{
+	struct os_reltime age;
+
+	os_reltime_sub(now, ts, &age);
+	return (age.sec > timeout_secs) ||
+	(age.sec == timeout_secs && age.usec > 0);
+}
+
 void * os_zalloc(size_t size);
 int os_get_reltime(struct os_reltime *t);
 size_t os_strlcpy(char *dest,const char *src, size_t siz);

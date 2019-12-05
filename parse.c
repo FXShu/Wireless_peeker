@@ -1,7 +1,7 @@
 #include"parse.h"
 
 int parse_http_request(const u_char* data,http_resquest_payload* http){
-	init_hashtable(&(http->header),25);
+/*	init_hashtable(&(http->header),25);
 	if(!data || !http){
 		log_printf(MSG_WARNING,"PARSE: packet payload is empty or buffer initialize fail\n");
 		return -1;
@@ -25,11 +25,11 @@ int parse_http_request(const u_char* data,http_resquest_payload* http){
 	}
 
 	print_hashtable(&(http->header));
-	return 0;
+*/	return 0;
 }
 
 int parse_http_reply(const u_char* data, http_reply_payload* payload) {
-	init_hashtable(&(payload->header),10);
+/*	init_hashtable(&(payload->header),10);
 	if(!data || !payload){
 		log_printf(MSG_WARNING,"PARSE: packet payload is empty or buffer initialize fail\n");
 		return -1;
@@ -53,5 +53,5 @@ int parse_http_reply(const u_char* data, http_reply_payload* payload) {
 	}
 
 	print_hashtable(&(payload->header));
-	return 0;
+*/	return 0;
 }

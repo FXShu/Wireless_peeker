@@ -63,7 +63,7 @@ int os_get_reltime(struct os_reltime *t) {
  * next: target time
  * Return: nonzero for true, zero for false
  * */
-int os_reltime_expired (struct timeval *prev, struct timeval *next,
+/*int os_reltime_expired (struct timeval *prev, struct timeval *next,
 	       	time_t sec, suseconds_t usec) {
 	struct timeval tmp;
 	tmp.tv_sec  = sec;
@@ -72,4 +72,4 @@ int os_reltime_expired (struct timeval *prev, struct timeval *next,
 	timeradd(prev, &tmp, &tmp);
 
 	return timercmp(next, &tmp, >);	
-}
+}*/

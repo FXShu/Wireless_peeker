@@ -3,7 +3,6 @@
 
 #include "include.h"
 #include "common.h"
-
 #ifndef MITM_CTRL_DIR
 #define MITM_CTRL_DIR "/tmp/MITM"
 #endif /* MITM_CTRL_DIR */

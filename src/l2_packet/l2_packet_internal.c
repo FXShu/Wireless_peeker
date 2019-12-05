@@ -20,7 +20,7 @@ struct access_point_info{
 	 ***
 };
 */
-static int parse_llc_header(u8* buf, size_t len, 
+static int parse_llc_header(const char* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	if (*offset > len) return -1;
 
@@ -30,7 +30,7 @@ static int parse_llc_header(u8* buf, size_t len,
 	return 0;
 }
 
-static int parse_auth_data(u8 *buf, size_t len,
+static int parse_auth_data(const char *buf, size_t len,
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	
 	packet->auth_data = *(struct ieee_8021x_authentication*) (buf + *offset);
@@ -43,13 +43,13 @@ static int parse_auth_data(u8 *buf, size_t len,
 	return 0;
 }
 
-void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t *buf, size_t len) {
+void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len) {
 	
 	struct MITM *MITM = (struct MITM *)ctx; 
 
 	uint32_t offset;
 	uint16_t type;
-	void *packet;
+	void *packet = NULL;
 	char* mac_s;
 	mac_s = malloc(20);
 
@@ -73,7 +73,6 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 			ap_info = malloc(sizeof(struct access_point_info));
 			//ap_info->BSSID = mactostring(mac_s, frame.addr2);
 			copy_mac_address(frame.addr2, ap_info->BSSID);
-			int i = 0;
 			for (;offset + 2 < len ;) {
 				enum beacon_param tag_name = *(buf + (offset++));
 				uint8_t tag_len = *(buf + (offset++));
@@ -97,11 +96,10 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const uint8_t
 					tmp->channel = ap_info->channel;
 					/* maybe call the strcpy() is a good ideal? */
 					free(ap_info);
-					goto printf_ap;
+					break;
 				}
 			}
 			dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
-printf_ap:
 		break;
 
 		case IEEE80211_DATA : {
