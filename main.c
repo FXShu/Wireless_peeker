@@ -101,7 +101,10 @@ create_monitor_interface:
 			", if you have already created a monitor mode interface:\n");
 
 		char create_interface[10];
-		scanf("%s", create_interface);
+		if (scanf("%s", create_interface) == EOF) {
+			log_printf(MSG_ERROR, "Invaild interface name.");
+			return -1;
+		}
 		if (!strcmp(create_interface, "yes")) {
 			MITM->monitor_dev = "mon0";
 			log_printf(MSG_DEBUG, "creating a monitor interface base on %s", 
@@ -177,23 +180,35 @@ create_monitor_interface:
 
 	if(manual){
 		log_printf(MSG_INFO, "type gateway's mac");
-		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.gateway_mac[0],
+		if (scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.gateway_mac[0],
 				&MITM->dev_info.gateway_mac[1], &MITM->dev_info.gateway_mac[2],
 				&MITM->dev_info.gateway_mac[3], &MITM->dev_info.gateway_mac[4],
-				&MITM->dev_info.gateway_mac[5]);
+				&MITM->dev_info.gateway_mac[5]) == EOF) {
+			log_printf(MSG_ERROR, "Invalid gateway mac address.");
+			return -1;
+		}
 		log_printf(MSG_INFO, "type gateway's ip");
-		scanf("%hhu.%hhu.%hhu.%hhu", &MITM->dev_info.gateway_ip[0], 
+		if (scanf("%hhu.%hhu.%hhu.%hhu", &MITM->dev_info.gateway_ip[0], 
 				&MITM->dev_info.gateway_ip[1], &MITM->dev_info.gateway_ip[2],
-			       	&MITM->dev_info.gateway_ip[3]);
+			       	&MITM->dev_info.gateway_ip[3]) == EOF) {
+			log_printf(MSG_ERROR, "Invalid gateway ip address.");
+			return -1;
+		}
 		log_printf(MSG_INFO, "type target's mac");
-		scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.target_mac[0],
+		if (scanf("%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &MITM->dev_info.target_mac[0],
 				&MITM->dev_info.target_mac[1], &MITM->dev_info.target_mac[2],
 				&MITM->dev_info.target_mac[3], &MITM->dev_info.target_mac[4],
-				&MITM->dev_info.target_mac[5]);
+				&MITM->dev_info.target_mac[5]) == EOF){
+			log_printf(MSG_ERROR, "Invalid target mac address.");
+			return -1;
+		}
 		log_printf(MSG_INFO, "type gateway's ip");
-		scanf("%hhu.%hhu.%hhu.%hhu",&MITM->dev_info.target_ip[0], 
+		if (scanf("%hhu.%hhu.%hhu.%hhu",&MITM->dev_info.target_ip[0], 
 				&MITM->dev_info.target_ip[1], &MITM->dev_info.target_ip[2],
-				&MITM->dev_info.target_ip[3]);
+				&MITM->dev_info.target_ip[3]) == EOF) {
+			log_printf(MSG_ERROR, "Invalid target ip address.");
+			return -1;
+		}
 	}
 
         MITM_info info={

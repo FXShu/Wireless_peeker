@@ -1,11 +1,11 @@
-CROSS=
+CROSS=arm-openwrt-linux-
 CC=$(CROSS)gcc 
-CFLAGS = -g -std=gnu99 -pedantic 
+CFLAGS = -g -O2 -std=gnu99  -Wno-switch -Wno-unused-variable -MMD
 CFLAGS += -I$(abspath ./src)
 CFLAGS += -I$(abspath ./src/utils)
 CFLAGS += -I$(abspath ./src/crypto)
 
-CFLAGS_CLI = -g -std=c99 -Wno-switch
+CFLAGS_CLI = -g -std=c99
 
 LIBS_c=
 LIBS_CLI_c=
@@ -33,6 +33,7 @@ BINALL=MITM MITM_cli
 ALL = $(BINALL)
 all: install $(ALL)
 
+export CFLAGS CC
 #ifdef CONFIG_ELOOP_EPOLL
 #CFLAGS += -DCONFIG_ELOOP_EPOLL -DCONFIG_CRYPTO_INTERNAL
 #endif

@@ -1,7 +1,8 @@
+ifndef CC
 CC=gcc
-
+endif
 ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g -Wno-switch -Wno-unused-variable -std=gnu99
+CFLAGS = -MMD -O2 -Wall -g -Wno-unused-variable -std=gnu99
 endif
 
 CFLAGS += -I.. -I../utils
