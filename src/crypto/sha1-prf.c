@@ -41,7 +41,7 @@ int sha1_prf(const u8 *key, size_t key_len, const char *label,
 			memcpy(&buf[pos], hash, plen);
 			break;
 		}
-		count++;
+		counter++;
 	}
 	memset(hash, 0, sizeof(hash));
 	return 0;

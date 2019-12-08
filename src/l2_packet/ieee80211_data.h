@@ -181,5 +181,6 @@ struct beacon_packet {
 	struct ieee80211_hdr_3addr frame;
 	struct ieee80211_beacon body;
 } __attribute__((packed));
+
 #endif /* LINUX_IEEE80211_H */
 

@@ -184,8 +184,8 @@ int sniffer_init(sni_info* info,char* errbuf){
 			alarm(0);
 		}
 		getAttackerInfo(info->dev,info->attacker_mac,info->attacker_ip);
-		char target[14];
-		sprintf(target,"%d.%d.%d.%d",info->target_ip[0],info->target_ip[1],
+		char target[16];
+		sprintf(target,"%u.%u.%u.%u",info->target_ip[0],info->target_ip[1],
 						info->target_ip[2],info->target_ip[3]);
 		alarm(1);
 		ping(target);

@@ -23,8 +23,8 @@ static int pbkdf2_sha1_f(const char *passphrase, const u8 *ssid, size_t ssid_len
 	count_buf[1] = (count >> 16) & 0xff;
 	count_buf[2] = (count >> 8)  & 0xff;
 	count_buf[3] = count & 0xff;
-	if (hmac_sha1_vector((u8 *) passphrase, passphrase_len, tmp,
-			       	SHA1_MAC_LEN, tmp2)) //U1
+	if (hmac_sha1_vector((u8 *) passphrase, passphrase_len, 2,
+			       	addr, len ,tmp)) //U1
 		return -1;
 	memcpy(tmp, tmp2, SHA1_MAC_LEN);
 

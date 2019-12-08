@@ -43,6 +43,16 @@ static int parse_auth_data(const char *buf, size_t len,
 	return 0;
 }
 
+static int fill_encry_info(struct encrypto_info * info, const struct WPA2_handshake_packet *packet) {
+	/* XXX : How to make sure the handshake packet is the same process ? */
+	/* frame 2 of 4-way handshake */
+	if (packet->key_information & WPA_KEY_INFO_MIC &&
+	    !(packet->key_information & WPA_KEY_INFO_ACK) &&
+	    !(packet->key_information & WPA_KEY_INFO_INSTALL)) {
+		
+	}
+}
+
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len) {
 	
 	struct MITM *MITM = (struct MITM *)ctx; 
@@ -61,6 +71,11 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 	switch (type) {
 		case IEEE80211_BEACON :;
+			/* XXX : Do we only maintance ap list in ap search state ?
+			 * or we should do this always?*/
+			//if (MITM->state != MITM_state_ap_search)
+			//	break;
+			
 			struct ieee80211_hdr_3addr frame;
 			frame = *(struct ieee80211_hdr_3addr *)(buf + offset);
 			offset += sizeof(struct ieee80211_hdr_3addr);
@@ -103,22 +118,32 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 		break;
 
 		case IEEE80211_DATA : {
+			/* we case the packet context util crash password. */
+			if (MITM->stats < 2) 
+				break; 
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
 		       	tmp->type = type;	
 			tmp->ieee80211_data = (struct ieee80211_hdr_3addr *)(buf + offset);
+			/* Ignore packet which not came from target access point. */
+			if (memcmp(LOCATE(u8 ,tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr1),
+					MITM->encry_info.AA, ETH_ALEN)) break;
 			offset += sizeof(struct ieee80211_hdr_3addr);
 
 			parse_llc_header(buf, len, &offset, packet);
 
 			if (tmp->llc_hdr.type == 0x888e && 
-			   (MITM->state == MITM_state_crash_password)) 
+			   (MITM->state == MITM_state_crash_password)) {
 				parse_auth_data(buf, len, &offset, packet);
-
+				fill_encry_info(&MITM->encry_info, packet);
+			}
 
 		break;}
 		
 		case IEEE80211_QOS_DATA :{
+			/* we case the packet context util crash password. */
+			if (MITM->stats < 2)
+				break;
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
 			tmp->type = type;

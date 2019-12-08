@@ -184,11 +184,10 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *line) 
 	struct access_point_info *tmp;
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
 		if(!strcmp(tmp->SSID, ap_SSID)) {
-			for (int i = 0; i < ETH_ALEN; i++) {
-				MITM->dev_info.ap_BSSID[i] = tmp->BSSID[i];
-				MITM->state = MITM_state_crash_password;
-				match = 1;
-			}
+			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
+			MITM->encry_info.SSID = strdup(ap_SSID);
+			MITM->state = MITM_state_crash_password;
+			match = 1;
 			break;
 		} 
 	}
