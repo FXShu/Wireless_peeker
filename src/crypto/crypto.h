@@ -6,7 +6,7 @@
 
 
 #define WPA_KCK_MAX_LEN 32
-#define WPA_KEK_MAC_LEN 64
+#define WPA_KEK_MAX_LEN 64
 #define WPA_TK_MAX_LEN 32
 
 struct wpa_ptk {

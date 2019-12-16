@@ -174,7 +174,7 @@ try_again:
 				CONFIG_CTRL_IFACE_CLIENT_PREFIX "%d-%d",
 			      	(int) getpid(), counter);
 	}
-	if (ret < 0 || (ret >= strlen(ctrl->local.sun_path))) {
+	if (ret < 0 || (ret > strlen(ctrl->local.sun_path))) {
 		log_printf(MSG_ERROR, "copy cil address failed");
 		close(ctrl->s);
 		free(ctrl);

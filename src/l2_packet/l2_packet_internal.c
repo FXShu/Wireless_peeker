@@ -46,9 +46,9 @@ static int parse_auth_data(const char *buf, size_t len,
 static int fill_encry_info(struct encrypto_info * info, const struct WPA2_handshake_packet *packet) {
 	/* XXX : How to make sure the handshake packet is the same process ? */
 	/* frame 2 of 4-way handshake */
-	if (packet->key_information & WPA_KEY_INFO_MIC &&
-	    !(packet->key_information & WPA_KEY_INFO_ACK) &&
-	    !(packet->key_information & WPA_KEY_INFO_INSTALL)) {
+	if (packet->auth_data.key_information & WPA_KEY_INFO_MIC &&
+	    !(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
+	    !(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL)) {
 		
 	}
 }
@@ -119,7 +119,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 		case IEEE80211_DATA : {
 			/* we case the packet context util crash password. */
-			if (MITM->stats < 2) 
+			if (MITM->state < 2) 
 				break; 
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
@@ -142,7 +142,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 		
 		case IEEE80211_QOS_DATA :{
 			/* we case the packet context util crash password. */
-			if (MITM->stats < 2)
+			if (MITM->state < 2)
 				break;
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
