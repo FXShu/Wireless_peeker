@@ -2,7 +2,7 @@
 ### Introduction
 `Man-in-the-middle` attack is a useful cyber attack to get the traffic between victim and router.<br>
 In the wireless generation, traffic was transmited via air, it make more easy to capute those packet.<br> 
-However, according to IEEE802.11, each packet was encrypted by `WPA2` encryption. 
+However, according to IEEE802.11, each packet was encrypted by `WPA2` encryption.<br>
 If we want to peek the inormation of those encrypted traffice, we should calculate the `PTK` of ap and station.
 
 ### How to Build
