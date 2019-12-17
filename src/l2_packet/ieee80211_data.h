@@ -73,6 +73,17 @@ enum ieee80211_type {
 	IEEE80211_DMG_BEACON              = 0x0030,
 };
 
+enum reason_code {
+	deauth_reserved = 0x0000,
+	deauth_unspec_reason,
+	deauth_nouse_auth,
+	deauth_STA_leave,
+	deauth_inactivity,
+	deauth_over_loading,
+	deauth_nonauth_l2,
+	deauth_nonauth_l3,
+};
+
 enum beacon_param {
 	BEACON_SSID              = 0x00,
 	BEACON_SUPPORT_RATE      = 0x01,
