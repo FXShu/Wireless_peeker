@@ -4,7 +4,6 @@
 #include "radiotap.h"
 #include "stdint.h"
 #include "common.h"
-#define NONCE_LEN 32
 #define IEEE_8021X_MIC_LEN 16
 
 #ifndef u8
@@ -139,7 +138,7 @@ struct ieee_8021x_authentication {
 	u16 key_information;
 	u16 key_len;
 	u64 replay_counter;
-	u8  Nonce[NONCE_LEN];
+	u8  Nonce[NONCE_ALEN];
 	u8  IV[16];
 	u64 RSC;
 	u64 key_id;

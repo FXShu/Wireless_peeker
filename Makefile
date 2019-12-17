@@ -1,4 +1,4 @@
-CROSS=
+CROSS=arm-linux-gnueabihf-
 CC=$(CROSS)gcc 
 CFLAGS = -g -O2 -std=gnu99  -Wno-switch -Wno-unused-variable -MMD
 CFLAGS += -I$(abspath ./src)
@@ -25,10 +25,10 @@ LIBS_c += -L ./src/l2_packet -ll2_packet
 LIBS_c += -L ./src/crypto -lcrypto
 LIBS_c += -L ./src/interface -liw
 LIBS_c += -lnl-3 -lnl-genl-3
-LIBS_c += -L ./src/utils -lutils
+LIBS_c += -L ./src/utils -lutils -lpthread -lrt
 
 LIBS_CLI_c += -L ./src/interaction -lctrl
-LIBS_CLI_c += -L ./src/utils -lutils
+LIBS_CLI_c += -L ./src/utils -lutils -lrt
 
 BINALL=MITM MITM_cli
 ALL = $(BINALL)
