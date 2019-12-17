@@ -1,25 +1,6 @@
 #include "ieee80211_data.h"
 #include "l2_packet.h"
 #include "../../MITM.h"
-/*
-struct access_point_info{
-	struct dl_list ap_node;
-	char *SSID;
-	int channel;
-	char *country;
-	u8 BSSID[ETH_ALEN];
-	***
-	 * support rate
-	 * Traffic indication
-	 * RSN information
-	 * vendor specific
-	 * HT capabilities
-	 * HT information
-	 * extended capabilies
-	 * vendor specific
-	 ***
-};
-*/
 static int parse_llc_header(const char* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	if (*offset > len) return -1;
@@ -46,11 +27,24 @@ static int parse_auth_data(const char *buf, size_t len,
 static int fill_encry_info(struct encrypto_info * info, const struct WPA2_handshake_packet *packet) {
 	/* XXX : How to make sure the handshake packet is the same process ? */
 	/* frame 2 of 4-way handshake */
-	if (packet->key_information & WPA_KEY_INFO_MIC &&
-	    !(packet->key_information & WPA_KEY_INFO_ACK) &&
-	    !(packet->key_information & WPA_KEY_INFO_INSTALL)) {
-		
+	if ((packet->auth_data.key_information & WPA_KEY_INFO_MIC) &&
+	    !(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
+	    !(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL)) {
+		memcpy(info->SN, packet->auth_data.Nonce, NONCE_ALEN);	
+		memcpy(info->SA, LOCATE(u8, packet->ieee80211_data, struct ieee80211_hdr_3addr, addr2), ETH_ALEN);
 	}
+	/* frame 3 of 4-way handshake */
+	if ((packet->auth_data.key_information & WPA_KEY_INFO_MIC) &&
+	    (packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
+	    (packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
+	    !memcmp(info->SA, LOCATE(u8, packet->ieee80211_data, struct ieee80211_hdr_3addr, addr1), ETH_ALEN)) {
+		memcpy(info->AN, packet->auth_data.Nonce, NONCE_ALEN);
+	}
+
+	/* frame 4 of 4-way handshake */
+	//if ()
+
+
 }
 
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len) {
@@ -119,7 +113,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 		case IEEE80211_DATA : {
 			/* we case the packet context util crash password. */
-			if (MITM->stats < 2) 
+			if (MITM->state < 2) 
 				break; 
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
@@ -127,7 +121,9 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			tmp->ieee80211_data = (struct ieee80211_hdr_3addr *)(buf + offset);
 			/* Ignore packet which not came from target access point. */
 			if (memcmp(LOCATE(u8 ,tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr1),
-					MITM->encry_info.AA, ETH_ALEN)) break;
+					MITM->encry_info.AA, ETH_ALEN) &&
+			    memcmp(LOCATE(u8, tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr2),
+				    	MITM->encry_info.AA, ETH_ALEN)) break;
 			offset += sizeof(struct ieee80211_hdr_3addr);
 
 			parse_llc_header(buf, len, &offset, packet);
@@ -142,7 +138,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 		
 		case IEEE80211_QOS_DATA :{
 			/* we case the packet context util crash password. */
-			if (MITM->stats < 2)
+			if (MITM->state < 2)
 				break;
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;

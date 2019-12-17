@@ -1,17 +1,12 @@
-//#include "include.h"
 #include <sys/ioctl.h>
 #include <netpacket/packet.h>
 #include <net/if.h>
 #include <linux/filter.h>
 
-#include "../utils/common.h"
-#include "../crypto/crypto.h"
+//#include "../utils/common.h"
+//#include "../crypto/crypto.h"
 #include "eloop.h"
 #include "l2_packet.h"
-/*
-#include "crypto/sha1.h"
-#include "crypto/crypto.h"
-*/
 
 struct l2_packet {
 	struct ieee80211_radiotap_header *_rtheader;

@@ -10,6 +10,7 @@
  * implementation.
  * */
 #include "ieee80211_data.h"
+#include "common.h"
 #define GETTYPE(type, object) ((struct (type) *)object)
 
 struct l2_packet_data;
