@@ -189,8 +189,8 @@ int prepare_deauth_pkt(u8 *buffer, size_t pkt_len, u8 *victim, u8 *ap, u16 seq_n
 	memcpy(deauth.addr3, ap, ETH_ALEN);
 	deauth.seq_ctrl = htons(seq_num);
 
-	pkt_len = radiotap_hdr.it_len + sizeof(struct(deauth));
-	memcpy(buffer, radiotap_hdr, radiotap_hdr.it_len);
-	memcpy(buffer + radiotap_hdr.it_len, deauth, sizeof(deauth));
+	pkt_len = radiotap_hdr.it_len + sizeof(deauth);
+	memcpy(buffer, &radiotap_hdr, radiotap_hdr.it_len);
+	memcpy(buffer + radiotap_hdr.it_len, &deauth, sizeof(deauth));
 	buffer[pkt_len++] = htons(deauth_unspec_reason);
 }
