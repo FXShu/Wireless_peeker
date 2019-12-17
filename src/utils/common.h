@@ -146,6 +146,10 @@ static inline unsigned int hack_swap_32(unsigned int v)
 #ifndef ETH_ALEN
 #define ETH_ALEN 6
 #endif /* ETH_ALEN */
+#ifndef MTU
+#define MTU 1500
+#endif
+
 void * zalloc(size_t size);
 
 #ifndef ETH_P_ALL

@@ -187,6 +187,7 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *line) 
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
 			MITM->encry_info.SSID = strdup(ap_SSID);
 			MITM->state = MITM_state_crash_password;
+			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
 			match = 1;
 			break;
 		} 

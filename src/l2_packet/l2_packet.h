@@ -70,4 +70,5 @@ uint32_t parse_subtype(uint32_t value);
 
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len);
 
+void deauth_attack(void *eloop_data, void *user_ctx);
 #endif /* L2_PACKET_H */

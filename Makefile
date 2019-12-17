@@ -28,6 +28,8 @@ LIBS_c += -lnl-3 -lnl-genl-3
 LIBS_c += -L ./src/utils -lutils
 
 LIBS_CLI_c += -L ./src/interaction -lctrl
+LIBS_CLI_c += -L ./src/l2_packet -ll2_packet
+LIBS_CLI_c += -L ./src/crypto -lcrypto
 LIBS_CLI_c += -L ./src/utils -lutils
 
 BINALL=MITM MITM_cli

