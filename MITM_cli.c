@@ -12,7 +12,9 @@ int debug_level;
 
 static void mitm_client_terminate(int sig, void *signal_ctx) {
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)signal_ctx;
+	struct mitm_ctrl fuckyou;
 	eloop_terminate();
+	unlink(ctrl->local.sun_path);
 	free(ctrl);
 	log_printf(MSG_INFO, "thanks for using mitm_cli");
 }
@@ -117,7 +119,7 @@ int main(int argc, char **argv) {
 		return -ENOMEM;
 	}
 //	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, ctrl, &keep_alive_interval);
-//	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
+	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
 //	eloop_run();
 	get_ap_list(ctrl);
 	eloop_run();			

@@ -4,6 +4,30 @@
 #include "common.h"
 #include "command.h"
 
+struct mitm_ctrl {
+#ifdef CONFIG_CTRL_IFACE_UDP
+	        int s;
+#ifdef CONFIG_CTRL_IFACE_UDP_IPV6
+		struct sockaddr_in6 local;
+		struct sockaddr_in6 dest;
+#else /* CONFIG_CTRL_IFACE_UDP_IPV6 */
+		struct sockaddr_in local;
+		struct sockaddr_in dest;
+#endif /* CONFIG_CTRL_IFACE_UDP_IPV6 */
+		char *cookie;
+		char *remote_ifname;
+		char *remote_ip;
+#endif /* CONFIG_CTRL_IFACE_UDP */
+#ifdef CONFIG_CTRL_IFACE_UNIX
+		int s;
+		struct sockaddr_un local;
+		struct sockaddr_un dest;
+#endif /* CONFIG_CTRL_IFACE_UNIX */
+#ifdef CONFIG_CTRL_IFACE_NAMED_PIPE
+		HANDLE pipe;
+#endif /* CONFIG_CTRL_IFACE_NAMED_PIPE */
+};
+
 struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path);
 
 struct mitm_ctrl * mitm_ctrl_open(const char *ctrl_path);

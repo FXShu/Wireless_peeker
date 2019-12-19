@@ -6,31 +6,6 @@
 #include "mitm_action.h"
 #include "mitm_ctrl.h"
 
-#define CONFIG_CTRL_IFACE_UNIX y
-
-struct mitm_ctrl {
-#ifdef CONFIG_CTRL_IFACE_UDP
-	int s;
-#ifdef CONFIG_CTRL_IFACE_UDP_IPV6
-	struct sockaddr_in6 local;
-	struct sockaddr_in6 dest;
-#else /* CONFIG_CTRL_IFACE_UDP_IPV6 */
-	struct sockaddr_in local;
-	struct sockaddr_in dest;
-#endif /* CONFIG_CTRL_IFACE_UDP_IPV6 */
-	char *cookie;
-	char *remote_ifname;
-	char *remote_ip;
-#endif /* CONFIG_CTRL_IFACE_UDP */
-#ifdef CONFIG_CTRL_IFACE_UNIX
-	int s;
-	struct sockaddr_un local;
-	struct sockaddr_un dest;
-#endif /* CONFIG_CTRL_IFACE_UNIX */
-#ifdef CONFIG_CTRL_IFACE_NAMED_PIPE
-	HANDLE pipe;
-#endif /* CONFIG_CTRL_IFACE_NAMED_PIPE */
-};
 
 
 #ifndef CONFIG_CTRL_IFACE_CLIENT_DIR
