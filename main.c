@@ -138,9 +138,7 @@ create_monitor_interface:
 	}
 
 	eloop_init();
-
 	MITM_init(MITM);
-
 	if (!MITM) {
 		log_printf(MSG_ERROR, "initialize global MITM failed");
 		return -1;
@@ -149,7 +147,6 @@ create_monitor_interface:
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
 		goto out;
 	}
-
 	ctrl = mitm_server_open(MITM, MITM_CTRL_PATH);
 	if (!ctrl) {
 		log_printf(MSG_ERROR, "control server open failed");
@@ -157,9 +154,7 @@ create_monitor_interface:
 	}else {
 		log_printf(MSG_DEBUG, "control server is ready");
 	}
-
 	eloop_run();
-
 	if(filter_set) {
 		strcat(user_filter," && not arp");
 	} else {

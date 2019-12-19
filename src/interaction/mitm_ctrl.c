@@ -86,11 +86,11 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 
 	info.sock_fd = ctrl->s;
 	info.send_flags = 0;
-	for (int i = 0; i < COUNT_OF_MSG; i++) {
+	for (int i = 0; i < ARRAY_SIZE(msg_handler); i++) {
 		if (!strncmp(msg_handler[i].command, buffer, strlen(msg_handler[i].command))) {
 			msg_handler[i].action(&info, MITM, buffer);
 			break;
-		}
+		} 
 		/* maybe can send the MITM_INVAILD_MESSAGE_FORMAT here. */
 	}
 
@@ -198,9 +198,8 @@ try_again:
 		close(ctrl->s);
 		free(ctrl);
 		return NULL;
-	} else {
-		log_printf(MSG_DEBUG, "[%s]:bind local file to socket successful", __func__);
 	}
+	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, NULL, ctrl);
 
 	ctrl->dest.sun_family = AF_UNIX;
 	if (strncmp(ctrl_path, "@abstract:", 10) == 0) {
@@ -336,42 +335,6 @@ send_err:
 	       	// free(void *pointer) - if pointer point to a NULL memery address, do nothing
 		return -1;
 	} 
-
-	for(;;) {
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-		FD_SET(ctrl->s, &rfds);
-
-		if (select(ctrl->s + 1, &rfds, NULL, NULL, &tv) < 0) {
-			log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
-			return -1;
-		}
-
-		if (FD_ISSET(ctrl->s, &rfds)) {
-			res = recv(ctrl->s, reply, *reply_len, flags);
-		       	if (res	< 0) {
-				log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
-				return -1;
-			}
-			if (res > 0 && reply[0] == '<') {
-				/* This is an unsolicited message from MITM, not the reply to the request.
-			 	 * Use msg_cb to report this to the caller.
-			 	 */
-				if(msg_cb) {
-					// Make sure the message is nul terminated.
-					if ((size_t)res == *reply_len) 
-						res = (*reply_len ) -1;
-					reply[res] = '\0';
-					msg_cb(reply, res);
-				}
-				continue;
-			}
-			*reply_len = res;
-			break;
-		} else {
-			return -2;
-		}
-	}
 	return 0;
 }
 

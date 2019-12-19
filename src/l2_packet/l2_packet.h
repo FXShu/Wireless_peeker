@@ -21,7 +21,7 @@ struct access_point_info{
 	struct dl_list ap_node;
 	char *SSID;
 	int channel;
-	char *country;
+	char country[COUNTRY_CODE_LEN];
 	u8 BSSID[ETH_ALEN];
 	/***
 	 * support rate
@@ -66,7 +66,7 @@ int l2_packet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter
 
 void print_handshake_packet(struct WPA2_handshake_packet *packet);
 
-uint32_t parse_subtype(uint32_t value);
+uint16_t parse_subtype(uint16_t value);
 
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len);
 

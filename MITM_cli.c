@@ -120,5 +120,5 @@ int main(int argc, char **argv) {
 //	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
 //	eloop_run();
 	get_ap_list(ctrl);
-			
+	eloop_run();			
 }

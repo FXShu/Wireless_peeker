@@ -52,7 +52,6 @@ static int fill_encry_info(struct encrypto_info * info, const struct WPA2_handsh
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len) {
 	
 	struct MITM *MITM = (struct MITM *)ctx; 
-
 	uint32_t offset;
 	uint16_t type;
 	void *packet = NULL;
@@ -62,17 +61,16 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	offset = ((struct ieee80211_radiotap_header *)buf)->it_len;
 
 	if (offset > len) return;
-
-	type = parse_subtype(ntohs(*(uint32_t *)(buf + offset)));
-
+	uint16_t tmp123 = *(uint16_t *)(buf + offset);
+	type = parse_subtype(ntohs(*(uint16_t *)(buf + offset)));
 	switch (type) {
 		case IEEE80211_BEACON :;
 			/* XXX : Do we only maintance ap list in ap search state ?
 			 * or we should do this always?*/
 			//if (MITM->state != MITM_state_ap_search)
 			//	break;
-			
 			struct ieee80211_hdr_3addr frame;
+			int match = 0;
 			frame = *(struct ieee80211_hdr_3addr *)(buf + offset);
 			offset += sizeof(struct ieee80211_hdr_3addr);
 
@@ -82,7 +80,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 			struct access_point_info *ap_info;
 			ap_info = malloc(sizeof(struct access_point_info));
-			//ap_info->BSSID = mactostring(mac_s, frame.addr2);
+			memset(ap_info, 0, sizeof(struct access_point_info));
 			copy_mac_address(frame.addr2, ap_info->BSSID);
 			for (;offset + 2 < len ;) {
 				enum beacon_param tag_name = *(buf + (offset++));
@@ -92,25 +90,31 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 					ap_info->SSID = strndup(buf + offset, tag_len);
 					break;
 				case BEACON_COUNTRY_INFO :
-					ap_info->country = strndup(buf + offset, tag_len);
+					strncpy(ap_info->country, buf+offset, COUNTRY_CODE_LEN);
 					break;
 				case BEACON_DS :
-					ap_info->channel = atoi(strndup(buf + offset, tag_len));
+					ap_info->channel = *(buf + offset);
 				}
 				offset += tag_len;
 			}
-
+			if (!ap_info->SSID || !ap_info->channel) {
+				free(ap_info);
+				break;
+			}
 			struct access_point_info *tmp;
 			dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-				if (!strcmp(tmp->SSID, ap_info->SSID)) {
-					tmp->country = ap_info->country;
+				if (!memcmp(tmp->BSSID, ap_info->BSSID, ETH_ALEN)) {
+					memcpy(tmp->country, ap_info->country, COUNTRY_CODE_LEN);
+		//			strcpy(tmp->SSID, ap_info->SSID);
 					tmp->channel = ap_info->channel;
-					/* maybe call the strcpy() is a good ideal? */
 					free(ap_info);
+					match = 1;
 					break;
 				}
 			}
-			dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
+			if (!match) {
+				dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
+			}
 		break;
 
 		case IEEE80211_DATA : {

@@ -473,9 +473,9 @@ void print_handshake_packet(struct WPA2_handshake_packet *packet) {
 	printf("============packet print information done==============\n");
 }
 
-uint32_t parse_subtype(uint32_t value) {
-	uint32_t subtype = value & subtype_mask;
-	uint32_t type    = value & type_mask;
-//	uint32_t version = value & version_mask;
-	return subtype >> 12 | type >> 6;
+uint16_t parse_subtype(uint16_t value) {
+	uint16_t subtype = value & subtype_mask;
+	uint16_t type    = value & type_mask;
+	uint16_t version = value & version_mask;
+	return subtype >> 12 | type >> 6 | version;
 }

@@ -45,26 +45,57 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	int ret;
 	struct access_point_info *tmp;
 	
-	sprintf(ap_list, MITM_GET_AP_LIST_REPLY);
-	strcpy(ap_list, strdup("ap_list"));
+	sprintf(ap_list, "%s:[", MITM_GET_AP_LIST_REPLY);
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-		char buf[50];
-		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\"},", tmp->SSID,
-			       	MAC2STR(tmp->BSSID));
+		char buf[1024];
+		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\"},", tmp->SSID,
+			       	MAC2STR(tmp->BSSID), tmp->channel);
 		strncat(ap_list, buf, strlen(buf));
 	}
 	char *ch = strrchr(ap_list, ',');
 	if (ch) 
 		*ch = ']';
-
-	printf("%s\n", ap_list);
+	else
+		strcat(ap_list, "]");
 	ret = sendto(recv_info->sock_fd, ap_list, strlen(ap_list), recv_info->send_flags,
 		       	(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0) 
 		log_printf(MSG_WARNING, "[%s] sendto failed, err:%s", __func__, strerror(errno));
 }
 
-void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *options) {}
+void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *options) {
+	log_printf(MSG_DEBUG, "%5s%30s%25s", "SSID", "BSSID", "Channel");
+	log_printf(MSG_INFO,"-------------------------------------------------------------------");
+	char *head, *tail, *tmp;
+	char buffer[100], contain[100];
+
+	for (tmp = options; tmp - options < strlen(options);) {
+		memset(buffer, 0, 100);
+		head = strchr(tmp, '{');
+		tail = strchr(tmp, '}') + 1;
+		if (!head || !tail)
+			break;
+		int length = tail - head;
+		memcpy(buffer, head + 1, length - 2);
+		memset(contain, 0, 100);
+		for (char *tmp2 = strtok(buffer, ","); tmp2; tmp2 = strtok(NULL, ",")) {
+			char *sep = strchr(tmp2, ':');
+			int offset = 0;
+			if (!memcmp(tmp2, "\"SSID\"", sep - tmp2)) {
+				offset = 0;
+			} else if (!memcmp(tmp2, "\"BSSID\"", sep - tmp2)) {
+				offset = 30;
+			} else if (!memcmp(tmp2, "\"Channel\"", sep - tmp2)) {
+				offset = 60;
+			} else 
+				continue;
+			memcpy(&contain[offset], sep + 1, strlen(tmp2) - (sep - tmp2));
+		}
+		log_printf(MSG_INFO, "%-25s%-30s%-10s", contain, &contain[30], &contain[60]);
+		tmp = tail;
+	}
+
+}
 
 void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options) {}
 
