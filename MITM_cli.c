@@ -67,10 +67,19 @@ static void get_ap_list(struct mitm_ctrl *ctrl) {
 	size_t len = COMMAND_BUFFER_LEN;
 	mitm_ctrl_request(ctrl, MITM_GET_AP_LIST_REQUEST, sizeof(MITM_GET_AP_LIST_REQUEST),
 			reply, &len, NULL);
-
-	log_printf(MSG_INFO,"%s\n", reply);
 	return;
 }
+
+void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
+	char buffer[1024];
+	memset(buffer, 0, 1024);
+	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)sock_ctx;
+	gets(buffer);
+	if (!strcmp(buffer, "10")) {
+		get_ap_list(ctrl);
+	}
+}
+
 int main(int argc, char **argv) {
 	int c;
 
@@ -120,7 +129,9 @@ int main(int argc, char **argv) {
 	}
 //	eloop_register_timeout(keep_alive_interval, 0, register_keep_alive, ctrl, &keep_alive_interval);
 	eloop_register_signal_terminate(mitm_client_terminate, ctrl);
-//	eloop_run();
-	get_ap_list(ctrl);
+	RESET_CURSOR();
+	CLEAR_SCREEN();
+//	get_ap_list(ctrl);
+	eloop_register_read_sock(0, handle_user_input, NULL, ctrl);
 	eloop_run();			
 }
