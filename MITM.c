@@ -3,6 +3,7 @@
 int MITM_init(struct MITM *MITM) {
 	int exitcode;
 	MITM->state = MITM_state_idle;
+	dl_list_init(&MITM->ap_list);
 	switch (MITM->dev_type) {
 	case ethernet :
 		break;
@@ -28,7 +29,6 @@ int MITM_init(struct MITM *MITM) {
 
 	log_printf(MSG_DEBUG, "sniffer init successful");
 	****/
-	dl_list_init(&MITM->ap_list);
 	printf("\n");
 }
 

@@ -48,7 +48,7 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	
 	sprintf(report, "%s:[", MITM_GET_AP_LIST_REPLY);
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-		char buf[1024];
+		char buf[100];
 		log_printf(MSG_DEBUG, "%s,%d", tmp->SSID, tmp->channel);
 		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\"},", tmp->SSID,
 			       	MAC2STR(tmp->BSSID), tmp->channel);
