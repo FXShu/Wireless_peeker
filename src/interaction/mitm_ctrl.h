@@ -32,7 +32,8 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path);
 
 struct mitm_ctrl * mitm_ctrl_open(const char *ctrl_path);
 
-struct mitm_ctrl * mitm_ctrl_open2(const char *ctrl_path, const char *cli_path);
+struct mitm_ctrl * mitm_ctrl_open2(const char *ctrl_path, const char *cli_path, 
+		struct MITM_info *info);
 
 void mitm_ctrl_close(struct mitm_ctrl *ctrl);
 
@@ -58,4 +59,6 @@ int mitm_ctrl_recv(struct mitm_ctrl *ctrl, char *reply, size_t *reply_len);
 int mitm_ctrl_pending(struct mitm_ctrl *ctrl);
 
 int mitm_ctrl_get_fd(struct mitm_ctrl *ctrl);
+
+int mitm_get_action_num();
 #endif /* MITM_CTRL_H */

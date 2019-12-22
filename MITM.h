@@ -58,6 +58,10 @@ struct MITM {
 	enum MITM_state state;
 };
 
+struct MITM_info {
+	enum MITM_state state;
+};
+
 int MITM_init(struct MITM *MITM);
 
 

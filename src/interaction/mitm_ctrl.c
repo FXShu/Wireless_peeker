@@ -16,28 +16,25 @@
 #define CONFIG_CTRL_IFACE_CLIENT_PREFIX "mitm_ctrl_"
 #endif /* CONFIG_CTRL_IFACE_CLIENT_PREFIX */
 
-
-#define COUNT_OF_MSG 50
-	
 struct MITM_ctrl_msg msg_handler[] = {
-	{MITM_CTRL_CONNECT_REQUEST, mitm_ctrl_connect_request_action},
-        {MITM_CTRL_CONNECT_REPLY, mitm_ctrl_connect_reply_action},
-        {MITM_CTRL_DISCONNECT_REQUEST, mitm_ctrl_disconnect_request_action},
-        {MITM_CTRL_DISCONNECT_REPLY, mitm_ctrl_disconnect_reply_action},
-        {MITM_GET_AP_LIST_REQUEST, mitm_get_ap_list_request_action, 
+	{1, MITM_GET_AP_LIST_REQUEST, mitm_get_ap_list_request_action, 
 		MITM_state_ap_search, MITM_state_spoofing, "Print ap list"},
-        {MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action},
-       	{MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
+        
+	{2, MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action},
+       	
+	{3, MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
 		MITM_state_ready, MITM_state_spoofing, "Set victim:[IP:ip] [MAC:mac]"},
-        {MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action},
-        {MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
+        
+	{4, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action},
+        
+	{5, MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
 		MITM_state_idle, MITM_state_spoofing, "Report state"},
-        {MITM_GET_STATUS_REPLY, mitm_get_status_reply_action},
-        {MITM_STATUS_CHANGED, mitm_status_change_action},
-        {MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
-        {MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action},
-        {MITM_KEEP_ALIVE_REQUSET, mitm_keep_alive_request_action},
-        {MITM_KEEP_ALIVE_REPLY, mitm_keep_alive_reply_action}
+        
+	{6, MITM_GET_STATUS_REPLY, mitm_get_status_reply_action},
+        
+	{7, MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
+        
+	{8, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action}
 };
 
 
@@ -66,7 +63,7 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 	info.send_flags = 0;
 	for (int i = 0; i < ARRAY_SIZE(msg_handler); i++) {
 		if (!strncmp(msg_handler[i].command, buffer, strlen(msg_handler[i].command))) {
-			msg_handler[i].action(&info, MITM, buffer);
+			msg_handler[i].action(&info, eloop_ctx, buffer);
 			break;
 		} 
 		/* maybe can send the MITM_INVAILD_MESSAGE_FORMAT here. */
@@ -110,11 +107,11 @@ OPEN_SERVER_FAIL:
 	return NULL;
 }
 struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
-	return mitm_ctrl_open2(ctrl_path, NULL);
+	return mitm_ctrl_open2(ctrl_path, NULL, NULL);
 }
 
 struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
-	       			const char *cli_path) {
+	       			const char *cli_path, struct MITM_info *info) {
 	struct mitm_ctrl *ctrl;
 	static int counter = 0;
 	int ret;
@@ -177,7 +174,7 @@ try_again:
 		free(ctrl);
 		return NULL;
 	}
-	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, NULL, ctrl);
+	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, info, ctrl);
 
 	ctrl->dest.sun_family = AF_UNIX;
 	if (strncmp(ctrl_path, "@abstract:", 10) == 0) {
@@ -342,4 +339,8 @@ int mitm_ctrl_pending(struct mitm_ctrl *ctrl) {
 
 int mitm_ctrl_get_fd(struct mitm_ctrl *ctrl) {
 	return ctrl->s;
+}
+
+int mitm_get_action_num() {
+	return ARRAY_SIZE(msg_handler);
 }

@@ -1,5 +1,7 @@
 #include "mitm_action.h"
 
+char report[BUFFER_LEN];
+
 static char ** parse_command(char *line, int *count) {
 	       char **options;
         if (!line)
@@ -41,23 +43,22 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
 	struct MITM *MITM = (struct MITM *)usr_data;
 
-	char ap_list[1024];
 	int ret;
 	struct access_point_info *tmp;
 	
-	sprintf(ap_list, "%s:[", MITM_GET_AP_LIST_REPLY);
+	sprintf(report, "%s:[", MITM_GET_AP_LIST_REPLY);
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-		char buf[1024];
+		char buf[100];
 		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\"},", tmp->SSID,
 			       	MAC2STR(tmp->BSSID), tmp->channel);
-		strncat(ap_list, buf, strlen(buf));
+		strncat(report, buf, strlen(buf));
 	}
-	char *ch = strrchr(ap_list, ',');
+	char *ch = strrchr(report, ',');
 	if (ch) 
 		*ch = ']';
 	else
-		strcat(ap_list, "]");
-	ret = sendto(recv_info->sock_fd, ap_list, strlen(ap_list), recv_info->send_flags,
+		strcat(report, "]");
+	ret = sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags,
 		       	(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0) 
 		log_printf(MSG_WARNING, "[%s] sendto failed, err:%s", __func__, strerror(errno));
@@ -228,7 +229,8 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *line) 
 	ret = sendto(recv_info->sock_fd, feedback, sizeof(feedback), recv_info->send_flags, 
 			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0)
-		log_printf(MSG_WARNING, "[CTRL]sendto caller failed, err:%s", strerror(errno));
+		log_printf(MSG_WARNING, "[CTRL]Send reply to  caller failed, with err:%s.", 
+				strerror(errno));
 	for (index = 0; index < number_of_options; index++) {
 		free(options[index]);
 	}
@@ -242,9 +244,23 @@ ap_request_reject:
 	/* Should I send something feedback to let caller know the format is wrong? */
 }
 
-void mitm_get_status_request_action (void *action_data, void *usr_data, char *options) {}
+void mitm_get_status_request_action (void *action_data, void *usr_data, char *options) {
+	int ret;
+	memset(report, 0, BUFFER_LEN);
+	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
+	struct MITM *MITM = (struct MITM*) usr_data;
+	sprintf(report, "%s:%d", MITM_GET_STATUS_REPLY, MITM->state);
+	ret = sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags, 
+			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
+	if (ret < 0) 
+		log_printf(MSG_WARNING, "[CTRL]Send reply to caller failed, with err:%s.",
+				strerror(errno));
+}
 
-void mitm_get_status_reply_action (void *action_data, void *usr_data, char *options) {}
+void mitm_get_status_reply_action (void *action_data, void *usr_data, char *options) {
+	struct MITM_info *info = (struct MITM_info *)usr_data;
+	info->state = atoi(strchr(options, ':') + 1);	
+}
 
 void mitm_status_change_action (void *action_data, void *usr_data, char *options) {}
 

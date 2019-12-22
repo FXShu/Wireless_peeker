@@ -27,6 +27,7 @@
 typedef int (*msg_handle) (void *action_data, void *usr_data);
 
 struct MITM_ctrl_msg {
+	int number;
 	char *command;
 	void (*action) (void *action_data, void *usr_data, char *options);
 	enum MITM_state header;
