@@ -48,7 +48,8 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	
 	sprintf(report, "%s:[", MITM_GET_AP_LIST_REPLY);
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-		char buf[100];
+		char buf[1024];
+		log_printf(MSG_DEBUG, "%s,%d", tmp->SSID, tmp->channel);
 		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\"},", tmp->SSID,
 			       	MAC2STR(tmp->BSSID), tmp->channel);
 		strncat(report, buf, strlen(buf));
@@ -259,7 +260,12 @@ void mitm_get_status_request_action (void *action_data, void *usr_data, char *op
 
 void mitm_get_status_reply_action (void *action_data, void *usr_data, char *options) {
 	struct MITM_info *info = (struct MITM_info *)usr_data;
-	info->state = atoi(strchr(options, ':') + 1);	
+	int state;
+	state = atoi(strchr(options, ':') + 1);
+	if (info->state != state) {	
+		info->state = state;
+		kill(getpid(), SIGUSR1);
+	}
 }
 
 void mitm_status_change_action (void *action_data, void *usr_data, char *options) {}

@@ -6,8 +6,6 @@
 #include "mitm_action.h"
 #include "mitm_ctrl.h"
 
-
-
 #ifndef CONFIG_CTRL_IFACE_CLIENT_DIR
 #define CONFIG_CTRL_IFACE_CLIENT_DIR "/tmp"
 #endif /* CONFIG_CTRL_IFACE_CLIENT_DIR */
@@ -36,7 +34,6 @@ struct MITM_ctrl_msg msg_handler[] = {
         
 	{8, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action}
 };
-
 
 void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 	struct mitm_recv_info info;
@@ -264,8 +261,7 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 }
 
 #endif /* CONFIG_CTRL_IFACE_UDP */
-int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len,
-	       	char *reply, size_t *reply_len, void (*msg_cb)(char *msg, size_t len)) {
+int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len) {
 	if (!ctrl || ctrl->s < 0) return -1;
 	struct timeval tv;
 	struct os_reltime started_at;

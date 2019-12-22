@@ -835,7 +835,7 @@ int eloop_register_signal(int sig, eloop_signal_handler handler,
 	
 	tmp = os_realloc_array(eloop.signals, eloop.signal_count + 1,
 			       sizeof(struct eloop_signal));
-	if (!tmp)
+	if (!tmp) 
 		return -1;
 
 	tmp[eloop.signal_count].sig = sig;
@@ -844,7 +844,11 @@ int eloop_register_signal(int sig, eloop_signal_handler handler,
 	tmp[eloop.signal_count].signaled = 0;
 	eloop.signal_count++;
 	eloop.signals =tmp;
-	signal(sig,eloop_handler_signal);
+	if (signal(sig,eloop_handler_signal) == SIG_ERR) {
+		log_printf(MSG_WARNING, "Register signal handler failed, with error:%s\n", 
+				strerror(errno));
+		return -1;
+	}
 
 	return 0;
 }

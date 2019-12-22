@@ -1,7 +1,6 @@
 #include<unistd.h>
 #include "common.h"
 #include "MITM.h"
-#include "./src/interaction/mitm_ctrl.h"
 
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];

@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "command.h"
+#include "mitm_action.h"
 
 struct mitm_ctrl {
 #ifdef CONFIG_CTRL_IFACE_UDP
@@ -45,9 +46,7 @@ void mitm_ctrl_close(struct mitm_ctrl *ctrl);
  * msg_cd - when the caller reply is illgel, this function will used
  * 	    to warn caller.  
  * */
-int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, 
-		size_t cmd_len, char *reply, size_t *reply_len, 
-		void (*msg_cd)(char *msg, size_t len));
+int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len);
 
 int mitm_ctrl_recv(struct mitm_ctrl *ctrl, char *reply, size_t *reply_len);
 
