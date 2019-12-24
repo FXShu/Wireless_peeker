@@ -13,8 +13,6 @@ typedef enum{
 #include "sniffer.h"
 #include "getif.h"
 #include "./src/utils/common.h"
-#include "./src/utils/print.h"
-#include "./src/utils/head.h"
 #include "./src/utils/eloop.h"
 #include "./src/interface/iw_implement.h"
 #include "./src/crypto/crypto.h"

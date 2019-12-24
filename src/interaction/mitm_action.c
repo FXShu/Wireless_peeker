@@ -245,6 +245,8 @@ ap_request_reject:
 	/* Should I send something feedback to let caller know the format is wrong? */
 }
 
+void mitm_set_ap_reply_action (void *action_data, void *usr_data, char *line) {}
+
 void mitm_get_status_request_action (void *action_data, void *usr_data, char *options) {
 	int ret;
 	memset(report, 0, BUFFER_LEN);

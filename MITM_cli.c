@@ -48,19 +48,34 @@ static void get_mitm_state(void *eloop_ctx, void *user_ctx) {
 	eloop_register_timeout(*interval, 0, get_mitm_state, interval, ctrl);
 }
 
+int parse_command (char* buffer, char ) {
+	int opt;
+	for(int i = 0; i < BUFFER_LEN; i++) {
+		if (buffer[i] == '\0') break;
+		if (*buffer >= '0' && *buffer <= '9')
+			opt=atoi(buffer);
+		buffer++;
+	}
+}
+
 void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
 	char buffer[BUFFER_LEN];
+	int opt;
 	memset(buffer, 0, BUFFER_LEN);
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)sock_ctx;
 	fgets(buffer, BUFFER_LEN, stdin);
-	if (!strcmp(buffer, "1\n")) {
-		get_ap_list(ctrl);
+	opt = atoi(buffer);
+	for (int i = 0; i < mitm_get_action_num(); i++) {
+		if (opt == msg_handler[i].number) {
+			mitm_ctrl_request(ctrl, msg_handler[i].command, 
+					strlen(msg_handler[i].command));
+		}	
 	}
 }
 
 void print_options(int sig) {
 	log_printf(MSG_INFO, "MITM state in %s state, please choose below action.");
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < mitm_get_action_num(); i++) {
 		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state)) {
 			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, 
 					msg_handler[i].prompt);

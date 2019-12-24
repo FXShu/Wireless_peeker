@@ -16,23 +16,28 @@
 
 struct MITM_ctrl_msg msg_handler[] = {
 	{1, MITM_GET_AP_LIST_REQUEST, mitm_get_ap_list_request_action, 
-		MITM_state_ap_search, MITM_state_spoofing, "Print ap list"},
+		MITM_state_ap_search, MITM_state_spoofing, "Print ap list."},
         
-	{2, MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action},
-       	
-	{3, MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
-		MITM_state_ready, MITM_state_spoofing, "Set victim:[IP:ip] [MAC:mac]"},
+	{2, MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action, -1, -1, NULL},
         
-	{4, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action},
+	{3, MITM_SET_AP_REQUEST, mitm_set_ap_request_action, 
+		MITM_state_ap_search, MITM_state_spoofing, "Set ap:[SSID:ssid] [BSSID:bssid]."},
+
+	{4, MITM_SET_AP_REPLY, mitm_set_ap_reply_action, -1, -1, NULL},
+	
+	{5, MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
+		MITM_state_ready, MITM_state_spoofing, "Set victim:[IP:ip] [MAC:mac]."},
         
-	{5, MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
+	{6, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action, -1, -1, NULL},
+        
+	{7, MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
 		MITM_state_idle, MITM_state_spoofing, "Report state"},
         
-	{6, MITM_GET_STATUS_REPLY, mitm_get_status_reply_action},
+	{8, MITM_GET_STATUS_REPLY, mitm_get_status_reply_action, -1, -1, NULL},
         
-	{7, MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
+	{9, MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
         
-	{8, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action}
+	{10, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action, -1, -1, NULL}
 };
 
 void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {

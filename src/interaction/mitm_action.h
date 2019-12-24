@@ -23,6 +23,8 @@ void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *opti
 
 void mitm_set_ap_request_action (void *action_data, void *usr_data, char *options);
 
+void mitm_set_ap_reply_action(void *action_data, void *usr_data, char *options);
+
 void mitm_get_status_request_action (void *action_data, void *usr_data, char *options);
 
 void mitm_get_status_reply_action (void *action_data, void *usr_data, char *options);
