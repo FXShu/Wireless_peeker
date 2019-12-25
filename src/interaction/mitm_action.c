@@ -198,25 +198,28 @@ send_reply:
 
 void mitm_set_status_reply_action (void *action_data, void *usr_data, char *options) {}
 
-void mitm_set_ap_request_action (void *action_data, void *usr_data, char *line) {
+void mitm_set_ap_request_action (void *action_data, void *usr_data, char *options) {
 	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
 	struct MITM *MITM = (struct MITM*) usr_data;
-	int index, ret, match = 0, number_of_options;
-	char **options = parse_command(line, &number_of_options);
-	for (index = 0; index < number_of_options; index++) {
-		if (!strncmp(options[index], "ap", sizeof("ap"))) {
-			break;
+	struct access_point_info target;
+	struct access_point_info *tmp;
+	char buf[256];
+	options = strchr(options, '?');
+	if (options) {
+		if (find_info_tag(buf, sizeof(buf), "SSID", options)) {
+			target.SSID = strdup(buf);
+		}
+		if (find_info_tag(buf, sizeof(buf), "BSSID", options)) {
+			int offset = 0;
+			for (char* mac = strtok(buf, ":"); mac; mac = strtok(NULL, ":")) {
+				target.BSSID[offset++] = strtol(mac, NULL, 16);
+			}
 		}
 	}
-	if (index == number_of_options) 
-		goto ap_request_reject;
-	char *ap_SSID = strrchr(options[index], '=');
-	if (!ap_SSID)
-		goto ap_request_reject;
-	ap_SSID = ap_SSID + 1;
-	struct access_point_info *tmp;
-	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-		if(!strcmp(tmp->SSID, ap_SSID)) {
+	log_printf(MSG_DEBUG, "search SSID=%s, BSSID"MACSTR" access point", 
+			target.SSID, MAC2STR(target.BSSID));
+/*	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
+		if(!strcmp(tmp->SSID, target_SSID)) {
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
 			MITM->encry_info.SSID = strdup(ap_SSID);
 			MITM->state = MITM_state_crash_password;
@@ -226,7 +229,7 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *line) 
 		} 
 	}
 	char *feedback = match ? MITM_COMMAND_OK : "Secpify AP not found";
-	/* if the request command is right ,is it necessary to send the feedback? */
+	// if the request command is right ,is it necessary to send the feedback? 
 	ret = sendto(recv_info->sock_fd, feedback, sizeof(feedback), recv_info->send_flags, 
 			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0)
@@ -242,7 +245,7 @@ ap_request_reject:
 	}
 	free(options);
 	log_printf(MSG_WARNING, "[CTRL]ap set request reject, unsupport format");
-	/* Should I send something feedback to let caller know the format is wrong? */
+	// Should I send something feedback to let caller know the format is wrong? */
 }
 
 void mitm_set_ap_reply_action (void *action_data, void *usr_data, char *line) {}

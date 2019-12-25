@@ -48,33 +48,57 @@ static void get_mitm_state(void *eloop_ctx, void *user_ctx) {
 	eloop_register_timeout(*interval, 0, get_mitm_state, interval, ctrl);
 }
 
-int parse_command (char* buffer, char ) {
-	int opt;
-	for(int i = 0; i < BUFFER_LEN; i++) {
-		if (buffer[i] == '\0') break;
-		if (*buffer >= '0' && *buffer <= '9')
-			opt=atoi(buffer);
-		buffer++;
+static char* sort_input_out(char *input) {
+	char command[BUFFER_LEN];
+	memset(command, 0, BUFFER_LEN);
+	int opt = 0, first_delim = 1, new_option = 0;
+	int offset;
+	opt = atoi(input);
+	if (opt == 0 || opt > mitm_get_action_num()) return NULL;
+	for (int num = 0; num < mitm_get_action_num();num++) {
+		if(opt == msg_handler[num].number) {
+			strcpy(command, msg_handler[num].command);
+			new_option = 1;
+			break;
+		}
 	}
+	offset = strlen(command);
+	if (!offset) return NULL;
+	for (int i = log10(opt) + 1; i < strlen(input); i++) {
+		if ((input[i] == ' ' || input[i] == '\t' || input[i] == ',') && new_option) {
+			strcat(command, first_delim? "?": "&");
+			offset ++;
+			first_delim = 0;
+			new_option = 0;
+		} else if (input[i] == '=') {
+			strcat(command, "=");
+			offset++;
+		} else if (input[i] == '\r' || input[i] == '\n'){
+			/* ignore those character.*/
+		}else {
+			command[offset++] = input[i];
+			new_option = 1;
+		}
+	}
+	strdup(command);
 }
 
 void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
 	char buffer[BUFFER_LEN];
-	int opt;
+	char *command;
 	memset(buffer, 0, BUFFER_LEN);
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)sock_ctx;
 	fgets(buffer, BUFFER_LEN, stdin);
-	opt = atoi(buffer);
-	for (int i = 0; i < mitm_get_action_num(); i++) {
-		if (opt == msg_handler[i].number) {
-			mitm_ctrl_request(ctrl, msg_handler[i].command, 
-					strlen(msg_handler[i].command));
-		}	
+	command = sort_input_out(buffer);
+	if (!command) {
+		log_printf(MSG_WARNING, "Wrong Input format!");
+		return;
 	}
+	mitm_ctrl_request(ctrl, command, strlen(command));
 }
 
 void print_options(int sig) {
-	log_printf(MSG_INFO, "MITM state in %s state, please choose below action.");
+	log_printf(MSG_INFO, "MITM state in %d state, please choose below action.", info.state);
 	for (int i = 0; i < mitm_get_action_num(); i++) {
 		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state)) {
 			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, 

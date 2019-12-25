@@ -21,7 +21,7 @@
 #include <errno.h>
 #endif /* _WIN_32_WCE */
 #include <ctype.h>
-
+#include <math.h>
 #ifndef _MSC_VER  //use to define translater version in mircosoft 
 #include <unistd.h>
 #endif /* _MSC_VER */

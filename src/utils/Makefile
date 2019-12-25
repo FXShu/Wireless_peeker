@@ -16,7 +16,7 @@ CONFIG_ELOOP_EPOLL=y
 LIB_OBJS= \
 	  eloop.o print.o \
 	  trace.o os_internal.o os_unix.o\
-	  common.o hashtab.o
+	  common.o hashtab.o split.o
 
 libutils.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

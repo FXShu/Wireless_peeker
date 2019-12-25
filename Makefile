@@ -19,6 +19,7 @@ OBJS_CLI += MITM_cli.o
 
 LIBS_c += -lnet
 LIBS_c += -lpcap
+LIBS_c += -lm
 LIBS_c += -lssl -lcrypto
 LIBS_c += -L ./src/interaction -lctrl
 LIBS_c += -L ./src/l2_packet -ll2_packet
@@ -31,6 +32,7 @@ LIBS_CLI_c += -L ./src/interaction -lctrl
 LIBS_CLI_c += -L ./src/l2_packet -ll2_packet
 LIBS_CLI_c += -L ./src/crypto -lcry
 LIBS_CLI_c += -L ./src/utils -lutils
+LIBS_CLI_c += -lm
 
 BINALL=MITM MITM_cli
 ALL = $(BINALL)
