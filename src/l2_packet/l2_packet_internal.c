@@ -221,3 +221,10 @@ void deauth_attack(void *eloop_data, void *user_ctx) {
 	}
 	free(packet);
 }
+
+void ap_init(struct access_point_info *info) {
+	info->SSID = NULL;
+	info->channel = 0;
+	memset(info->country, 0, COUNTRY_CODE_LEN);
+	memset(info->BSSID, 0, ETH_ALEN);
+}

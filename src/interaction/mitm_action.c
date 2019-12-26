@@ -49,7 +49,6 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	sprintf(report, "%s:[", MITM_GET_AP_LIST_REPLY);
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
 		char buf[100];
-		log_printf(MSG_DEBUG, "%s,%d", tmp->SSID, tmp->channel);
 		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\"},", tmp->SSID,
 			       	MAC2STR(tmp->BSSID), tmp->channel);
 		strncat(report, buf, strlen(buf));
@@ -203,7 +202,9 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *option
 	struct MITM *MITM = (struct MITM*) usr_data;
 	struct access_point_info target;
 	struct access_point_info *tmp;
+	int match = 0, ret;
 	char buf[256];
+	ap_init(&target);
 	options = strchr(options, '?');
 	if (options) {
 		if (find_info_tag(buf, sizeof(buf), "SSID", options)) {
@@ -216,36 +217,26 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *option
 			}
 		}
 	}
-	log_printf(MSG_DEBUG, "search SSID=%s, BSSID"MACSTR" access point", 
+	log_printf(MSG_DEBUG, "search SSID=%s, BSSID="MACSTR" access point", 
 			target.SSID, MAC2STR(target.BSSID));
-/*	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
-		if(!strcmp(tmp->SSID, target_SSID)) {
+	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
+		if(target.SSID ? !strcmp(tmp->SSID, target.SSID) : 0 || !memcmp(tmp->BSSID, target.BSSID, ETH_ALEN)) {
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
-			MITM->encry_info.SSID = strdup(ap_SSID);
+			MITM->encry_info.SSID = strdup(tmp->SSID);
 			MITM->state = MITM_state_crash_password;
-			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+//			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
 			match = 1;
 			break;
 		} 
 	}
-	char *feedback = match ? MITM_COMMAND_OK : "Secpify AP not found";
-	// if the request command is right ,is it necessary to send the feedback? 
-	ret = sendto(recv_info->sock_fd, feedback, sizeof(feedback), recv_info->send_flags, 
+	memset(buf, 0, BUFFER_LEN);
+	snprintf(buf, BUFFER_LEN, "%s?%s",MITM_SET_AP_REPLY, match? MITM_COMMAND_OK: MITM_COMMAND_NOT_FOUND);
+	
+	ret = sendto(recv_info->sock_fd, buf, strlen(buf), recv_info->send_flags, 
 			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0)
-		log_printf(MSG_WARNING, "[CTRL]Send reply to  caller failed, with err:%s.", 
-				strerror(errno));
-	for (index = 0; index < number_of_options; index++) {
-		free(options[index]);
-	}
-	free(options);
-ap_request_reject:
-	for (index = 0; index < number_of_options; index++) {
-		free(options[index]);
-	}
-	free(options);
-	log_printf(MSG_WARNING, "[CTRL]ap set request reject, unsupport format");
-	// Should I send something feedback to let caller know the format is wrong? */
+		log_printf(MSG_WARNING, "[CTRL]Send reply to  caller failed, with err:%s.", strerror(errno));
+	free(target.SSID);
 }
 
 void mitm_set_ap_reply_action (void *action_data, void *usr_data, char *line) {}

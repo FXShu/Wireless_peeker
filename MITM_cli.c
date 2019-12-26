@@ -80,7 +80,7 @@ static char* sort_input_out(char *input) {
 			new_option = 1;
 		}
 	}
-	strdup(command);
+	return strdup(command);
 }
 
 void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
@@ -95,6 +95,7 @@ void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
 		return;
 	}
 	mitm_ctrl_request(ctrl, command, strlen(command));
+	free(command);
 }
 
 void print_options(int sig) {
@@ -111,7 +112,7 @@ int main(int argc, char **argv) {
 	int c;
 	struct mitm_ctrl *ctrl;
 	char *mitm_ctrl_path;
-	int ask_mitm_state_interval = 1;
+	int ask_mitm_state_interval = 3;
 	/* used to communicate with UI(web, cli...) */
 	char *ctrl_ifname = NULL;
 	/* if true, use terminal to control MITM binary */

@@ -21,7 +21,7 @@ struct MITM_ctrl_msg msg_handler[] = {
 	{2, MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action, -1, -1, NULL},
         
 	{3, MITM_SET_AP_REQUEST, mitm_set_ap_request_action, 
-		MITM_state_ap_search, MITM_state_spoofing, "Set ap:[SSID:ssid] [BSSID:bssid]."},
+		MITM_state_ap_search, MITM_state_spoofing, "Set ap [SSID=ssid] [BSSID=bssid]."},
 
 	{4, MITM_SET_AP_REPLY, mitm_set_ap_reply_action, -1, -1, NULL},
 	
@@ -52,7 +52,7 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 
 	info.length = sizeof(struct sockaddr_un);
 	memset(&info.recv_from, 0, sizeof(struct sockaddr_un));
-
+	memset(buffer, 0 ,COMMAND_BUFFER_LEN);
 	ret = recvfrom(ctrl->s, buffer, COMMAND_BUFFER_LEN, flags,
 		       	(struct sockaddr*)&info.recv_from,&info.length);
 	if (ret < 0) { 
