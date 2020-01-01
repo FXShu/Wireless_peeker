@@ -19,5 +19,5 @@ typedef enum{
 #include "./src/l2_packet/l2_packet.h"
 #define MAX_IPV4_LEN 16
 #define MAX_MAC_LEN 17
-#define BUFFER_LEN 256
+#define BUFFER_LEN 2048
 #endif /* MITM_COMMON_H */

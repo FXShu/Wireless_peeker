@@ -35,6 +35,7 @@ LIBS_CLI_c += -L ./src/utils -lutils
 LIBS_CLI_c += -lm
 
 BINALL=MITM MITM_cli
+.phony : ALL
 ALL = $(BINALL)
 all: install $(ALL)
 
@@ -45,6 +46,7 @@ CFLAGS += -DCONFIG_ELOOP_EPOLL -DCONFIG_CRYPTO_INTERNAL -DCONFIG_CTRL_IFACE_UNIX
 
 MITM : $(OBJS)	
 	$(CC) $(CFLAGS) $(OBJS) -o MITM  $(LIBS_c)
+.phony : MITM_cli
 MITM_cli : $(OBJS_CLI)
 	$(CC) $(CFLAGS) $(OBJS_CLI) -o MITM_cli $(LIBS_CLI_c)
 

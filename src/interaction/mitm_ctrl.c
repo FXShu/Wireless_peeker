@@ -44,7 +44,7 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 	struct mitm_recv_info info;
 	int ret;
 	int flags;
-	char buffer[COMMAND_BUFFER_LEN];
+	char buffer[BUFFER_LEN];
 
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl*) sock_ctx;
 	struct MITM *MITM = (struct MITM*) eloop_ctx;
@@ -52,8 +52,8 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 
 	info.length = sizeof(struct sockaddr_un);
 	memset(&info.recv_from, 0, sizeof(struct sockaddr_un));
-	memset(buffer, 0 ,COMMAND_BUFFER_LEN);
-	ret = recvfrom(ctrl->s, buffer, COMMAND_BUFFER_LEN, flags,
+	memset(buffer, 0 ,BUFFER_LEN);
+	ret = recvfrom(ctrl->s, buffer, BUFFER_LEN, flags,
 		       	(struct sockaddr*)&info.recv_from,&info.length);
 	if (ret < 0) { 
 		log_printf(MSG_DEBUG, "[CTRL_COMMAND] recvfrom fail, with error:%s",

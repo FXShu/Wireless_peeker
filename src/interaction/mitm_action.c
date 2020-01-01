@@ -65,7 +65,8 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 }
 
 void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *options) {
-	log_printf(MSG_DEBUG, "%5s%30s%25s", "SSID", "BSSID", "Channel");
+
+	log_printf(MSG_DEBUG, "%5s%40s%25s", "SSID", "BSSID", "Channel");
 	log_printf(MSG_INFO,"-------------------------------------------------------------------");
 	char *head, *tail, *tmp;
 	char buffer[100], contain[100];
@@ -85,14 +86,14 @@ void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *opt
 			if (!memcmp(tmp2, "\"SSID\"", sep - tmp2)) {
 				offset = 0;
 			} else if (!memcmp(tmp2, "\"BSSID\"", sep - tmp2)) {
-				offset = 30;
+				offset = 50;
 			} else if (!memcmp(tmp2, "\"Channel\"", sep - tmp2)) {
-				offset = 60;
+				offset = 80;
 			} else 
 				continue;
 			memcpy(&contain[offset], sep + 1, strlen(tmp2) - (sep - tmp2));
 		}
-		log_printf(MSG_INFO, "%-25s%-30s%-10s", contain, &contain[30], &contain[60]);
+		log_printf(MSG_INFO, "%-35s%-30s%-10s", contain, &contain[50], &contain[80]);
 		tmp = tail;
 	}
 
