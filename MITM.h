@@ -26,10 +26,9 @@ enum usr_dev_type {
 enum MITM_state {
 	MITM_state_idle = 0,
 	MITM_state_ap_search,  /* Only use when device type is wireless. */
-	MITM_state_crash_password, /* Only use when device type is wireless. */
-	MITM_state_ready,
-	MITM_state_sniffer,
+	MITM_state_capture_handshake, /* Only use when device type is wireless. */
 	MITM_state_crash_PTK, /* Only use when device type is wireless. */
+	MITM_state_ready,
 	MITM_state_spoofing,
 };
 
@@ -64,7 +63,7 @@ struct MITM_info {
 
 int MITM_init(struct MITM *MITM);
 
-
 int MITM_deinit(struct MITM *MITM);
+
 #endif /* MITM_H */
 

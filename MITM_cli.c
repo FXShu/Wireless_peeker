@@ -26,6 +26,25 @@ static void usage(void) {
 		       	     "usage: mitm_ctrl [-p<path>] [-G<keep alive interval>]\n");
 }
 
+char const *mitm_get_state(enum MITM_state state) {
+	switch(state) {
+		case MITM_state_idle:
+			return "IDLE";
+		case MITM_state_ap_search:
+			return "Searching for available AP";
+		case MITM_state_capture_handshake:
+			return "Capturing handshake packet";
+		case MITM_state_crash_PTK:
+			return "Crashing PTK";
+		case MITM_state_ready:
+			return "Waiting for Victim setting";
+		case MITM_state_spoofing:
+			return "Attacking";
+		default:
+			return "Unknow";
+	}
+}
+
 static void hello() {
 	log_printf(MSG_INFO, 
 			"-----------------------------------------------------------------------\n"
@@ -99,7 +118,7 @@ void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
 }
 
 void print_options(int sig) {
-	log_printf(MSG_INFO, "MITM state in %d state, please choose below action.", info.state);
+	log_printf(MSG_INFO, "MITM at \"%s\" state, please choose below action.", mitm_get_state(info.state));
 	for (int i = 0; i < mitm_get_action_num(); i++) {
 		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state)) {
 			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, 

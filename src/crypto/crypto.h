@@ -20,13 +20,13 @@ struct wpa_ptk {
 
 struct encrypto_info {
 	u8 *SSID;
-        u8 SA[ETH_ALEN];
-        u8 AA[ETH_ALEN];
-        u8 SN[NONCE_ALEN];
-        u8 AN[NONCE_ALEN];
-        u8 *eapol;
-        struct wpa_ptk ptk;
-        u8 MIC[MD5_DIGEST_LENGTH];
+	u8 SA[ETH_ALEN];
+	u8 AA[ETH_ALEN];
+	u8 SN[NONCE_ALEN];
+	u8 AN[NONCE_ALEN];
+	u8 *eapol;
+	struct wpa_ptk ptk;
+	u8 MIC[MD5_DIGEST_LENGTH];
 	int enough;
 };
 
