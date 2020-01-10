@@ -60,8 +60,8 @@ int main(int argc,char* argv[]){
 				}
 				
 				while(MITM->if_buf->next){
-                                                printf("%s\n",MITM->if_buf->name);
-                                                MITM->if_buf = MITM->if_buf->next;
+					printf("%s\n",MITM->if_buf->name);
+					MITM->if_buf = MITM->if_buf->next;
 				}
 				return 0;
 			break;

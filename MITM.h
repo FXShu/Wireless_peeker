@@ -55,6 +55,7 @@ struct MITM {
 	struct dl_list ap_list;  //used to foreach access_point_info array.
 	struct encrypto_info encry_info;
 	enum MITM_state state;
+	char* dict_path;
 };
 
 struct MITM_info {

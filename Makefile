@@ -1,4 +1,4 @@
-CROSS=
+CROSS=arm-openwrt-linux-
 CC=$(CROSS)gcc 
 CFLAGS = -g -O0 -std=gnu99  -Wno-switch -Wno-unused-variable -MMD
 CFLAGS += -I$(abspath ./src)
@@ -20,19 +20,20 @@ OBJS_CLI += MITM_cli.o
 LIBS_c += -lnet
 LIBS_c += -lpcap
 LIBS_c += -lm
-LIBS_c += -lssl -lcrypto
 LIBS_c += -L ./src/interaction -lctrl
 LIBS_c += -L ./src/l2_packet -ll2_packet
 LIBS_c += -L ./src/crypto -lcry
 LIBS_c += -L ./src/interface -liw
 LIBS_c += -lnl-3 -lnl-genl-3
 LIBS_c += -L ./src/utils -lutils
+LIBS_c += -lssl -lcrypto
 
 LIBS_CLI_c += -L ./src/interaction -lctrl
 LIBS_CLI_c += -L ./src/l2_packet -ll2_packet
 LIBS_CLI_c += -L ./src/crypto -lcry
 LIBS_CLI_c += -L ./src/utils -lutils
 LIBS_CLI_c += -lm
+LIBS_CLI_c += -lssl -lcrypto
 
 BINALL=MITM MITM_cli
 .phony : ALL

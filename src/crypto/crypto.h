@@ -8,7 +8,7 @@
 #define WPA_KCK_MAX_LEN 32
 #define WPA_KEK_MAX_LEN 64
 #define WPA_TK_MAX_LEN 32
-
+/*
 struct wpa_ptk {
         u8 kck[WPA_KCK_MAX_LEN];
         u8 kek[WPA_KEK_MAX_LEN];
@@ -17,6 +17,20 @@ struct wpa_ptk {
         size_t kek_len;
         size_t tk_len;
 };
+*/
+
+struct wpa_ptk {
+	u8 mic_key[16];
+	u8 encr_key[16];
+	u8 tk1[16];
+	union {
+		u8 tk2[16];
+		struct {
+			u8 tx_mic_key[8];
+			u8 rx_mic_key[8];
+		} auth;
+	} u;
+} __attribute__ ((packed));
 
 struct encrypto_info {
 	u8 *SSID;
@@ -24,10 +38,14 @@ struct encrypto_info {
 	u8 AA[ETH_ALEN];
 	u8 SN[NONCE_ALEN];
 	u8 AN[NONCE_ALEN];
+	int version;
+	u8 counter[8];
+	int eapol_frame_len;
 	u8 *eapol;
 	struct wpa_ptk ptk;
 	u8 MIC[MD5_DIGEST_LENGTH];
 	int enough;
+	char *password;
 };
 
 /**
@@ -54,4 +72,7 @@ int wpa_pmk_to_ptk(u8 *pmk, u8 *addr1, u8 *addr2,
  * @mic - MIC key  
  * */
 int hmac_hash(int ver, u8 *key, int hashlen, u8 *buf, int buflen, u8 *mic);
+
+int dictionary_attack(const char *dictionary_path, struct encrypto_info *info);
+
 #endif /* CRYPTO_H */

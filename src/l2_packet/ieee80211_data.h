@@ -148,7 +148,7 @@ struct ieee_8021x_authentication {
 	u8  key_descriptor_type;
 	u16 key_information;
 	u16 key_len;
-	u64 replay_counter;
+	u8 replay_counter[8];
 	u8  Nonce[NONCE_ALEN];
 	u8  IV[16];
 	u64 RSC;

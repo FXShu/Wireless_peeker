@@ -47,6 +47,8 @@ char * os_strdup(const char *s);
 #endif
 #endif
 
+#define SET(offset, nums) nums |= (1 << offset)
+
 typedef long os_time_t;
 
 void os_sleep(os_time_t sec, os_time_t usec); 

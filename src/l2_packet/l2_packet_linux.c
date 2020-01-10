@@ -469,8 +469,11 @@ void print_handshake_packet(struct WPA2_handshake_packet *packet) {
 	printf("version:%d\n", packet->auth_data.version);
 	printf("type:%d\n", packet->auth_data.type);
 	printf("len:%d\n", packet->auth_data.len);
+	printf("key len:%d\n", packet->auth_data.key_len);
+	printf("counter:%d\n", packet->auth_data.replay_counter[7]);
+	printf("key information:0x%x\n", packet->auth_data.key_information);
 	printf("key_descr_type:%d\n", packet->auth_data.key_descriptor_type);
-	printf("============packet print information done==============\n");
+	printf("==============================packet print information done========================\n");
 }
 
 uint16_t parse_subtype(uint16_t value) {
