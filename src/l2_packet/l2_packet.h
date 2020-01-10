@@ -73,4 +73,11 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 void deauth_attack(void *eloop_data, void *user_ctx);
 
 void ap_init(struct access_point_info *info);
+
+/* Just for testing */
+void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len);
+
+int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num);
+/* Just for testing */
+
 #endif /* L2_PACKET_H */
