@@ -21,6 +21,10 @@ void mitm_set_victim_request_action (void *action_data, void *usr_data, char *op
 
 void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options);
 
+void mitm_get_dictionary_request_action(void *action_data, void *usr_data, char *options);
+
+void mitm_get_dictionary_reply_action(void *action_data, void *usr_data, char *options);
+
 void mitm_set_ap_request_action (void *action_data, void *usr_data, char *options);
 
 void mitm_set_ap_reply_action(void *action_data, void *usr_data, char *options);

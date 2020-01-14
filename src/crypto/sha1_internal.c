@@ -34,6 +34,8 @@
 	        z += (w ^ x ^ y) + blk(i) + 0xCA62C1D6 + rol(v, 5); \
         w=rol(w, 30);
 
+#ifndef HEADER_SHA_H
+
 typedef struct SHA1Context SHA1_CTX;
 void SHA1Transform(u32 state[5], const unsigned char buffer[64]);
 
@@ -171,7 +173,7 @@ void SHA1Final(unsigned char digest[20], SHA1_CTX *context) {
 	memset(context->count, 0, 8);
 	memset(finalcount, 0, 8);
 }
-
+#endif /* HEADER_SHA_H */
 /**
  * sha1_vector - SHA-1 hash for data vertor
  * @num_elem: Number of elements in the data vector

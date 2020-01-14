@@ -12,31 +12,25 @@
  *
  * This function is used to derive new, cryptographically separate keys from a give key
  * */
-int sha1_prf(const u8 *key, size_t key_len, const char *label,
-		const u8 *data, size_t data_len, u8 *buf, size_t buf_len) {
-	u8 counter = 0;
+int sha1_prf(unsigned char *key, unsigned int key_len, char *label,
+		unsigned char *data, unsigned int data_len, unsigned char *buf, size_t buf_len) {
+	char zero = 0, counter = 0;
 	size_t pos, plen;
 	u8 hash[SHA1_MAC_LEN];
-	size_t label_len = strlen(label) + 1;
-	const unsigned char *addr[3];
-	size_t len[3];
+	size_t label_len = strlen(label);
+	unsigned char *addr[] = { (unsigned char *)label, (unsigned char *)&zero, data, (unsigned char *)&counter};
+	unsigned int len[] = {label_len, 1, data_len, 1};
 
-	addr[0] = (u8 *) label;
-	len[0] = label_len;
-	addr[1] = data;
-	len[1] = data_len;
-	addr[2] = &counter;
-	len[2] = 1;
 
 	pos = 0;
 	while (pos < buf_len) {
 		plen = buf_len - pos;
 		if (plen >= SHA1_MAC_LEN) {
-			if (hmac_sha1_vector(key, key_len, 3, addr, len, &buf[pos]))
+			if (hmac_sha1_vector(key, key_len, 4, addr, len, &buf[pos], NOCACHED));
 				return -1;
 			pos += SHA1_MAC_LEN;
 		} else {
-			if (hmac_sha1_vector(key, key_len, 3, addr, len, hash))
+			if (hmac_sha1_vector(key, key_len, 4, addr, len, hash, NOCACHED));
 				return -1;
 			memcpy(&buf[pos], hash, plen);
 			break;

@@ -8,16 +8,21 @@
 #define WPA_KCK_MAX_LEN 32
 #define WPA_KEK_MAX_LEN 64
 #define WPA_TK_MAX_LEN 32
-/*
-struct wpa_ptk {
-        u8 kck[WPA_KCK_MAX_LEN];
-        u8 kek[WPA_KEK_MAX_LEN];
-        u8 tk [WPA_TK_MAX_LEN];
-        size_t kck_len;
-        size_t kek_len;
-        size_t tk_len;
-};
-*/
+#define WPA_REPLAY_COUNTER_LEN 8
+#define WPA_NONCE_LEN 32
+struct wpa_eapol_key {
+	u8 type;
+	u16 key_info;
+	u16 key_length;
+	u8 replay_counter[WPA_REPLAY_COUNTER_LEN];
+	u8 key_nonce[WPA_NONCE_LEN];
+	u8 key_iv[16];
+	u8 key_rsc[8];
+	u8 key_id[8];   /* Reserved in IEEE 802.11i/RSN */
+	u8 key_mic[16];
+	u16 key_data_length;
+	/* u8 key_data[0]; */
+} __attribute__ ((packed));
 
 struct wpa_ptk {
 	u8 mic_key[16];

@@ -1,8 +1,13 @@
 #include"MITM.h"
+
 int MITM_init(struct MITM *MITM) {
 	int exitcode;
 	MITM->state = MITM_state_idle;
 	dl_list_init(&MITM->ap_list);
+	if (!MITM->dict_path) {
+		log_printf(MSG_ERROR, "No dictionary path specify.");
+		return -1;
+	}
 	switch (MITM->dev_type) {
 	case ethernet :
 		break;
@@ -29,11 +34,13 @@ int MITM_init(struct MITM *MITM) {
 	log_printf(MSG_DEBUG, "sniffer init successful");
 	****/
 	printf("\n");
+	return 0;
 }
 
 int MITM_deinit(struct MITM *MITM) {
 	free(MITM->if_buf);
 	free(MITM->monitor_buf);
+	free(MITM->dict_path);
 	l2_packet_deinit(MITM->l2_packet);
 	free(MITM);
 }

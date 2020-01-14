@@ -28,15 +28,18 @@ static int parse_auth_data(const char *buf, size_t len,
 	return 0;
 }
 
-static int fill_encry_info(const char *dict_path, enum MITM_state *state, struct encrypto_info * info, 
-		const struct WPA2_handshake_packet *packet) {
+static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet *packet) {
 	/* XXX : How to make sure the handshake packet is the same process ? */
 	/* frame 2 of 4-way handshake */
+	struct encrypto_info *info = &MITM->encry_info;
+	enum MITM_state *state = &MITM->state;
+	
 	if ((packet->auth_data.key_information & WPA_KEY_INFO_MIC) &&
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
 			packet->auth_data.data_len > 0) {
 		log_printf(MSG_DEBUG, "Capture 2 of 4-way pakcet, fill SN,SA");
+		info->version = packet->auth_data.version;
 		memcpy(info->SN, packet->auth_data.Nonce, NONCE_ALEN);	
 		memcpy(info->SA, LOCATE(u8, packet->ieee80211_data, 
 					struct ieee80211_hdr_3addr, addr2), ETH_ALEN);
@@ -71,12 +74,18 @@ static int fill_encry_info(const char *dict_path, enum MITM_state *state, struct
 		memcpy(info->eapol, &packet->auth_data, packet->auth_data.len + 4);
 		SET(4, info->enough);
 		if ( info->enough == 0x001c || info->enough == 0x001e ) {
+			log_printf(MSG_DEBUG, "get all hankshake information, start dictionary attack.");
 			*state = MITM_state_crash_PTK;
 			/* Dictionary attack , if crash password success, reset enough. */
-			if (!dictionary_attack(dict_path, info)) {
+			if (!dictionary_attack(MITM->dict_path, info)) {
+				log_printf(MSG_DEBUG, "[CRASH] Crash WPA2 encryption success!");
 				*state = MITM_state_ready;
 				info->enough = 0;
+			} else {
+				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
 			}
+		} else {
+			log_printf(MSG_DEBUG, "info->enough = 0x%x", info->enough);
 		}
 	}
 	return 0;
@@ -169,7 +178,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			if (tmp->llc_hdr.type == 0x888e && 
 			   (MITM->state == MITM_state_capture_handshake)) {
 				parse_auth_data(buf, len, &offset, packet);
-				fill_encry_info(MITM->dict_path ,&MITM->state, &MITM->encry_info, packet);
+				fill_encry_info(MITM, packet);
 			}
 
 		break;}
@@ -188,7 +197,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			if (tmp->llc_hdr.type == 0x888e &&
 			   (MITM->state == MITM_state_capture_handshake)) {
 				parse_auth_data(buf, len, &offset, packet);
-				fill_encry_info(MITM->dict_path, &MITM->state, &MITM->encry_info, packet);
+				fill_encry_info(MITM, packet);
 			}
 		break;}
 		case IEEE80211_DEAUTHENTICATION :

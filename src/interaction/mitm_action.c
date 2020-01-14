@@ -61,7 +61,7 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	ret = sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags,
 		       	(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0) 
-		log_printf(MSG_WARNING, "[%s] sendto failed, err:%s", __func__, strerror(errno));
+		log_printf(MSG_WARNING, "[CTRL] sendto failed, err:%s", __func__, strerror(errno));
 }
 
 void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *options) {
@@ -96,6 +96,35 @@ void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *opt
 		log_printf(MSG_INFO, "%-35s%-30s%-10s", contain, &contain[50], &contain[80]);
 		tmp = tail;
 	}
+
+}
+
+void mitm_get_dictionary_request_action(void *action_data, void *usr_data, char *options) {
+	struct mitm_recv_info *recv_info = (struct mitm_recv_info *)action_data;
+	struct MITM *MITM = (struct MITM *)usr_data;
+	char *path;
+	int ret;
+	path = malloc(BUFFER_LEN);
+	if (!path) {
+		log_printf(MSG_WARNING, "Malloc memory failed, with error:%s", strerror(errno));
+		return;
+	}
+	memset(path, 0, BUFFER_LEN);
+	log_printf(MSG_INFO, "Specify dictionary path:");
+	fgets(path, BUFFER_LEN, stdin);
+	snprintf(report, BUFFER_LEN, "%s?%s", MITM_GET_DICTIONARY_REPLY, path);
+	sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags,
+			(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
+	if (ret < 0)
+		log_printf(MSG_WARNING, "[CTRL] sendto failed, with error:%s", __func__, strerror(errno));
+	free(path);
+}
+
+void mitm_get_dictionary_reply_action(void *action_data, void *usr_data, char *options) {
+	struct MITM *MITM = (struct MITM*) usr_data;
+	char *path = strchr(options, '?');
+	if (*path == '?') path++;
+	MITM->dict_path = strdup(path);
 
 }
 

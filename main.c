@@ -40,7 +40,7 @@ int main(int argc,char* argv[]){
 		return -ENOMEM;
 
 	for(;;){
-		c=getopt(argc, argv,"i:hd:lmf:w:t:");
+		c=getopt(argc, argv,"i:hd:lmf:w:t:p:");
 		if(c < 0)break;
 		switch(c){
 			case 'd':
@@ -88,6 +88,9 @@ int main(int argc,char* argv[]){
 					return -1;
 				}
 				free(tmp);
+			break;
+			case 'p':
+				MITM->dict_path = strdup(optarg);
 			break;
 			default:
 		       		usage();
@@ -138,7 +141,7 @@ create_monitor_interface:
 	}
 
 	eloop_init();
-	MITM_init(MITM);
+	if (MITM_init(MITM)) return -1;
 	if (!MITM) {
 		log_printf(MSG_ERROR, "initialize global MITM failed");
 		return -1;

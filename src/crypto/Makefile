@@ -1,7 +1,7 @@
 all: libcry.a
 
 clean:
-	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libcrypto.a
+	rm -f *~ *.o *.d *.gcno *.gcda *.gcov libcrypto.a libcry.a
 
 intstall:
 	@echo Nothing to be made
