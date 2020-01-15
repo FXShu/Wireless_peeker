@@ -21,33 +21,33 @@ int hmac_sha1_vector(unsigned char *key, size_t key_len, size_t num_elem,
 		memcpy(k_ipad, key, key_len);
 		memcpy(k_opad, key, key_len);
 
-		for (int i = 0; i < 64; i++) {
+		for (i = 0; i < 64; i++) {
 			k_ipad[i] ^= 0x36;
 			k_opad[i] ^= 0x5c;
 		}
 
-		SHA1_Init(&context);
-		SHA1_Update(&context, k_ipad, 64);
+		SHA1Init(&context);
+		SHA1Update(&context, k_ipad, 64);
 		
 		if (usecached) {
 			memcpy(&cached.k_ipad, &context, sizeof(context));
 			cached.k_ipad_set = 1;
 		}
-		for (int i = 0; i < num_elem; i++) {
-			SHA1_Update(&context, addr[i], len[i]);
+		for (i = 0; i < num_elem; i++) {
+			SHA1Update(&context, addr[i], len[i]);
 		}
-		SHA1_Final(mac, &context);
+		SHA1Final(mac, &context);
 
-		SHA1_Init(&context);
-		SHA1_Update(&context, k_opad, 64);
+		SHA1Init(&context);
+		SHA1Update(&context, k_opad, 64);
 
 		if (usecached) {
 			memcpy(&cached.k_opad, &context, sizeof(context));
 			cached.k_opad_set = 1;
 		}
 
-		SHA1_Update(&context, mac, 20);
-		SHA1_Final(mac, &context);
+		SHA1Update(&context, mac, 20);
+		SHA1Final(mac, &context);
 		return 0;
 	}
 

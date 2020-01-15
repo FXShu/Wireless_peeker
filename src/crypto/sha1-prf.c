@@ -26,12 +26,10 @@ int sha1_prf(unsigned char *key, unsigned int key_len, char *label,
 	while (pos < buf_len) {
 		plen = buf_len - pos;
 		if (plen >= SHA1_MAC_LEN) {
-			if (hmac_sha1_vector(key, key_len, 4, addr, len, &buf[pos], NOCACHED));
-				return -1;
+			hmac_sha1_vector(key, key_len, 4, addr, len, &buf[pos], NOCACHED);
 			pos += SHA1_MAC_LEN;
 		} else {
-			if (hmac_sha1_vector(key, key_len, 4, addr, len, hash, NOCACHED));
-				return -1;
+			hmac_sha1_vector(key, key_len, 4, addr, len, hash, NOCACHED);
 			memcpy(&buf[pos], hash, plen);
 			break;
 		}

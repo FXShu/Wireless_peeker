@@ -6,7 +6,7 @@ int wpa_pmk_to_ptk(u8 *pmk, u8 *addr1, u8 *addr2,
 		log_printf(MSG_WARNING, "Calculate PTK failure, Invalid input parameter.");
 		return -1;
 	}
-	u8 data[2 * ETH_ALEN + 2 * NONCE_ALEN * 2];
+	u8 data[2 * ETH_ALEN + 2 * NONCE_ALEN];
 	memset(data, 0 , sizeof(data));
 	/***
 	 * PTK = PRF-X(PMK, "Pairwise key expansion",
@@ -28,7 +28,8 @@ int wpa_pmk_to_ptk(u8 *pmk, u8 *addr1, u8 *addr2,
 		memcpy(data + ETH_ALEN * 2, nonce2, NONCE_ALEN);
 		memcpy(data + ETH_ALEN * 2 + NONCE_ALEN, nonce1, NONCE_ALEN);
 	}
-
+	log_printf(MSG_DEBUG, "DATA = ");
+	lamont_hdump(data, sizeof(data));
 	sha1_prf(pmk, 32, "Pairwise key expansion", data, 
 			sizeof(data), ptk, ptk_len);
 
@@ -98,24 +99,29 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 		if (fret < 8 || fret > 63) 
 			continue;
 		log_printf(MSG_DEBUG, "password=%d, SSID=%s", info->password, info->SSID);
-		pbkdf2_sha1("password", info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk), USECACHED);
-		printf("pmk = \n");
-		for(int i = 0; i < sizeof(pmk); i++){
-			printf("0x%x ", pmk[i]);
-		}	
-		printf("\n");
-		wpa_pmk_to_ptk(pmk, info->AA, info->SA, info->AN, info->SN, ptk, sizeof(ptk));
-		printf("ptk = \n");
-		for(int i = 0; i < sizeof(ptk); i++) {
-			printf("0x%x ", ptk[i]);
-		}	
-		printf("\n");
-		ptkset = (struct wpa_ptk *)ptk;
-		struct wpa_eapol_key eapol_frame;
-		memcpy(&eapol_frame, info->eapol, sizeof(struct wpa_eapol_key));
-		memset(&eapol_frame.key_mic, 0, sizeof(eapol_frame.key_mic));
 
-		hmac_hash(info->version, ptkset->mic_key, 16, (u8 *)&eapol_frame, info->eapol_frame_len, keymic);
+		pbkdf2_sha1("password", info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk), USECACHED);
+		log_printf(MSG_DEBUG, "Calculate PMK = \n");
+		lamont_hdump(pmk, sizeof(pmk));
+
+		wpa_pmk_to_ptk(pmk, info->AA, info->SA, info->AN, info->SN, ptk, sizeof(ptk));
+		log_printf(MSG_DEBUG, "Calculate PTK = ");
+		lamont_hdump(ptk, sizeof(ptk));
+
+		ptkset = (struct wpa_ptk *)ptk;
+		struct wpa_eapol_key *eapol_frame;
+		eapol_frame = (struct wpa_eapol_key *)info->eapol;
+//		memcpy(eapol_frame, info->eapol, sizeof(struct wpa_eapol_key));
+		memset(eapol_frame->key_mic, 0, sizeof(eapol_frame->key_mic));
+		eapol_frame->eapol_len = ntohs(eapol_frame->eapol_len);
+		eapol_frame->key_info = ntohs(eapol_frame->key_info);
+		eapol_frame->key_length = ntohs(eapol_frame->key_length);
+		log_printf(MSG_DEBUG, "Size of EAPOL Frame = %d,EAPOL Frame = ", info->eapol_frame_len);
+		lamont_hdump(info->eapol, 99);
+
+		hmac_hash(info->version, ptkset->mic_key, 16, info->eapol, 99, keymic);
+		log_printf(MSG_DEBUG, "Calculate MIC = ");
+		lamont_hdump(keymic, sizeof(keymic));
 
 		if (!memcmp(&info->MIC, &keymic, sizeof(keymic))) {
 			memcpy(&info->ptk, ptkset, sizeof(ptkset));

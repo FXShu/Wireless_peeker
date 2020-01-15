@@ -1,8 +1,9 @@
 #ifndef PRINTF_H
 #define PRINTF_H
-#include <stdio.h>
-#include <stdint.h>
-#include <stdarg.h>
+//#include <stdio.h>
+//#include <stdint.h>
+//#include <stdarg.h>
+#include "includes.h"
 #include "head.h"
 
 enum {
@@ -47,4 +48,6 @@ void print_protocol(unsigned char protocol_type);
 void log_printf(int level,char* format,...);
 
 void copy_mac_address(uint8_t *src, uint8_t *dst);
+
+void lamont_hdump(unsigned char *bp, unsigned int length);
 #endif

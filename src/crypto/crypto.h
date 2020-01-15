@@ -11,7 +11,10 @@
 #define WPA_REPLAY_COUNTER_LEN 8
 #define WPA_NONCE_LEN 32
 struct wpa_eapol_key {
+	u8 version;
 	u8 type;
+	u16 eapol_len;
+	u8 key_description;
 	u16 key_info;
 	u16 key_length;
 	u8 replay_counter[WPA_REPLAY_COUNTER_LEN];

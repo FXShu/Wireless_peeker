@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "split.h"
 
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info) {
 	const char *p;
