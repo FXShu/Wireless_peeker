@@ -90,7 +90,7 @@ void lamont_hdump(unsigned char *bp, unsigned int length) {
 	int nshorts, nshorts2;
 	int padding;
 
-	printf("\n\t");
+	printf("\t");
 	padding = 0;
 	sp = (unsigned short *)bp;
 	ap = (unsigned char *)bp;

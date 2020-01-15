@@ -1,6 +1,9 @@
 #include "ieee80211_data.h"
 #include "l2_packet.h"
 #include "../../MITM.h"
+
+extern int debug_level;
+
 static int parse_llc_header(const char* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	if (*offset > len) return -1;
@@ -24,7 +27,8 @@ static int parse_auth_data(const char *buf, size_t len,
 	packet->auth_data.key_information = ntohs(packet->auth_data.key_information);
 	packet->auth_data.len = ntohs(packet->auth_data.len);
 	packet->auth_data.key_len = ntohs(packet->auth_data.key_len);
-	print_handshake_packet(packet);
+	if (debug_level < MSG_MSGDUMP)
+		print_handshake_packet(packet);
 	return 0;
 }
 
@@ -78,14 +82,13 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 			*state = MITM_state_crash_PTK;
 			/* Dictionary attack , if crash password success, reset enough. */
 			if (!dictionary_attack(MITM->dict_path, info)) {
-				log_printf(MSG_DEBUG, "[CRASH] Crash WPA2 encryption success!");
+				log_printf(MSG_INFO, "[CRASH] Crash WPA2 encryption success! SSID = %s, Password = %s", 
+						info->SSID, info->password);
 				*state = MITM_state_ready;
 				info->enough = 0;
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
 			}
-		} else {
-			log_printf(MSG_DEBUG, "info->enough = 0x%x", info->enough);
 		}
 	}
 	return 0;
