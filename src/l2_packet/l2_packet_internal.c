@@ -82,7 +82,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 			*state = MITM_state_crash_PTK;
 			/* Dictionary attack , if crash password success, reset enough. */
 			if (!dictionary_attack(MITM->dict_path, info)) {
-				log_printf(MSG_INFO, "[CRASH] Crash WPA2 encryption success! SSID = %s, Password = %s", 
+				log_printf(MSG_INFO, "[CRASH] Crash WPA2 encryption success!"RED" SSID = %s, Password = %s"NONE, 
 						info->SSID, info->password);
 				*state = MITM_state_ready;
 				info->enough = 0;

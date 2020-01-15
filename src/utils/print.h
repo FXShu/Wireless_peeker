@@ -1,11 +1,16 @@
 #ifndef PRINTF_H
 #define PRINTF_H
-//#include <stdio.h>
-//#include <stdint.h>
-//#include <stdarg.h>
 #include "includes.h"
 #include "head.h"
 
+#define CLEAR_SCREEN() printf("\033[2J")
+#define RESET_CURSOR() printf("\033[H")
+#define RED "\033[0;32;31m"
+#define NONE "\033[m"
+#define SET_CURSOR_POSITION(x) printf("\033["#x";0H")
+#define CLEAR_SCREEN_FROM_CURSOR_POSITION() printf("\033[K")
+#define STORE_CURSOR_POSITION() printf("\033[s")
+#define RECOVER_CURSOR_POSITION() printf("\033[u")
 enum {
 	MSG_EXCESSIVE,
 	MSG_MSGDUMP,

@@ -53,11 +53,7 @@ static void hello() {
 			"| Please notice that if you execute this process                      |\n"
 			"| to peer otherone's network taffic is illegal.                       |\n"
 			"----------------------------------------------------------------------");
-}
-
-static void get_ap_list(struct mitm_ctrl *ctrl) {
-	mitm_ctrl_request(ctrl, MITM_GET_AP_LIST_REQUEST, sizeof(MITM_GET_AP_LIST_REQUEST));
-	return;
+	//STORE_CURSOR_POSITION();
 }
 
 static void get_mitm_state(void *eloop_ctx, void *user_ctx) {
@@ -118,12 +114,12 @@ void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
 }
 
 void print_options(int sig) {
+//	RECOVER_CURSOR_POSITION();
+//	CLEAR_SCREEN_FROM_CURSOR_POSITION();
 	log_printf(MSG_INFO, "MITM at \"%s\" state, please choose below action.", mitm_get_state(info.state));
 	for (int i = 0; i < mitm_get_action_num(); i++) {
-		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state)) {
-			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, 
-					msg_handler[i].prompt);
-		}
+		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state)) 
+			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, msg_handler[i].prompt);
 	}
 }
 
