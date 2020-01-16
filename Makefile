@@ -9,6 +9,7 @@ CFLAGS_CLI = -g -std=c99
 
 LIBS_c=
 LIBS_CLI_c=
+LIBS_SEND=
 
 OBJS= 
 OBJS_CLI =
@@ -16,6 +17,8 @@ OBJS_CLI =
 OBJS += main.o arp.o sniffer.o packet.o getif.o parse.o \
 	MITM.o
 OBJS_CLI += MITM_cli.o
+
+OBJS_SEND += send_packet_test.o 
 
 LIBS_c += -lnet
 LIBS_c += -lpcap
@@ -35,7 +38,7 @@ LIBS_CLI_c += -L ./src/utils -lutils
 LIBS_CLI_c += -lm
 LIBS_CLI_c += -lssl -lcrypto
 
-BINALL=MITM MITM_cli
+BINALL=MITM MITM_cli send_packet_test
 .phony : ALL
 ALL = $(BINALL)
 all: install $(ALL)
@@ -50,6 +53,9 @@ MITM : $(OBJS)
 .phony : MITM_cli
 MITM_cli : $(OBJS_CLI)
 	$(CC) $(CFLAGS) $(OBJS_CLI) -o MITM_cli $(LIBS_CLI_c)
+
+send_packet_test : $(OBJS_SEND)
+	$(CC) $(CFLAGS) $(OBJS_SEND) -o send_packet_test $(LIBS_c)
 
 install: 
 	$(MAKE) -C src
