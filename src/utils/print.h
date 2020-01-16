@@ -6,11 +6,14 @@
 #define CLEAR_SCREEN() printf("\033[2J")
 #define RESET_CURSOR() printf("\033[H")
 #define RED "\033[0;32;31m"
+#define YELLOW "\033[1;33m"
 #define NONE "\033[m"
 #define SET_CURSOR_POSITION(x) printf("\033["#x";0H")
-#define CLEAR_SCREEN_FROM_CURSOR_POSITION() printf("\033[K")
+#define CLEAR_LINE_FROM_CURSOR_POSITION() printf("\033[K")
+#define DELETE_MULTIPLE_LINE(x) printf("\033["#x"M")
 #define STORE_CURSOR_POSITION() printf("\033[s")
 #define RECOVER_CURSOR_POSITION() printf("\033[u")
+#define CURSOR_UP_LINE(x) printf("\033["#x"A");
 enum {
 	MSG_EXCESSIVE,
 	MSG_MSGDUMP,

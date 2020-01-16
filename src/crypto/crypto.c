@@ -96,6 +96,8 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 		if (fret < 0) {
 			break;
 		}
+		CURSOR_UP_LINE(1);
+		CLEAR_LINE_FROM_CURSOR_POSITION();
 		log_printf(MSG_DEBUG, "Test \"%s\" to crash \"%s\" access point", info->password, info->SSID);
 		/*
 		 * Test length of word. IEEE 802.11i indicates the passphrase

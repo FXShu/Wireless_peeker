@@ -57,7 +57,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 	    !memcmp(info->SA, LOCATE(u8, packet->ieee80211_data, 
 			    struct ieee80211_hdr_3addr, addr1), ETH_ALEN)) {
 		memcpy(info->AN, packet->auth_data.Nonce, NONCE_ALEN);
-		log_printf(MSG_DEBUG, "Capute 3 of 4-way packet, fill AN");
+		log_printf(MSG_DEBUG, "Capture 3 of 4-way packet, fill AN");
 		SET(3, info->enough);
 	}
 
@@ -66,7 +66,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 			!(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
 			!(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
 			packet->auth_data.replay_counter[7] == info->counter[7] + 1) {
-		log_printf(MSG_DEBUG, "Capute 4 of 4-way packet, fill MIC, eapol frame");
+		log_printf(MSG_DEBUG, "Capture 4 of 4-way packet, fill MIC, eapol frame");
 		memcpy(info->MIC, packet->auth_data.MIC, MD5_DIGEST_LENGTH);
 		/* Total size of eapol frame = version(1Byte) + Type(1Byte) + len(2Bytes) + value of len */
 		if (!info->eapol)

@@ -18,7 +18,7 @@ static void mitm_client_terminate(int sig, void *signal_ctx) {
 	eloop_terminate();
 	unlink(ctrl->local.sun_path);
 	free(ctrl);
-	log_printf(MSG_INFO, "thanks for using mitm_cli");
+	log_printf(MSG_INFO, "Thanks for using mitm_cli");
 }
 
 static void usage(void) {
@@ -53,7 +53,7 @@ static void hello() {
 			"| Please notice that if you execute this process                      |\n"
 			"| to peer otherone's network taffic is illegal.                       |\n"
 			"----------------------------------------------------------------------");
-	//STORE_CURSOR_POSITION();
+	STORE_CURSOR_POSITION();
 }
 
 static void get_mitm_state(void *eloop_ctx, void *user_ctx) {
@@ -98,29 +98,33 @@ static char* sort_input_out(char *input) {
 	return strdup(command);
 }
 
+void print_options(int sig) {
+	RECOVER_CURSOR_POSITION();
+	DELETE_MULTIPLE_LINE(100);
+	log_printf(MSG_INFO, "MITM at "YELLOW"\"%s\""NONE" state, please choose below action.", mitm_get_state(info.state));
+	for (int i = 0; i < mitm_get_action_num(); i++) {
+		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state))
+			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, msg_handler[i].prompt);
+	}
+	printf("\n");
+}
+
 void handle_user_input(int sock, void *eloop_ctx, void *sock_ctx) {
 	char buffer[BUFFER_LEN];
 	char *command;
 	memset(buffer, 0, BUFFER_LEN);
 	struct mitm_ctrl *ctrl = (struct mitm_ctrl *)sock_ctx;
 	fgets(buffer, BUFFER_LEN, stdin);
-	command = sort_input_out(buffer);
-	if (!command) {
-		log_printf(MSG_WARNING, "Wrong Input format!");
-		return;
-	}
-	mitm_ctrl_request(ctrl, command, strlen(command));
-	free(command);
-}
-
-void print_options(int sig) {
-//	RECOVER_CURSOR_POSITION();
-//	CLEAR_SCREEN_FROM_CURSOR_POSITION();
-	log_printf(MSG_INFO, "MITM at \"%s\" state, please choose below action.", mitm_get_state(info.state));
-	for (int i = 0; i < mitm_get_action_num(); i++) {
-		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state)) 
-			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, msg_handler[i].prompt);
-	}
+	do {
+		command = sort_input_out(buffer);
+		if (!command) {
+			log_printf(MSG_WARNING, "Wrong Input format!");
+			break;
+		}
+		mitm_ctrl_request(ctrl, command, strlen(command));
+		free(command);
+	} while(0);
+	print_options(-1);
 }
 
 int main(int argc, char **argv) {
