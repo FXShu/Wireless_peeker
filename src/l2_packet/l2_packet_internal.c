@@ -88,6 +88,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 				info->enough = 0;
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
+				return -1;
 			}
 		}
 	}
