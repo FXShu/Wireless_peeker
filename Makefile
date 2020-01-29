@@ -1,4 +1,5 @@
-CROSS=arm-openwrt-linux-
+#CROSS=arm-openwrt-linux-
+CROSS=
 CC=$(CROSS)gcc 
 CFLAGS = -g -O0 -std=gnu99  -Wno-switch -Wno-unused-variable -MMD
 CFLAGS += -I$(abspath ./src)
@@ -38,7 +39,7 @@ LIBS_CLI_c += -L ./src/utils -lutils
 LIBS_CLI_c += -lm
 LIBS_CLI_c += -lssl -lcrypto
 
-BINALL=MITM MITM_cli send_packet_test
+BINALL=MITM MITM_cli
 .phony : ALL
 ALL = $(BINALL)
 all: install $(ALL)
@@ -53,9 +54,6 @@ MITM : $(OBJS)
 .phony : MITM_cli
 MITM_cli : $(OBJS_CLI)
 	$(CC) $(CFLAGS) $(OBJS_CLI) -o MITM_cli $(LIBS_CLI_c)
-
-send_packet_test : $(OBJS_SEND)
-	$(CC) $(CFLAGS) $(OBJS_SEND) -o send_packet_test $(LIBS_c)
 
 install: 
 	$(MAKE) -C src

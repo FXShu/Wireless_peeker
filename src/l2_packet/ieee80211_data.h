@@ -24,6 +24,12 @@
 #define version_mask 0x0300
 
 enum ieee80211_type {
+    IEEE80211_MANAGMENT_TYPE = 0x00,
+    IEEE80211_CONTROL_TYPE   = 0x01,
+    IEEE80211_DATA_TYPE      = 0x02,
+};
+
+enum ieee80211_subtype {
 	/* Management Type */
 	IEEE80211_ASSOCIATION_RESQUEST    =  0x0000,
 	IEEE80211_ASSOCIATION_RESPONSE    =  0x0001,
@@ -70,6 +76,19 @@ enum ieee80211_type {
 	IEEE80211_QOS_CF_ACK_CF_POLL      = 0x002F,
 	/* Extension Type */
 	IEEE80211_DMG_BEACON              = 0x0030,
+};
+
+enum IEEE80211_FLAGS {
+    IEEE80211_FLAGS_DIR_NODS   = 0x00,    /* STA -> STA */
+    IEEE80211_FALGS_DIR_TODS   = 0x01,    /* STA -> AP  */
+    IEEE80211_FLAGS_DIR_FROMDS = 0x02,  /* AP  -> STA  */
+    IEEE80211_FLAGS_DIR_DSTODS = 0x03,  /* AP  -> AP */
+    IEEE80211_FLAGS_MORE_FRAG  = 0x04,
+    IEEE80211_FLAGS_RETRY      = 0x08,
+    IEEE80211_FLAGS_PWR_MGT    = 0x10,
+    IEEE80211_FLAGS_MORE_DATA  = 0x20,
+    IEEE80211_FLAGS_PROTECTED  = 0x40,
+    IEEE80211_FLAGS_ORDER      = 0x80,
 };
 
 enum reason_code {
@@ -179,7 +198,7 @@ struct ieee80211_beacon {
 
 struct WPA2_handshake_packet {
 	//struct ieee80211_radiotap_header radiotap_hdr;
-	enum ieee80211_type type;
+	enum ieee80211_subtype type;
 	void *ieee80211_data;
 	struct llc_header llc_hdr;
 	struct ieee_8021x_authentication auth_data;
@@ -187,7 +206,7 @@ struct WPA2_handshake_packet {
 
 struct beacon_packet {
 	//struct ieee80211_radiotap_header radiotap_hdr;
-	enum ieee80211_type type;
+	enum ieee80211_subtype type;
 	struct ieee80211_hdr_3addr frame;
 	struct ieee80211_beacon body;
 } __attribute__((packed));
