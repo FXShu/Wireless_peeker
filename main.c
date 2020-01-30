@@ -141,11 +141,10 @@ create_monitor_interface:
 	}
 
 	eloop_init();
-	if (MITM_init(MITM)) return -1;
-	if (!MITM) {
-		log_printf(MSG_ERROR, "initialize global MITM failed");
-		return -1;
-	}
+	if (MITM_init(MITM) || !MITM) {
+        log_printf(MSG_ERROR, "initialize global MITM failed");
+        return -1;
+    }
 	if (!MITM->l2_packet) {
 		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
 		goto out;

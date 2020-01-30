@@ -108,10 +108,8 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 			continue;
 		pbkdf2_sha1(info->password, info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk), USECACHED);
 		wpa_pmk_to_ptk(pmk, info->AA, info->SA, info->AN, info->SN, ptk, sizeof(ptk));
-
 		memcpy(&ptkset, ptk, sizeof(ptkset));
 		hmac_hash(info->version, ptkset.mic_key, 16, info->eapol, sizeof(struct wpa_eapol_key), keymic);
-
 		if (!memcmp(&info->MIC, &keymic, sizeof(keymic))) {
 			log_printf(MSG_DEBUG, "Pair Master Key = ");
 			lamont_hdump(pmk, sizeof(pmk));

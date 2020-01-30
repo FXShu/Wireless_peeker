@@ -56,7 +56,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
 			packet->auth_data.data_len > 0) {
 		log_printf(MSG_DEBUG, "Capture 2 of 4-way pakcet, fill SN,SA");
-		info->version = packet->auth_data.version;
+        info->version = packet->auth_data.key_information & WPA_KEY_INFO_TYPE_MASK;
 		memcpy(info->SN, packet->auth_data.Nonce, NONCE_ALEN);	
 		memcpy(info->SA, LOCATE(u8, packet->ieee80211_data, 
 					struct ieee80211_hdr_3addr, addr2), ETH_ALEN);

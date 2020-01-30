@@ -17,8 +17,14 @@ int MITM_init(struct MITM *MITM) {
 		MITM->state = MITM_state_ap_search;
 		break;
 	}
-	if(getifinfo(&(MITM->if_buf), MITM->errbuf)) return 10;
-	if(!checkdevice(MITM->if_buf, MITM->usr_dev)) return 11;
+	if(getifinfo(&(MITM->if_buf), MITM->errbuf)) {
+        log_printf(MSG_ERROR, "getifinfo failed");
+        return -1;
+    }
+	if(!checkdevice(MITM->if_buf, MITM->usr_dev)) {
+        log_printf(MSG_ERROR, "checkdevice failed\n");
+        return -1;
+    }
 
 	/***
 	 * here should do after crack wpa2 password
