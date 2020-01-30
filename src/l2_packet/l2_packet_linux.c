@@ -475,10 +475,3 @@ void print_handshake_packet(struct WPA2_handshake_packet *packet) {
 	printf("key_descr_type:%d\n", packet->auth_data.key_descriptor_type);
 	printf("==============================packet print information done========================\n");
 }
-
-uint16_t parse_subtype(uint16_t value) {
-	uint16_t subtype = value & subtype_mask;
-	uint16_t type    = value & type_mask;
-	uint16_t version = value & version_mask;
-	return subtype >> 12 | type >> 6 | version;
-}

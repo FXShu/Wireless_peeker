@@ -19,7 +19,7 @@ int sha1_prf(unsigned char *key, unsigned int key_len, char *label,
 	u8 hash[SHA1_MAC_LEN];
 	size_t label_len = strlen(label);
 	unsigned char *addr[] = { (unsigned char *)label, (unsigned char *)&zero, data, (unsigned char *)&counter};
-	unsigned int len[] = {label_len, 1, data_len, 1};
+	size_t len[] = {label_len, 1, data_len, 1};
 
 
 	pos = 0;

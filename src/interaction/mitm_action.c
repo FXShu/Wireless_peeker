@@ -162,6 +162,7 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *option
 		if(target.SSID ? !strcmp(tmp->SSID, target.SSID) : 0 || !memcmp(tmp->BSSID, target.BSSID, ETH_ALEN)) {
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
 			MITM->encry_info.SSID = strdup(tmp->SSID);
+            MITM->encry_info.Channel = tmp->channel;
 			MITM->state = MITM_state_capture_handshake;
 			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
 			match = 1;

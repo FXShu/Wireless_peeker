@@ -10,8 +10,8 @@ struct ieee80211_radiotap_header {
 	uint8_t  it_pad;
 	uint16_t it_len;
 	uint32_t it_present;
-	uint8_t  *padload;
-};
+//	uint8_t  *padload;
+} __attribute__((__packed__));
 
 /* Name                                 Data type    Units
  * ----                                 ---------    -----

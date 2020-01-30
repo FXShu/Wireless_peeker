@@ -73,4 +73,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 void deauth_attack(void *eloop_data, void *user_ctx);
 
 void ap_init(struct access_point_info *info);
+
+uint16_t construct_frame_control(uint8_t version, enum ieee80211_type type, 
+                                    enum ieee80211_subtype subtype, enum IEEE80211_FLAGS flags);
 #endif /* L2_PACKET_H */

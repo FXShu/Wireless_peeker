@@ -1,4 +1,5 @@
-CROSS=arm-openwrt-linux-
+#CROSS=arm-openwrt-linux-
+CROSS=
 CC=$(CROSS)gcc 
 CFLAGS = -g -O0 -std=gnu99  -Wno-switch -Wno-unused-variable -MMD
 CFLAGS += -I$(abspath ./src)
@@ -9,6 +10,7 @@ CFLAGS_CLI = -g -std=c99
 
 LIBS_c=
 LIBS_CLI_c=
+LIBS_SEND=
 
 OBJS= 
 OBJS_CLI =
@@ -16,6 +18,8 @@ OBJS_CLI =
 OBJS += main.o arp.o sniffer.o packet.o getif.o parse.o \
 	MITM.o
 OBJS_CLI += MITM_cli.o
+
+OBJS_SEND += send_packet_test.o 
 
 LIBS_c += -lnet
 LIBS_c += -lpcap

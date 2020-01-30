@@ -49,7 +49,7 @@ static void pbkdf2_sha1_f(char *passphrase, char *ssid,
 	int i, j;
 	unsigned char count_buf[4];
 	unsigned char *addr[] = { (unsigned char *)ssid, count_buf };
-	unsigned int len[] = { ssid_len, 4 };
+	size_t len[] = { ssid_len, 4 };
 	size_t passphrase_len = strlen(passphrase);
 
 	/* F(P, S, c, i) = U1 xor U2 xor ... Uc
