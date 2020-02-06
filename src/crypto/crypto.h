@@ -43,7 +43,7 @@ struct wpa_ptk {
 struct encrypto_info {
 	u8 *SSID;
 	int Channel;
-    u8 SA[ETH_ALEN];
+  u8 SA[ETH_ALEN];
 	u8 AA[ETH_ALEN];
 	u8 SN[NONCE_ALEN];
 	u8 AN[NONCE_ALEN];

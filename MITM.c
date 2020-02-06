@@ -4,6 +4,7 @@ int MITM_init(struct MITM *MITM) {
 	int exitcode;
 	MITM->state = MITM_state_idle;
 	dl_list_init(&MITM->ap_list);
+    dl_list_init(&MITM->victim_list);
 	if (!MITM->dict_path) {
 		log_printf(MSG_ERROR, "No dictionary path specify.");
 		return -1;

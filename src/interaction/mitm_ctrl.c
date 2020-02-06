@@ -28,16 +28,21 @@ struct MITM_ctrl_msg msg_handler[] = {
 	{5, MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
 		MITM_state_ready, MITM_state_spoofing, "Set victim:[IP:ip] [MAC:mac]."},
         
-	{6, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action, -1, -1, NULL},
+	{6, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action, -1, -1, NULL}, 
+  
+  {7, MITM_GET_VICTIM_LIST_REQUEST, mitm_get_victim_request_action, 
+    MITM_state_ready, MITM_state_spoofing, "Print victim list."},
+  
+  {8, MITM_GET_VICTIM_LIST_REPLY, mitm_get_victim_reply_action, -1, -1, NULL},
         
-	{7, MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
+	{9, MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
 		MITM_state_idle, MITM_state_spoofing, "Report state"},
         
-	{8, MITM_GET_STATUS_REPLY, mitm_get_status_reply_action, -1, -1, NULL},
+	{10, MITM_GET_STATUS_REPLY, mitm_get_status_reply_action, -1, -1, NULL},
         
-	{9, MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
+	{11, MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
         
-	{10, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action, -1, -1, NULL}
+	{12, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action, -1, -1, NULL}
 };
 
 void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {

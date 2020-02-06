@@ -35,6 +35,12 @@ struct access_point_info{
 	 ***/
 };
 
+struct victim_info {
+  struct dl_list victim_node;
+  struct wpa_ptk ptk;
+  u8 mac[ETH_ALEN];
+};
+
 enum l2_packet_filter_type {
 	L2_PACKET_FILTER_DHCP,
 	L2_PACKET_FILTER_NDISC,

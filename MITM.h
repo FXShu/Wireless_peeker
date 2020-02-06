@@ -53,6 +53,7 @@ struct MITM {
 	pcap_if_t* monitor_buf;
 	struct l2_packet_data *l2_packet;
 	struct dl_list ap_list;  //used to foreach access_point_info array.
+  struct dl_list victim_list;
 	struct encrypto_info encry_info;
 	enum MITM_state state;
 	char* dict_path;

@@ -61,7 +61,7 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	ret = sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags,
 		       	(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
 	if (ret < 0) 
-		log_printf(MSG_WARNING, "[CTRL] sendto failed, err:%s", __func__, strerror(errno));
+		log_printf(MSG_WARNING, "[CTRL]%s: Sendto failed, err:%s", __func__, strerror(errno));
 }
 
 void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *options) {
@@ -127,9 +127,49 @@ void mitm_get_dictionary_reply_action(void *action_data, void *usr_data, char *o
 
 }
 
-void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options) {}
+void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options){}
 
-void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options) {}
+void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options){}
+
+void mitm_get_victim_request_action (void *action_data, void *usr_data, char *options) {
+  struct mitm_recv_info *recv_info = (struct mitm_recv_info *) action_data;
+  struct MITM *MITM = (struct MITM*)usr_data;
+
+  int ret;
+  struct victim_info *tmp;
+  sprintf(report, "%s:[", MITM_GET_VICTIM_LIST_REPLY);
+  char buf[100];
+  dl_list_for_each(tmp, &MITM->victim_list, struct victim_info, victim_node) {
+    memset(buf, 0, sizeof(buf));
+    sprintf(buf, MACSTR",", MAC2STR(tmp->mac));
+    strncat(report, buf, strlen(buf));
+  }
+  char *ch = strrchr(report, ',');
+  if (ch)
+    *ch = ']';
+  else
+    strcat(report, "]");
+  ret = sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags, 
+              (const struct sockaddr *)&recv_info->recv_from, recv_info->length);
+  if (ret < 0)
+    log_printf(MSG_WARNING, "[CTRL]%s: Sendto failed, with err:%s", __func__, strerror(errno));
+}
+
+void mitm_get_victim_reply_action (void *action_data, void *usr_data, char *options) {
+  log_printf(MSG_INFO, "%5s%20s%40s", "Item", "MAC Address", "Victim List");
+  log_printf(MSG_INFO,"-------------------------------------------------------------------");
+  char *head = strchr(options, '[');
+  char *tail = strchr(options, ']');
+  *tail = '\0';
+  if (!head) {
+    log_printf(MSG_WARNING, "[%s] Wrong reply format.");
+    return;
+  }
+  int counter = 1;
+  for(char *tmp = strtok(head + 1, ","); tmp; tmp = strtok(NULL, ",")) {
+    log_printf(MSG_INFO, "%3d%25s", counter++, tmp);
+  }
+}
 
 // The request command should like `MITM-SET-AP-REQUEST?state=ap_search`.
 void mitm_set_status_request_action (void *action_data, void *usr_data, char *line) {}
