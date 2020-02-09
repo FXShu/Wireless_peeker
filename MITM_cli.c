@@ -101,7 +101,8 @@ static char* sort_input_out(char *input) {
 void print_options(int sig) {
 	RECOVER_CURSOR_POSITION();
 	DELETE_MULTIPLE_LINE(100);
-	log_printf(MSG_INFO, "MITM at "YELLOW"\"%s\""NONE" state, please choose below action.", mitm_get_state(info.state));
+	log_printf(MSG_INFO, "MITM at "YELLOW"\"%s\""NONE" state, please choose below action.", 
+		mitm_get_state(info.state));
 	for (int i = 0; i < mitm_get_action_num(); i++) {
 		if (!(msg_handler[i].header > info.state) && !(msg_handler[i].tail < info.state))
 			log_printf(MSG_INFO, "[%d]%s", msg_handler[i].number, msg_handler[i].prompt);

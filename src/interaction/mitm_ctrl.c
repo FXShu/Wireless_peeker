@@ -26,7 +26,7 @@ struct MITM_ctrl_msg msg_handler[] = {
 	{4, MITM_SET_AP_REPLY, mitm_set_ap_reply_action, -1, -1, NULL},
 	
 	{5, MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
-		MITM_state_ready, MITM_state_spoofing, "Set victim:[IP:ip] [MAC:mac]."},
+		MITM_state_ready, MITM_state_spoofing, "Set victim [MAC=mac]."},
         
 	{6, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action, -1, -1, NULL}, 
   

