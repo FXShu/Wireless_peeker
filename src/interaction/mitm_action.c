@@ -150,7 +150,8 @@ void mitm_set_victim_request_action (void *action_data, void *usr_data, char *op
 			memcpy(MITM->encry_info.SA, target.mac, ETH_ALEN);
 			// Start deauth attack again to take the PTK between specify AP and STA.
 			MITM->state = MITM_state_capture_handshake;
-			// Send postive reply.
+			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+      // Send postive reply.
 		}
 	}
 	sprintf(report, "%s:%s,"MACSTR, MITM_SET_VICTIM_REPLY, 
@@ -256,8 +257,12 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *option
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
 			MITM->encry_info.SSID = strdup(tmp->SSID);
             MITM->encry_info.Channel = tmp->channel;
-			MITM->state = MITM_state_capture_handshake;
-			eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+			/* Reset victim list of global MITM structure. */
+      struct victim_info *tmp;
+      dl_list_for_each(tmp, &MITM->victim_list, struct victim_info, victim_node) {
+        free(tmp);
+      }
+      dl_list_init(&MITM->victim_list);
 			match = 1;
 			break;
 		} 

