@@ -132,6 +132,19 @@ static int maintain_victim_list(struct dl_list *list, char *mac) {
   return match;
 }
 
+static void maintain_ap_list(void *eloop_data, void *user_data) {
+	struct access_point_info *ap = (struct access_point_info *)user_data;
+	log_printf(MSG_DEBUG, "[Maintenance]AP:"YELLOW" %s"NONE" remove from MITM ap list.", ap->SSID);
+	dl_list_del(&ap->ap_node);
+	struct client_info *client;
+	if (!dl_list_empty(&ap->client_list)) {
+		dl_list_for_each(client, &ap->client_list, struct client_info, client_node) {
+			free(client);
+		}
+	}
+	free(ap);
+}
+
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len) {
 	
 	struct MITM *MITM = (struct MITM *)ctx; 
@@ -163,6 +176,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			struct access_point_info *ap_info;
 			ap_info = malloc(sizeof(struct access_point_info));
 			memset(ap_info, 0, sizeof(struct access_point_info));
+			ap_init(ap_info);
 			copy_mac_address(frame.addr2, ap_info->BSSID);
 			for (;offset + 2 < len ;) {
 				enum beacon_param tag_name = *(buf + (offset++));
@@ -191,10 +205,12 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 					tmp->channel = ap_info->channel;
 					free(ap_info);
 					match = 1;
+					eloop_replenish_timeout(5, 0, maintain_ap_list, NULL, tmp);
 					break;
 				}
 			}
 			if (!match) {
+				eloop_register_timeout(5, 0, maintain_ap_list, NULL, ap_info);
 				dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
 			}
 		break;

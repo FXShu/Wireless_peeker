@@ -748,7 +748,7 @@ int eloop_deplete_timeout(unsigned int req_secs, unsigned int req_usecs,
 	return -1;
 }
 
-int eloop_replienish_timeout(unsigned int req_secs, unsigned int req_usecs,
+int eloop_replenish_timeout(unsigned int req_secs, unsigned int req_usecs,
 			     eloop_timeout_handler handler, void * eloop_data,
 			     void *user_data){
 	struct os_reltime now, requested, remaining;

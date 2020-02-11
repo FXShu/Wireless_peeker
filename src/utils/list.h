@@ -73,7 +73,7 @@ static inline unsigned int dl_list_len(struct dl_list *list){
 	for (item = dl_list_entry((list)->next, type, member), \
 			n = dl_list_entry(item->member.next, type, member); \
 		&item->member != (list); \
-		item = dl_list_entry(item->member.prev, type, member))
+		item = n, n = dl_list_entry(item->member.next, type, member))
 
 #define DEFINE_DL_LIST(name) \
 	struct dl_list name = { &(name), &(name) }

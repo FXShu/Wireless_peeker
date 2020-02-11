@@ -47,12 +47,12 @@ char const *mitm_get_state(enum MITM_state state) {
 
 static void hello() {
 	log_printf(MSG_INFO, 
-			"-----------------------------------------------------------------------\n"
-			"| Welcome to MITM Comman Line.                                        |\n"
-			"| This program is used to show how the Man-IN-THE-MIDDLE work.        |\n"
-			"| Please notice that if you execute this process                      |\n"
-			"| to peer otherone's network taffic is illegal.                       |\n"
-			"----------------------------------------------------------------------");
+			"+----------------------------------------------------------------------------+\n"
+			"| Welcome to MITM Comman Line.                                               |\n"
+			"| This program is used to show how the Man-IN-THE-MIDDLE work.               |\n"
+			"| Please notice that if you execute this process                             |\n"
+			"| to peer otherone's network taffic is illegal.                              |\n"
+			"+----------------------------------------------------------------------------+");
 	STORE_CURSOR_POSITION();
 }
 
