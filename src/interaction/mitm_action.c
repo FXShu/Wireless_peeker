@@ -49,8 +49,8 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 	sprintf(report, "%s:[", MITM_GET_AP_LIST_REPLY);
 	dl_list_for_each(tmp, &MITM->ap_list, struct access_point_info, ap_node) {
 		char buf[100];
-		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\"},", tmp->SSID,
-			       	MAC2STR(tmp->BSSID), tmp->channel);
+		sprintf(buf, "{\"SSID\":\"%s\",\"BSSID\":\"" MACSTR "\",\"Channel\":\"%d\",\"Clients\":\"%d\"},", tmp->SSID,
+			       	MAC2STR(tmp->BSSID), tmp->channel, tmp->clients);
 		strncat(report, buf, strlen(buf));
 	}
 	char *ch = strrchr(report, ',');
@@ -65,7 +65,7 @@ void mitm_get_ap_list_request_action (void *action_data, void *usr_data, char *o
 }
 
 void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *options) {
-	log_printf(MSG_INFO, "%5s%40s%25s", "SSID", "BSSID", "Channel");
+	log_printf(MSG_INFO, "%5s%40s%25s%10s", "SSID", "BSSID", "Channel", "Online");
 	log_printf(MSG_INFO,"-------------------------------------------------------------------");
 	char *head, *tail, *tmp;
 	char buffer[100], contain[100];
@@ -88,11 +88,13 @@ void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *opt
 				offset = 50;
 			} else if (!memcmp(tmp2, "\"Channel\"", sep - tmp2)) {
 				offset = 80;
-			} else 
+			} else if (!memcmp(tmp2, "\"Clients\"", sep - tmp2)) {
+				offset = 90;
+			} else
 				continue;
 			memcpy(&contain[offset], sep + 1, strlen(tmp2) - (sep - tmp2));
 		}
-		log_printf(MSG_INFO, "%-35s%-30s%-10s", contain, &contain[50], &contain[80]);
+		log_printf(MSG_INFO, "%-35s%-30s%-10s%-10s", contain, &contain[50], &contain[80], &contain[90]);
 		tmp = tail;
 	}
 
@@ -130,8 +132,9 @@ void mitm_get_dictionary_reply_action(void *action_data, void *usr_data, char *o
 void mitm_set_victim_request_action (void *action_data, void *usr_data, char *options){
 	struct mitm_recv_info *recv_info = (struct mitm_recv_info *) action_data;
 	struct MITM *MITM = (struct MITM*) usr_data;
-	struct victim_info target;
-	struct victim_info *tmp;
+	struct access_point_info *ap;
+	struct client_info target;
+	struct client_info *tmp;
 	int match = 0, ret;
 	char buf[256];
 	memset(report, 0, BUFFER_LEN);
@@ -144,7 +147,11 @@ void mitm_set_victim_request_action (void *action_data, void *usr_data, char *op
 			}
 		}
 	}
-	dl_list_for_each(tmp, &MITM->victim_list, struct victim_info, victim_node) {
+	dl_list_for_each(ap, &MITM->ap_list, struct access_point_info, ap_node) {
+		if(!memcmp(ap->BSSID, MITM->encry_info.AA, ETH_ALEN) && !strcmp(ap->SSID, MITM->encry_info.SSID))
+			break;
+	}
+	dl_list_for_each(tmp, &ap->client_list, struct client_info, client_node) {
 		if (!memcmp(target.mac, tmp->mac, ETH_ALEN)) {
 			match = 1;
 			memcpy(MITM->encry_info.SA, target.mac, ETH_ALEN);
@@ -190,10 +197,15 @@ void mitm_get_victim_request_action (void *action_data, void *usr_data, char *op
   struct MITM *MITM = (struct MITM*)usr_data;
 
   int ret;
-  struct victim_info *tmp;
-  sprintf(report, "%s:[", MITM_GET_VICTIM_LIST_REPLY);
+  struct client_info *tmp;
+  struct access_point_info *ap;
+	sprintf(report, "%s:[", MITM_GET_VICTIM_LIST_REPLY);
   char buf[100];
-  dl_list_for_each(tmp, &MITM->victim_list, struct victim_info, victim_node) {
+	dl_list_for_each(ap, &MITM->ap_list, struct access_point_info, ap_node) {
+		if(!memcmp(ap->BSSID, MITM->encry_info.AA, ETH_ALEN) && !strcmp(ap->SSID, MITM->encry_info.SSID))
+			break;
+	}
+  dl_list_for_each(tmp, &ap->client_list, struct client_info, client_node) {
     memset(buf, 0, sizeof(buf));
     sprintf(buf, MACSTR",", MAC2STR(tmp->mac));
     strncat(report, buf, strlen(buf));
@@ -257,12 +269,6 @@ void mitm_set_ap_request_action (void *action_data, void *usr_data, char *option
 			memcpy(MITM->encry_info.AA, tmp->BSSID, ETH_ALEN);
 			MITM->encry_info.SSID = strdup(tmp->SSID);
             MITM->encry_info.Channel = tmp->channel;
-			/* Reset victim list of global MITM structure. */
-      struct victim_info *tmp;
-      dl_list_for_each(tmp, &MITM->victim_list, struct victim_info, victim_node) {
-        free(tmp);
-      }
-      dl_list_init(&MITM->victim_list);
 			match = 1;
 			break;
 		} 

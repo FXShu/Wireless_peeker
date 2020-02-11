@@ -23,6 +23,8 @@ struct access_point_info{
 	int channel;
 	char country[COUNTRY_CODE_LEN];
 	u8 BSSID[ETH_ALEN];
+	int clients;
+	struct dl_list client_list;
 	/***
 	 * support rate
 	 * Traffic indication
@@ -35,8 +37,8 @@ struct access_point_info{
 	 ***/
 };
 
-struct victim_info {
-  struct dl_list victim_node;
+struct client_info {
+  struct dl_list client_node;
   struct wpa_ptk ptk;
   u8 mac[ETH_ALEN];
 };
