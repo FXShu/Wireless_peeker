@@ -138,9 +138,9 @@ static void maintain_ap_list(void *eloop_data, void *user_data) {
 	dl_list_del(&ap->ap_node);
 	struct client_info *client;
 	if (!dl_list_empty(&ap->client_list)) {
-		dl_list_for_each(client, &ap->client_list, struct client_info, client_node) {
-			free(client);
-		}
+		client = dl_list_first(&ap->client_list, struct client_info, client_node);
+		dl_list_del(&client->client_node);
+		free(client);
 	}
 	free(ap);
 }
