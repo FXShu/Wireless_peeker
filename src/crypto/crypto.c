@@ -75,11 +75,11 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 	if (!info->password)
 		info->password = malloc(MAXPASSLEN + 1);
 	if (!info->password) {
-		log_printf(MSG_WARNING, "[%s]Malloc memory failed, with error:%s", strerror(errno));
+		log_printf(MSG_WARNING, "[%s]Malloc memory failed, with error:"RED"%s"NONE, strerror(errno));
 	}
 	fp = fopen(dictionary_path, "r");
 	if (fp == NULL) {
-		log_printf(MSG_WARNING, "Couldn't open dictionary, with error:%s", strerror(errno));
+		log_printf(MSG_WARNING, "Couldn't open dictionary, with error:"RED"%s"NONE, strerror(errno));
 		return -1;
 	}
 

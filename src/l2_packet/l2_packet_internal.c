@@ -202,12 +202,12 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 					tmp->channel = ap_info->channel;
 					free(ap_info);
 					match = 1;
-					eloop_replenish_timeout(5, 0, maintain_ap_list, NULL, tmp);
+					eloop_replenish_timeout(20, 0, maintain_ap_list, NULL, tmp);
 					break;
 				}
 			}
 			if (!match) {
-				eloop_register_timeout(5, 0, maintain_ap_list, NULL, ap_info);
+				eloop_register_timeout(20, 0, maintain_ap_list, NULL, ap_info);
 				dl_list_add_tail(&MITM->ap_list, &ap_info->ap_node);
 			}
 		break;
@@ -219,7 +219,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 			memcpy(&packet.ieee80211_header, buf + offset, sizeof(struct ieee80211_hdr_3addr));
 
-			offset += sizeof(struct ieee80211_hdr);
+			offset += sizeof(struct ieee80211_hdr_3addr);
 			if (packet.type == IEEE80211_QOS_DATA) offset += 2;
 			parse_llc_header(buf, len , &offset, &packet);
 			switch(MITM->state) {
@@ -236,7 +236,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
         break;
 			case MITM_state_capture_handshake :
 				if (packet.llc_hdr.type == 0x888e) {
-					parse_auth_data(buf, len, &offset, &packet);
+          parse_auth_data(buf, len, &offset, &packet);
 					fill_encry_info(MITM, &packet);
 				}
 				break;
