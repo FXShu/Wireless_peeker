@@ -68,6 +68,16 @@ struct encrypto_info {
 int sha1_vector(size_t num_elem, const uint8_t *addr[], const size_t *len,
 		                uint8_t *mac);
 
+/**
+ * wpa_pmk_to_ptk - calculate PTK by PMK
+ * @pmk: pointers to PMK areas
+ * @addr1: MAC Address of access point
+ * @addr2: MAC Address of STA
+ * @nonce1: Nonce value generate by Access pointer
+ * @nonce2: Nonce value generate by STA
+ * @ptk: Pointers to PTK area
+ * @pkt_len: Length of PTK (bytes)
+ */
 int wpa_pmk_to_ptk(u8 *pmk, u8 *addr1, u8 *addr2, 
 		u8 *nonce1, u8 *nonce2, u8 *ptk, size_t ptk_len);
 
@@ -82,6 +92,34 @@ int wpa_pmk_to_ptk(u8 *pmk, u8 *addr1, u8 *addr2,
  * */
 int hmac_hash(int ver, u8 *key, int hashlen, u8 *buf, int buflen, u8 *mic);
 
+/**
+ * dictionary_attack - foreach password in dictionary to match correct password.
+ * @dictionary_path: The path of password dictionary (absolute path).
+ * @info: The information to calculate PMK, PTK and MIC wihch capute in the 4-way handshake.
+ */
+
 int dictionary_attack(const char *dictionary_path, struct encrypto_info *info);
 
+/**
+ * aes_encrypt_init - Initialize AES for encryption
+ * @key: Encryption key.
+ * @len: Key Length in bytes (usually 16, i.e., 128 bits)
+ * Returns : Pointer to context data or NULL on failure.
+ */
+void *aes_encrypt_init(const u8 *key, size_t len);
+
+/**
+ * aes_encrypt - Encrypt one AES block
+ * @ctx: Context pointer from aes_encrypt_init()
+ * @plain: Plaintext data to be encrypted (16 bytes)
+ * @crypt: Buffer for the encrypted data (18 bytes)
+ * Returns: 0 on success, -1 on failure.
+ */
+int aes_encrypt(void *ctx, const u8 *plain, u8 *crypt);
+
+/**
+ * aes_encrypt_deinit - Deinitialize AES encryption
+ * @ctx: Context pointer from aes_encrypt_init()
+ */
+void aes_encrypt_deinit(void *ctx);
 #endif /* CRYPTO_H */
