@@ -320,7 +320,7 @@ void deauth_attack(void *eloop_data, void *user_ctx) {
 		log_printf(MSG_WARNING, "[Deauth]Send deauth packet failed, with error:%s", strerror(errno));
 	}
 	if (MITM->state == MITM_state_capture_handshake) 
-		eloop_register_timeout(3, 0, deauth_attack, NULL, MITM);
+		eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
 	free(packet);
 }
 

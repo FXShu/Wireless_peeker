@@ -196,19 +196,24 @@ void mitm_get_victim_request_action (void *action_data, void *usr_data, char *op
   struct mitm_recv_info *recv_info = (struct mitm_recv_info *) action_data;
   struct MITM *MITM = (struct MITM*)usr_data;
 
-  int ret;
+  int ret, match;
   struct client_info *tmp;
   struct access_point_info *ap;
 	sprintf(report, "%s:[", MITM_GET_VICTIM_LIST_REPLY);
   char buf[100];
+  match = 0;
 	dl_list_for_each(ap, &MITM->ap_list, struct access_point_info, ap_node) {
-		if(!memcmp(ap->BSSID, MITM->encry_info.AA, ETH_ALEN) && !strcmp(ap->SSID, MITM->encry_info.SSID))
-			break;
+		if(!memcmp(ap->BSSID, MITM->encry_info.AA, ETH_ALEN) && !strcmp(ap->SSID, MITM->encry_info.SSID)) {
+	    match = 1;
+    	break;
+    }
 	}
-  dl_list_for_each(tmp, &ap->client_list, struct client_info, client_node) {
-    memset(buf, 0, sizeof(buf));
-    sprintf(buf, MACSTR",", MAC2STR(tmp->mac));
-    strncat(report, buf, strlen(buf));
+  if (match) {
+    dl_list_for_each(tmp, &ap->client_list, struct client_info, client_node) {
+     memset(buf, 0, sizeof(buf));
+     sprintf(buf, MACSTR",", MAC2STR(tmp->mac));
+     strncat(report, buf, strlen(buf));
+    }
   }
   char *ch = strrchr(report, ',');
   if (ch)
