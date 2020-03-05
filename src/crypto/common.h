@@ -3,8 +3,6 @@
 #include "include.h"
 #include "../utils/common.h"
 
-#define NONCE_ALEN 32
-
 #ifndef BIT
 #define BIT(x) (1U << (x)) 
 #endif 

@@ -3,8 +3,12 @@
 
 #include "radiotap.h"
 #include "stdint.h"
-#include "common.h"
+//#include "common.h"
+#define NONCE_ALEN 32
 #define IEEE_8021X_MIC_LEN 16
+#ifndef ETH_ALEN
+#define ETH_ALEN 6
+#endif
 
 #ifndef u8
 #define u8 uint8_t
@@ -23,10 +27,22 @@
 #define type_mask    0x0c00
 #define version_mask 0x0300
 
+#define WLAN_FC_TODS      0x0001
+#define WLAN_FC_FROMDS    0x0002
+#define WLAN_FC_MOREFRAG  0x0004
+#define WLAN_FC_RETRY     0x0008
+#define WLAN_FC_PWRMGT    0x0010
+#define WLAN_FC_MOREDATA  0x0020
+#define WLAN_FC_PROTECTED 0x0040
+#define WLAN_FC_ORDER     0x0080
+
+#define WLAN_PARSE_TYPE(fc)    (((fc) & type_mask) >> 6)
+#define WLAN_PARSE_SUBTYPE(fc) ((((fc) & subtype_mask) >> 12) | WLAN_PARSE_TYPE(fc))
+
 enum ieee80211_type {
-    IEEE80211_MANAGMENT_TYPE = 0x00,
-    IEEE80211_CONTROL_TYPE   = 0x01,
-    IEEE80211_DATA_TYPE      = 0x02,
+    IEEE80211_MANAGMENT_TYPE = 0x0000,
+    IEEE80211_CONTROL_TYPE   = 0x0010,
+    IEEE80211_DATA_TYPE      = 0x0020,
 };
 
 enum ieee80211_subtype {

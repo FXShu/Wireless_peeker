@@ -1,5 +1,5 @@
 #ifndef UTILS_COMMON_H
-#define UTILS_CPMMON_H
+#define UTILS_COMMON_H
 
 #include "os.h"
 #include "includes.h"
@@ -152,6 +152,16 @@ static inline unsigned int hack_swap_32(unsigned int v)
 #endif
 
 void * zalloc(size_t size);
+
+static inline void MITM_PUT_BE16(u8 *a, u16 val) {
+  a[0] = val >> 8;
+  a[1] = val & 0xff;
+}
+
+static inline void MITM_PUT_LE16(u8 *a, u16 val) {
+  a[0] = val & 0xff;
+  a[1] = val >> 8;
+}
 
 #ifndef ETH_P_ALL
 #define ETH_P_ALL 0x0003

@@ -13,7 +13,7 @@ include ../lib.rules
 CONFIG_CRYPTO_INTERNAL=y
 
 
-LIB_OBJS= sha1_internal.o crypto.o hmac_sha1.o sha1_pbkf2.o sha1-prf.o
+LIB_OBJS= sha1_internal.o crypto.o hmac_sha1.o sha1_pbkf2.o sha1-prf.o aes_openssl.o aes-ccm.o ccmp.o
 
 libcry.a: $(LIB_OBJS)
 	$(AR) crT $@ $?

@@ -112,11 +112,11 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 		hmac_hash(info->version, ptkset.mic_key, 16, info->eapol, sizeof(struct wpa_eapol_key), keymic);
 		if (!memcmp(&info->MIC, &keymic, sizeof(keymic))) {
 			log_printf(MSG_DEBUG, "Pair Master Key = ");
-			lamont_hdump(pmk, sizeof(pmk));
+			lamont_hdump(MSG_DEBUG, pmk, sizeof(pmk));
 			log_printf(MSG_DEBUG, "Pair Transient Key = ");
-			lamont_hdump(ptk, sizeof(ptk));
+			lamont_hdump(MSG_DEBUG, ptk, sizeof(ptk));
 			log_printf(MSG_DEBUG, "Message Integrity Check = ");
-			lamont_hdump(keymic, sizeof(keymic));
+			lamont_hdump(MSG_DEBUG, keymic, sizeof(keymic));
 			memcpy(&info->ptk, ptk, sizeof(ptk));
 			return 0;
 		}

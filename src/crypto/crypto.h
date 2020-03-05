@@ -122,4 +122,11 @@ int aes_encrypt(void *ctx, const u8 *plain, u8 *crypt);
  * @ctx: Context pointer from aes_encrypt_init()
  */
 void aes_encrypt_deinit(void *ctx);
+
+int aes_ccm_ae(const u8 *key, size_t key_len, const u8 *nonce,
+    size_t M, const u8 *plain, size_t plain_len, const u8 *aad,
+    size_t aad_len, u8 *crypt, u8 *auth);
+
+u8 *ccmp_encrypt(const u8 *tk, u8 *frame, size_t len, size_t hdrlen, u8 *qos,
+		 u8 *pn, int keyid, size_t *encrypted_len);
 #endif /* CRYPTO_H */

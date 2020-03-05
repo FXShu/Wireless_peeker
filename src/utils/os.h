@@ -1,7 +1,7 @@
 #ifndef OS_H
 #define OS_H
 
-#include "common.h"
+#include "includes.h"
 #ifdef WPA_TRACE
 void * os_malloc(size_t size);
 void * os_realloc(void *ptr, size_t size);

@@ -9,9 +9,11 @@
  * but the contents of this structure should not be used directly outside l2_packet
  * implementation.
  * */
-#include "ieee80211_data.h"
+#include "include.h"
 #include "common.h"
 #define GETTYPE(type, object) ((struct (type) *)object)
+typedef void (*rx_callback)(void *ctx, const u8 *src_addr, const char *buf, size_t len);
+
 
 struct l2_packet_data;
 
@@ -72,9 +74,9 @@ void l2_packet_notify_auth_start(struct l2_packet_data *l2);
 
 int l2_packet_set_packet_filter(struct l2_packet_data *l2, enum l2_packet_filter_type type);
 
-void print_handshake_packet(struct WPA2_handshake_packet *packet);
+void l2_packet_change_callback(struct l2_packet_data *l2, rx_callback new_function);
 
-uint16_t parse_subtype(uint16_t value);
+void print_handshake_packet(struct WPA2_handshake_packet *packet);
 
 void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *buf, size_t len);
 

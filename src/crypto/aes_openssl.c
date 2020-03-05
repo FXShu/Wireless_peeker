@@ -45,3 +45,17 @@ int aes_encrypt(void *ctx, const u8 *plain, u8 *crypt) {
   }
   return 0;
 }
+
+void aes_encrypt_deinit(void *ctx) {
+  EVP_CIPHER_CTX *c = ctx;
+  u8 buf[16];
+  int len = sizeof(buf);
+  if (EVP_EncryptFinal_ex(c, buf, &len) != 1) {
+    log_printf(MSG_ERROR, "OpenSSL: EVP_EncryptFinal_ex failed: %s",
+        ERR_error_string(ERR_get_error(), NULL));
+  }
+  if (len != 0) {
+    log_printf(MSG_ERROR, "OpenSSL: Unexpected padding length %d in AES encrypt", len);
+  }
+  EVP_CIPHER_CTX_free(c);
+}

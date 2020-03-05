@@ -79,9 +79,9 @@ void copy_mac_address(uint8_t *src, uint8_t *dst) {
 	}
 }
 
-void lamont_hdump(unsigned char *bp, unsigned int length) {
+void lamont_hdump(int level, unsigned char *bp, unsigned int length) {
 	/* stolen from tcpdump, then kludged extensively */
-
+  if (debug_level > level) return;
 	static const char asciify[] =
 			"................................ !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~.................................................................................................................................";
 	const unsigned short *sp;
