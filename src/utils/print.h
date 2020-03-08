@@ -57,5 +57,5 @@ void log_printf(int level,char* format,...);
 
 void copy_mac_address(uint8_t *src, uint8_t *dst);
 
-void lamont_hdump(int level, unsigned char *bp, unsigned int length);
+void lamont_hdump(int level, const char* title, const unsigned char *bp, unsigned int length);
 #endif

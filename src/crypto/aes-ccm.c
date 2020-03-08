@@ -22,8 +22,7 @@ static void aes_ccm_auth_start(void *aes, size_t M, size_t L, const u8 *nonce,
   memcpy(&b[1], nonce, 15 - L);
   MITM_PUT_BE16(&b[AES_BLOCK_SIZE - L], plain_len);
 
-  log_printf(MSG_EXCESSIVE, "CCM B_0");
-  lamont_hdump(MSG_EXCESSIVE, b, AES_BLOCK_SIZE);
+  lamont_hdump(MSG_EXCESSIVE, "CCM B_0", b, AES_BLOCK_SIZE);
   aes_encrypt(aes, b, x); /* X_1 = E(K, B_0) */
 
   if(!aad_len)
@@ -94,15 +93,26 @@ static void aes_ccm_encr_auth(void *aes, size_t M, u8 *x, u8 *a, u8 *auth) {
   size_t i;
   u8 tmp[AES_BLOCK_SIZE];
 
-  log_printf(MSG_EXCESSIVE, "CCM T :");
-  lamont_hdump(MSG_EXCESSIVE, x, M);
+  lamont_hdump(MSG_EXCESSIVE, "CCM T", x, M);
   /* U = T XOR S_0; S_0 = E(K, A_0) */
   MITM_PUT_BE16(&a[AES_BLOCK_SIZE - 2], 0);
   aes_encrypt(aes, a, tmp);
   for (i = 0; i < M; i++)
     auth[i] = x[i] ^ tmp[i];
-  log_printf(MSG_EXCESSIVE, "CCM U :");
-  lamont_hdump(MSG_EXCESSIVE, auth, M);
+  lamont_hdump(MSG_EXCESSIVE, "CCM U", auth, M);
+}
+
+static void aes_ccm_decr_auth(void *aes, size_t M, u8 *a, const u8 *auth, u8 *t) {
+  size_t i;
+  u8 tmp[AES_BLOCK_SIZE];
+
+  lamont_hdump(MSG_EXCESSIVE, "CCM U", auth, M);
+  /* U = T XOR S_0; S_0 = E(K, A_0) */
+  MITM_PUT_BE16(&a[AES_BLOCK_SIZE - 2], 0);
+  aes_encrypt(aes, a, tmp);
+  for (i = 0;i < M; i++) 
+    t[i] = auth[i] ^ tmp[i];
+  lamont_hdump(MSG_EXCESSIVE, "CCM T", t, M);
 }
 
 int aes_ccm_ae(const u8 *key, size_t key_len, const u8 *nonce,
@@ -125,5 +135,40 @@ int aes_ccm_ae(const u8 *key, size_t key_len, const u8 *nonce,
   aes_ccm_encr(aes, L, plain, plain_len, crypt, a);
   aes_ccm_encr_auth(aes, M, x, a, auth);
   aes_encrypt_deinit(aes);
+  return 0;
+}
+
+int aes_ccm_ad(const u8 *key, size_t key_len, const u8 *nonce, size_t M,
+                const u8 *crypt, size_t crypt_len, const u8 *aad,
+                size_t aad_len, const u8 *auth, u8 *plain) {
+  const size_t L = 2;
+  void *aes;
+  u8 x[AES_BLOCK_SIZE], a[AES_BLOCK_SIZE];
+  u8 t[AES_BLOCK_SIZE];
+
+  if (aad_len > 30 || M > AES_BLOCK_SIZE)
+   return -1;
+
+  aes = aes_encrypt_init(key, key_len);
+  if (!aes)
+    return -1;
+
+  /* Descrption */
+  aes_ccm_encr_start(L, nonce, a);
+  aes_ccm_decr_auth(aes, M, a, auth, t);
+
+  /* plaintext = msg XOR (S_1 | S_2 | ... | S_n) */
+  aes_ccm_encr(aes, L, crypt, crypt_len, plain, a);
+
+  aes_ccm_auth_start(aes, M, L, nonce, aad, aad_len, crypt_len, x);
+  aes_ccm_auth(aes, plain, crypt_len, x);
+
+  aes_encrypt_deinit(aes);
+
+  if (memcmp(x, t, M) != 0) {
+    log_printf(MSG_EXCESSIVE, "CCM: Auth mismatch");
+    return -1;
+  }
+
   return 0;
 }

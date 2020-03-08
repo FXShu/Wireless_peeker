@@ -79,7 +79,7 @@ void copy_mac_address(uint8_t *src, uint8_t *dst) {
 	}
 }
 
-void lamont_hdump(int level, unsigned char *bp, unsigned int length) {
+void lamont_hdump(int level, const char *title, const unsigned char *bp, unsigned int length) {
 	/* stolen from tcpdump, then kludged extensively */
   if (debug_level > level) return;
 	static const char asciify[] =
@@ -90,8 +90,9 @@ void lamont_hdump(int level, unsigned char *bp, unsigned int length) {
 	int nshorts, nshorts2;
 	int padding;
 
-	printf("\t");
-	padding = 0;
+	log_printf(level, "%s:", title);
+  printf("\t");
+  padding = 0;
 	sp = (unsigned short *)bp;
 	ap = (unsigned char *)bp;
 	nshorts = (unsigned int)length / sizeof(unsigned short);

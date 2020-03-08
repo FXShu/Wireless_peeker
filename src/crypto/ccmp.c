@@ -100,20 +100,51 @@ u8 *ccmp_encrypt(const u8 *tk, u8 *frame, size_t len, size_t hdrlen, u8 *qos,
 
   memset(aad, 0, sizeof(aad));
   ccmp_aad_nonce(hdr, crypt + hdrlen, aad, &aad_len, nonce);
-  log_printf(MSG_EXCESSIVE, "CCMP AAD = ");
-  lamont_hdump(MSG_EXCESSIVE, aad, aad_len);
-  log_printf(MSG_EXCESSIVE, "CCMP NONCE = ");
-  lamont_hdump(MSG_EXCESSIVE, nonce, 13);
+  lamont_hdump(MSG_EXCESSIVE, "CCMP AAD", aad, aad_len);
+  lamont_hdump(MSG_EXCESSIVE, "CCMP NONCE", nonce, 13);
 
   if (aes_ccm_ae(tk, 16, nonce, 8, frame + hdrlen, plen, aad, aad_len,
         pos, pos + plen) < 0) {
     free(crypt);
     return NULL;
   }
-  log_printf(MSG_EXCESSIVE, "CCMP encrypted = ");
-  lamont_hdump(MSG_EXCESSIVE, crypt + hdrlen + 8, plen);
+  lamont_hdump(MSG_EXCESSIVE, "CCMP encrypted", crypt + hdrlen + 8, plen);
 
   *encrypted_len = hdrlen + 8 + plen + 8;
 
   return crypt;
+}
+
+u8 *ccmp_decrypt(const u8 *tk, const struct ieee80211_hdr_3addr *hdr, const u8 *data,
+    size_t data_len, size_t *decrypted_len) {
+  u8 aad[30], nonce[13];
+  size_t aad_len;
+  /* length of message */
+  size_t mlen;
+  u8 *plain;
+  
+  if (data_len < 8 + 8)
+    return NULL;
+
+  plain = malloc(data_len + AES_BLOCK_SIZE);
+  if (!plain)
+    return NULL;
+  
+  mlen = data_len - 8 - 8;
+
+  memset(aad, 0, sizeof(aad));
+  ccmp_aad_nonce(hdr, data, aad, &aad_len, nonce);
+  lamont_hdump(MSG_EXCESSIVE, "CCMP AAD",aad, aad_len);
+
+  if (aes_ccm_ad(tk, 16, nonce, 8, data+8, mlen, aad, aad_len, data + 8 + mlen, plain) < 0) {
+    u16 seq_ctrl = ntohs(hdr->seq_ctrl);
+    log_printf(MSG_INFO, "Invalid CCMP MIC in frame: A1="MACSTR " A2="MACSTR 
+                " A3=" MACSTR " seq=%u frag=%u", MAC2STR(hdr->addr1), MAC2STR(hdr->addr2),
+                MAC2STR(hdr->addr3), WLAN_PARSE_SEQ(seq_ctrl), WLAN_PARSE_FRAG(seq_ctrl));
+    free(plain);
+    return NULL;
+  }
+  log_printf(MSG_EXCESSIVE, "CCMP decrypted", plain, mlen);
+  *decrypted_len = mlen;
+  return plain;
 }

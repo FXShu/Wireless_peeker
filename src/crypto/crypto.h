@@ -123,10 +123,30 @@ int aes_encrypt(void *ctx, const u8 *plain, u8 *crypt);
  */
 void aes_encrypt_deinit(void *ctx);
 
+/**
+ * aes_ccm_ae - Main AES-CBC encrption process.
+ */
 int aes_ccm_ae(const u8 *key, size_t key_len, const u8 *nonce,
     size_t M, const u8 *plain, size_t plain_len, const u8 *aad,
     size_t aad_len, u8 *crypt, u8 *auth);
 
+
+int aes_ccm_ad(const u8 *key, size_t key_len, const u8 *nonce, size_t M,
+    const u8 *crypt, size_t crypt_len, const u8 *aad, size_t aad_len,
+    const u8 *auth, u8 *plain);
+
 u8 *ccmp_encrypt(const u8 *tk, u8 *frame, size_t len, size_t hdrlen, u8 *qos,
 		 u8 *pn, int keyid, size_t *encrypted_len);
+
+/**
+ * ccmp_descrpt - descrpte cipher to plain by AES-CCM
+ * @tk - temporal key from PTK
+ * @hdr - ieee80211 header from packet
+ * @data - payload from packet, not include radiotap header, 80211 header
+ * @data_len - length of packet payload. likely, not include radiotap and 80211 header
+ * @descrtpted_len - length of plain text.
+ * Return - Plain text, should be free after using.
+ */
+u8 *ccmp_decrypt(const u8 *tk, const struct ieee80211_hdr_3addr *hdr, const u8 *data,
+      size_t data_len, size_t *decrypted_len);
 #endif /* CRYPTO_H */

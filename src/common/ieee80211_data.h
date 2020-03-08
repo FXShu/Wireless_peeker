@@ -38,6 +38,8 @@
 
 #define WLAN_PARSE_TYPE(fc)    (((fc) & type_mask) >> 6)
 #define WLAN_PARSE_SUBTYPE(fc) ((((fc) & subtype_mask) >> 12) | WLAN_PARSE_TYPE(fc))
+#define WLAN_PARSE_SEQ(seq) ((seq) >> 4)
+#define WLAN_PARSE_FRAG(seq) ((seq) & (BIT(1) | BIT(2) | BIT(3) | BIT(4)))
 
 enum ieee80211_type {
     IEEE80211_MANAGMENT_TYPE = 0x0000,
