@@ -65,7 +65,7 @@ int nextdictword(char *word, FILE *fp) {
 	return strlen(word);
 }
 
-int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
+int dictionary_attack(const char *dictionary_path, struct encrypto_info *info, int cracked) {
 	FILE *fp;
 	int fret;
 	u8 pmk[32];
@@ -90,6 +90,8 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 	eapol_frame->key_info = ntohs(eapol_frame->key_info);
 	eapol_frame->key_length = ntohs(eapol_frame->key_length);
 
+  if (cracked)
+    goto calculate_ptk;
 	/* TODO : We should break this loop when receive cli break request. */
 	while (feof(fp) == 0) {
 		fret = nextdictword(info->password, fp);
@@ -106,7 +108,8 @@ int dictionary_attack(const char *dictionary_path, struct encrypto_info *info) {
 	 	*/
 		if (fret < 8 || fret > 63) 
 			continue;
-		pbkdf2_sha1(info->password, info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk), USECACHED);
+calculate_ptk:
+    pbkdf2_sha1(info->password, info->SSID, strlen(info->SSID), 4096, pmk, sizeof(pmk), USECACHED);
 		wpa_pmk_to_ptk(pmk, info->AA, info->SA, info->AN, info->SN, ptk, sizeof(ptk));
 		memcpy(&ptkset, ptk, sizeof(ptkset));
 		hmac_hash(info->version, ptkset.mic_key, 16, info->eapol, sizeof(struct wpa_eapol_key), keymic);

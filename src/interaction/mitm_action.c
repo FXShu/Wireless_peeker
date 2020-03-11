@@ -74,7 +74,7 @@ void mitm_get_ap_list_reply_action (void *action_data, void *usr_data, char *opt
 		memset(buffer, 0, 100);
 		head = strchr(tmp, '{');
 		tail = strchr(tmp, '}') + 1;
-		if (!head || !tail)
+		if ((!head || !tail) || head > tail)
 			break;
 		int length = tail - head;
 		memcpy(buffer, head + 1, length - 2);

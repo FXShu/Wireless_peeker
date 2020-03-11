@@ -215,6 +215,12 @@ struct ieee80211_beacon {
 	struct beacon_tag_params *tag_param;
 } __attribute__((packed));
 
+struct WPA2_packet {
+  enum ieee80211_subtype type;
+  struct ieee80211_hdr_3addr ieee80211_header;
+  struct llc_header llc_hdr;
+} __attribute((packed));
+
 struct WPA2_handshake_packet {
 	//struct ieee80211_radiotap_header radiotap_hdr;
 	enum ieee80211_subtype type;

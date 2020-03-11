@@ -137,14 +137,13 @@ u8 *ccmp_decrypt(const u8 *tk, const struct ieee80211_hdr_3addr *hdr, const u8 *
   lamont_hdump(MSG_EXCESSIVE, "CCMP AAD",aad, aad_len);
 
   if (aes_ccm_ad(tk, 16, nonce, 8, data+8, mlen, aad, aad_len, data + 8 + mlen, plain) < 0) {
-    u16 seq_ctrl = ntohs(hdr->seq_ctrl);
+    u16 seq_ctrl = hdr->seq_ctrl;
     log_printf(MSG_INFO, "Invalid CCMP MIC in frame: A1="MACSTR " A2="MACSTR 
                 " A3=" MACSTR " seq=%u frag=%u", MAC2STR(hdr->addr1), MAC2STR(hdr->addr2),
                 MAC2STR(hdr->addr3), WLAN_PARSE_SEQ(seq_ctrl), WLAN_PARSE_FRAG(seq_ctrl));
     free(plain);
     return NULL;
   }
-  log_printf(MSG_EXCESSIVE, "CCMP decrypted", plain, mlen);
   *decrypted_len = mlen;
   return plain;
 }

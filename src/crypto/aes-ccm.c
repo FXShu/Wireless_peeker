@@ -147,7 +147,7 @@ int aes_ccm_ad(const u8 *key, size_t key_len, const u8 *nonce, size_t M,
   u8 t[AES_BLOCK_SIZE];
 
   if (aad_len > 30 || M > AES_BLOCK_SIZE)
-   return -1;
+    return -1;
 
   aes = aes_encrypt_init(key, key_len);
   if (!aes)
