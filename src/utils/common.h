@@ -163,6 +163,14 @@ static inline void MITM_PUT_LE16(u8 *a, u16 val) {
   a[1] = val >> 8;
 }
 
+static inline void MITM_PUT_LE32(u8 *a, u32 val)
+{
+  a[3] = (val >> 24) & 0xff;
+  a[2] = (val >> 16) & 0xff;
+  a[1] = (val >> 8) & 0xff;
+  a[0] = val & 0xff;
+}
+
 #ifndef ETH_P_ALL
 #define ETH_P_ALL 0x0003
 #endif /* ETH_P_ALL */
@@ -170,5 +178,14 @@ static inline void MITM_PUT_LE16(u8 *a, u16 val) {
 #ifndef ETH_P_PAE 
 #define ETH_P_PAE 0x888E
 #endif /* ETH_P_PAE */
+
+/* Time convert */
+union t_convert{
+  os_time_t tv;
+  struct ints {
+    u32 low;
+    u32 high;
+  }set;
+};
 
 #endif /* UTILS_COMMON_H */

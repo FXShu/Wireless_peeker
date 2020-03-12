@@ -57,6 +57,7 @@ struct MITM {
 	struct encrypto_info encry_info;
 	enum MITM_state state;
 	char* dict_path;
+  FILE *pcapng_path;
 };
 
 struct MITM_info {

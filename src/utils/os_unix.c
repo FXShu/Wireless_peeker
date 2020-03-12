@@ -73,3 +73,39 @@ int os_get_reltime(struct os_reltime *t) {
 
 	return timercmp(next, &tmp, >);	
 }*/
+
+char *os_get_hw_info() {
+ FILE *fp;
+  char *info;
+  info = malloc(200);
+  if (!info) {
+    printf("Alloc memory failed, with error :%s\n", strerror(errno));
+    return NULL;
+  }
+  fp = popen("lshw | grep CPU | grep version | awk -F: '{print $2}'", "r");
+  if (!fp) {
+    printf("Run 'lshw' command failed, with error :%s\n", strerror(errno));
+    return NULL;
+  }
+  fgets(info, 200, fp);
+  pclose(fp);
+  return info;
+}
+
+char *os_get_os_info() {
+  FILE *fp;
+  char *info;
+  info = malloc(200);
+  if (!info) {
+    printf("Alloc memory failed, with error :%s\n", strerror(errno));
+    return NULL;
+  }
+  fp = popen("uname -v", "r");
+  if (!fp) {
+    printf("Run 'lshw' command failed, with error :%s\n", strerror(errno));
+    return NULL;
+  }
+  fgets(info, 200, fp);
+  pclose(fp);
+  return info;
+}

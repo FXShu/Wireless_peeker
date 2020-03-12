@@ -98,4 +98,7 @@ static inline int os_reltime_expired(struct os_reltime *now,
 void * os_zalloc(size_t size);
 int os_get_reltime(struct os_reltime *t);
 size_t os_strlcpy(char *dest,const char *src, size_t siz);
+
+char *os_get_hw_info();
+char *os_get_os_info();
 #endif /* OS_H */

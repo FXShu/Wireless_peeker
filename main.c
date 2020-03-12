@@ -6,7 +6,6 @@
 char ip_s[MAX_IPV4_LEN];
 char mac_s[MAX_MAC_LEN];
 int debug_level;
-char *wfile;
 bool manual=false;
 
 void usage(){
@@ -73,8 +72,8 @@ int main(int argc,char* argv[]){
 				filter_set = true;
 			break;
 			case 'w':
-				wfile=optarg;
-			break;
+        MITM->pcapng_path = fopen(optarg, "w+");
+      break;
 			case 't':;
 				char *tmp;
 				tmp = strdup(optarg);
