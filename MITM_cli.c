@@ -37,7 +37,7 @@ char const *mitm_get_state(enum MITM_state state) {
 		case MITM_state_crash_PTK:
 			return "Crashing PTK";
 		case MITM_state_ready:
-			return "Ready for Man-In-The_Middle attack";
+			return "Peek encrypted packet!";
 		case MITM_state_spoofing:
 			return "Attacking";
 		default:
