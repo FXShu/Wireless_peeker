@@ -5,6 +5,7 @@ CFLAGS = -g -O0 -std=gnu99  -Wno-switch -Wno-unused-variable -MMD
 CFLAGS += -I$(abspath ./src)
 CFLAGS += -I$(abspath ./src/utils)
 CFLAGS += -I$(abspath ./src/crypto)
+CFLAGS += -I /usr/include/libnl3
 
 CFLAGS_CLI = -g -std=c99
 
@@ -15,14 +16,12 @@ LIBS_SEND=
 OBJS= 
 OBJS_CLI =
 
-OBJS += main.o arp.o sniffer.o packet.o getif.o parse.o \
-	MITM.o
+OBJS += main.o packet.o parse.o MITM.o
 OBJS_CLI += MITM_cli.o
 
 OBJS_SEND += send_packet_test.o 
 
 LIBS_c += -lnet
-LIBS_c += -lpcap
 LIBS_c += -lm
 LIBS_c += -L ./src/interaction -lctrl
 LIBS_c += -L ./src/l2_packet -ll2_packet

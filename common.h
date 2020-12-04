@@ -9,9 +9,6 @@ typedef enum{
 }bool;
 #include <linux/if_ether.h>
 #include "include.h"
-#include "arp.h"
-#include "sniffer.h"
-#include "getif.h"
 #include "./src/utils/common.h"
 #include "./src/utils/eloop.h"
 #include "./src/interface/iw_implement.h"

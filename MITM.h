@@ -44,13 +44,9 @@ enum MITM_state {
  * 	only use if the user_dev is a wireless interface
  **/
 struct MITM {
-	sni_info dev_info;
-	char errbuf[PCAP_ERRBUF_SIZE];
 	char* usr_dev;
 	enum usr_dev_type dev_type;
 	char* monitor_dev;
-	pcap_if_t* if_buf;
-	pcap_if_t* monitor_buf;
 	struct l2_packet_data *l2_packet;
 	struct dl_list ap_list;  //used to foreach access_point_info array.
   struct dl_list victim_list;
