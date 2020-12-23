@@ -7,3 +7,4 @@ MITM_cli
 *.so
 *.d
 *.swp
+cscope.*

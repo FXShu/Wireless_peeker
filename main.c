@@ -1,12 +1,8 @@
-#include "MITM.h"
+#include "wireless_peek.h"
 #include "common.h"
-#include "./src/interaction/mitm_ctrl.h"
+#include "./src/interaction/peek_ctrl.h"
 
-
-char ip_s[MAX_IPV4_LEN];
-char mac_s[MAX_MAC_LEN];
 int debug_level;
-bool manual=false;
 
 void usage(){
 	printf("MITM usage:\n"
@@ -14,8 +10,6 @@ void usage(){
 		"  -h = show this help\n"
 		"  -d <level> = increase debugging verbosity\n"
 		"  -i = interface name\n"
-		"  -m = manual set interface information\n"
-		"  -f <filter> set packet filter\n"
 		"  -t <device_type(wireless/ethernet)> set the device type\n");
 }
 
@@ -23,22 +17,18 @@ static void mitm_eloop_terminate(int sig, void *signal_ctx) {
 	eloop_terminate();
 }
 
-int main(int argc,char* argv[]){
+int main(int argc, char **argv){
 
-	struct MITM *MITM;
+	struct wireless_peek this;
 
-	bool filter_set = false;
-	int c ,exitcode;
-	char user_filter[100];
-	struct packet_handler *handler;
+	char packet_path[64];
+	char main_iface[64];
+	char dictionary_path[64];
+	int c;
 	struct mitm_ctrl *ctrl;
 
-	MITM = malloc(sizeof(struct MITM));
-	if (!MITM)
-		return -ENOMEM;
-
 	for(;;){
-		c=getopt(argc, argv,"i:hd:mf:w:t:p:");
+		c=getopt(argc, argv,"i:hd:w:p:");
 		if(c < 0)break;
 		switch(c){
 		case 'd':
@@ -49,40 +39,24 @@ int main(int argc,char* argv[]){
 			return 0;
 		break;
 		case 'i':
-			MITM->usr_dev = optarg;
-		break;
-		case 'm':
-			manual=true;	
-		break;
-		case 'f':
-			strcpy(user_filter,optarg);
-			filter_set = true;
+			strncpy(main_iface, optarg, 64);
 		break;
 		case 'w':
-			MITM->pcapng_path = fopen(optarg, "w+");
-		break;
-		case 't':;
-			char *tmp;
-			tmp = strdup(optarg);
-			if (!strcmp("wireless", tmp)) {
-				MITM->dev_type = wireless;
-			} else if (!strcmp("ethernet", tmp)) {
-				MITM->dev_type = ethernet;
-			} else {
-				printf("only supper wireless/ethernet type device\n");
-				usage();
-				return -1;
-			}
-			free(tmp);
+			strncpy(packet_path, optarg, 64);
 		break;
 		case 'p':
-			MITM->dict_path = strdup(optarg);
+			strncpy(dictionary_path, optarg, 64);
 		break;
 		default:
 	       		usage();
 			return 0;
 		}
 	}
+	eloop_init();
+
+	memset(&this, 0, sizeof(struct wireless_peek));
+	if (wireless_peek_init(&this, main_iface, dictionary_path, packet_path))
+		goto exit;
 #if 0
 create_monitor_interface:
 	if(MITM->dev_type == wireless) {
@@ -127,24 +101,8 @@ create_monitor_interface:
 		}
 	}
 #endif
-	eloop_init();
-	if (MITM_init(MITM) || !MITM) {
-		log_printf(MSG_ERROR, "initialize global MITM failed");
-		return -1;
-	}
-	if (!MITM->l2_packet) {
-		log_printf(MSG_ERROR, "l2_packet_data alloc failed");
-		goto fail;
-	}
-	ctrl = mitm_server_open(MITM, MITM_CTRL_PATH);
-	if (!ctrl) {
-		log_printf(MSG_ERROR, "control server open failed");
-		goto fail;
-	}else {
-		log_printf(MSG_DEBUG, "control server is ready");
-	}
 	eloop_run();
-fail:
-	MITM_deinit(MITM);
+exit:
+	wireless_peek_deinit(&this);
 	return -1;
 }

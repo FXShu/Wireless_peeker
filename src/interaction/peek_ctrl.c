@@ -3,63 +3,64 @@
 #include <sys/un.h>
 #include <fcntl.h> // fcntl - manipulate file descriptor
 #endif /* CONFIG_CTRL_IFACE */
-#include "mitm_action.h"
-#include "mitm_ctrl.h"
+#include "peek_action.h"
+#include "peek_ctrl.h"
 
 #ifndef CONFIG_CTRL_IFACE_CLIENT_DIR
 #define CONFIG_CTRL_IFACE_CLIENT_DIR "/tmp"
 #endif /* CONFIG_CTRL_IFACE_CLIENT_DIR */
 
 #ifndef CONFIG_CTRL_IFACE_CLIENT_PREFIX
-#define CONFIG_CTRL_IFACE_CLIENT_PREFIX "mitm_ctrl_"
+#define CONFIG_CTRL_IFACE_CLIENT_PREFIX "peek_ctrl_"
 #endif /* CONFIG_CTRL_IFACE_CLIENT_PREFIX */
 
-struct MITM_ctrl_msg msg_handler[] = {
-	{1, MITM_GET_AP_LIST_REQUEST, mitm_get_ap_list_request_action, 
-		MITM_state_ap_search, MITM_state_spoofing, "Print ap list."},
+struct peek_ctrl_msg msg_handler[] = {
+	{1, PEEK_GET_AP_LIST_REQUEST, peek_get_ap_list_request_action, 
+		wireless_peek_state_ap_search, wireless_peek_state_spoofing, "Print ap list."},
         
-	{2, MITM_GET_AP_LIST_REPLY, mitm_get_ap_list_reply_action, -1, -1, NULL},
+	{2, PEEK_GET_AP_LIST_REPLY, peek_get_ap_list_reply_action, -1, -1, NULL},
         
-	{3, MITM_SET_AP_REQUEST, mitm_set_ap_request_action, 
-		MITM_state_ap_search, MITM_state_spoofing, "Set ap [SSID=ssid] [BSSID=bssid]."},
+	{3, PEEK_SET_AP_REQUEST, peek_set_ap_request_action, 
+		wireless_peek_state_ap_search, wireless_peek_state_spoofing,
+		"Set ap [SSID=ssid] [BSSID=bssid]."},
 
-	{4, MITM_SET_AP_REPLY, mitm_set_ap_reply_action, -1, -1, NULL},
+	{4, PEEK_SET_AP_REPLY, peek_set_ap_reply_action, -1, -1, NULL},
 	
-	{5, MITM_SET_VICTIM_REQUEST, mitm_set_victim_request_action, 
-		MITM_state_ap_search, MITM_state_spoofing, "Set victim [MAC=mac]."},
+	{5, PEEK_SET_VICTIM_REQUEST, peek_set_victim_request_action, 
+		wireless_peek_state_ap_search, wireless_peek_state_spoofing, "Set victim [MAC=mac]."},
         
-	{6, MITM_SET_VICTIM_REPLY, mitm_set_victim_reply_action, -1, -1, NULL}, 
+	{6, PEEK_SET_VICTIM_REPLY, peek_set_victim_reply_action, -1, -1, NULL}, 
   
-  {7, MITM_GET_VICTIM_LIST_REQUEST, mitm_get_victim_request_action, 
-    MITM_state_ap_search, MITM_state_spoofing, "Print victim list."},
-  
-  {8, MITM_GET_VICTIM_LIST_REPLY, mitm_get_victim_reply_action, -1, -1, NULL},
+  	{7, PEEK_GET_VICTIM_LIST_REQUEST, peek_get_victim_request_action, 
+		wireless_peek_state_ap_search, wireless_peek_state_spoofing, "Print victim list."},
+		
+	{8, PEEK_GET_VICTIM_LIST_REPLY, peek_get_victim_reply_action, -1, -1, NULL},
         
-	{9, MITM_GET_STATUS_REQUEST, mitm_get_status_request_action, 
-		MITM_state_idle, MITM_state_spoofing, "Report state"},
+	{9, PEEK_GET_STATUS_REQUEST, peek_get_status_request_action, 
+		wireless_peek_state_idle, wireless_peek_state_spoofing, "Report state"},
         
-	{10, MITM_GET_STATUS_REPLY, mitm_get_status_reply_action, -1, -1, NULL},
+	{10, PEEK_GET_STATUS_REPLY, peek_get_status_reply_action, -1, -1, NULL},
         
-	{11, MITM_START_ATTACK_REQUEST, mitm_start_attack_request_action},
+	{11, PEEK_START_ATTACK_REQUEST, peek_start_attack_request_action},
         
-	{12, MITM_START_ATTACK_REPLY, mitm_start_attack_reply_action, -1, -1, NULL}
+	{12, PEEK_START_ATTACK_REPLY, peek_start_attack_reply_action, -1, -1, NULL}
 };
 
-void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
-	struct mitm_recv_info info;
+static void peek_ctrl_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
+	struct recv_info info;
 	int ret;
 	int flags;
 	char buffer[BUFFER_LEN];
 
-	struct mitm_ctrl *ctrl = (struct mitm_ctrl*) sock_ctx;
-	struct MITM *MITM = (struct MITM*) eloop_ctx;
+	struct peek_ctrl *ctrl = (struct peek_ctrl*) sock_ctx;
+	struct wireless_peek *this = (struct wireless_peek*) eloop_ctx;
 	flags = 0;
 
 	info.length = sizeof(struct sockaddr_un);
 	memset(&info.recv_from, 0, sizeof(struct sockaddr_un));
 	memset(buffer, 0 ,BUFFER_LEN);
 	ret = recvfrom(ctrl->s, buffer, BUFFER_LEN, flags,
-		       	(struct sockaddr*)&info.recv_from,&info.length);
+		       	(struct sockaddr*)&info.recv_from, &info.length);
 	if (ret < 0) { 
 		log_printf(MSG_DEBUG, "[CTRL_COMMAND] recvfrom fail, with error:%s",
 			       	strerror(errno));
@@ -78,16 +79,16 @@ void mitm_server_handle_msg(int sock, void *eloop_ctx, void *sock_ctx) {
 
 }
 
-struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
+struct peek_ctrl* peek_ctrl_server_open(struct wireless_peek *this, const char *ctrl_path) {
 	int ret;
 
 	unlink(ctrl_path);
-	struct mitm_ctrl *ctrl;
+	struct peek_ctrl *ctrl;
 	if (!ctrl_path) { 
 		log_printf(MSG_ERROR, "no control interface path specify");
 		return NULL;
 	}
-	ctrl = malloc(sizeof(struct mitm_ctrl));
+	ctrl = malloc(sizeof(struct peek_ctrl));
 	if (!ctrl) {
 		log_printf(MSG_ERROR, "malloc ctrl failed");
 		return NULL;
@@ -104,22 +105,23 @@ struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path) {
 	ret = bind(ctrl->s, (const struct sockaddr *)&(ctrl->local), sizeof(struct sockaddr_un));
 	if (ret < 0) {
 		log_printf(MSG_ERROR, "[%s]:bind socket to local file failed, with error:\"%s\" %s",
-			       	__func__, (errno == ENOENT) ? MITM_CTRL_DIR : "",strerror(errno));
+			       	__func__, (errno == ENOENT) ? WIRELESS_PEEK_CTRL_DIR : "",
+				strerror(errno));
 		goto OPEN_SERVER_FAIL;
 	}
-	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, MITM, ctrl);
+	eloop_register_read_sock(ctrl->s, peek_ctrl_server_handle_msg, this, ctrl);
 	return ctrl;
 OPEN_SERVER_FAIL:
 	free(ctrl);
 	return NULL;
 }
-struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
-	return mitm_ctrl_open2(ctrl_path, NULL, NULL);
+struct peek_ctrl* peek_ctrl_open(const char *ctrl_path) {
+	return peek_ctrl_open2(ctrl_path, NULL, NULL);
 }
 
-struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
-	       			const char *cli_path, struct MITM_info *info) {
-	struct mitm_ctrl *ctrl;
+struct peek_ctrl* peek_ctrl_open2(const char *ctrl_path, const char *cli_path,
+				struct wireless_peek_info *info) {
+	struct peek_ctrl *ctrl;
 	static int counter = 0;
 	int ret;
 	size_t res;
@@ -130,7 +132,7 @@ struct mitm_ctrl* mitm_ctrl_open2(const char *ctrl_path,
 		log_printf(MSG_ERROR, "no control file path specify!");       
 		return NULL;
 	}
-	ctrl = malloc(sizeof(struct mitm_ctrl));
+	ctrl = malloc(sizeof(struct peek_ctrl));
 	if (!ctrl){
 		log_printf(MSG_ERROR, "alloc memory failed, please check memory left");
 		return NULL;
@@ -181,7 +183,7 @@ try_again:
 		free(ctrl);
 		return NULL;
 	}
-	eloop_register_read_sock(ctrl->s, mitm_server_handle_msg, info, ctrl);
+	eloop_register_read_sock(ctrl->s, peek_ctrl_server_handle_msg, info, ctrl);
 
 	ctrl->dest.sun_family = AF_UNIX;
 	if (strncmp(ctrl_path, "@abstract:", 10) == 0) {
@@ -230,7 +232,7 @@ try_again:
 	return ctrl;
 }
 
-void mitm_ctrl_close(struct mitm_ctrl *ctrl) {
+void peek_ctrl_close(struct peek_ctrl *ctrl) {
 	if(!ctrl) return;
 
 	unlink(ctrl->local.sun_path);
@@ -242,7 +244,7 @@ void mitm_ctrl_close(struct mitm_ctrl *ctrl) {
 
 #ifdef CONFIG_CTRL_IFACE_UDP
 
-struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
+struct peek_ctrl* peek_ctrl_open(const char *ctrl_path) {
 	struct mitm_ctrl *ctrl;
 	char buf[128];
 	size_t len;
@@ -271,7 +273,7 @@ struct mitm_ctrl* mitm_ctrl_open(const char *ctrl_path) {
 }
 
 #endif /* CONFIG_CTRL_IFACE_UDP */
-int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len) {
+int peek_ctrl_request(struct peek_ctrl *ctrl, const char *cmd, size_t cmd_len) {
 	if (!ctrl || ctrl->s < 0) return -1;
 	struct timeval tv;
 	struct os_reltime started_at;
@@ -319,34 +321,6 @@ send_err:
 	return 0;
 }
 
-int mitm_ctrl_recv(struct mitm_ctrl *ctrl, char *reply, size_t *reply_len) {
-	int res;
-	int flags;
-	flags = 0;
-	res = recv(ctrl->s, reply, *reply_len, flags);
-	if (res < 0) {
-		log_printf(MSG_ERROR, "%s:%s", __func__, strerror(errno));
-		return -1 ;
-	}
-	*reply_len = res;
-	return 0;
-}
-
-int mitm_ctrl_pending(struct mitm_ctrl *ctrl) {
-	struct timeval tv;
-	fd_set rfds;
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	FD_ZERO(&rfds);
-	FD_SET(ctrl->s, &rfds);
-	select(ctrl->s + 1, &rfds, NULL, NULL, &tv);
-	return FD_ISSET(ctrl->s, &rfds);
-}
-
-int mitm_ctrl_get_fd(struct mitm_ctrl *ctrl) {
-	return ctrl->s;
-}
-
-int mitm_get_action_num() {
+int peek_get_action_num() {
 	return ARRAY_SIZE(msg_handler);
 }

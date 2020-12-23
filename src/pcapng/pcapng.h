@@ -10,12 +10,12 @@
  *    |- repeated total block length
  * */
 struct pcapng_section_header {
-  u32 block_type;       /* string : "\n\r\r\n" */
-  u32 total_length;
-  u32 magic;            /* detect byte order 0x1a2b3c4d */
-  u16 version_major;
-  u16 version_minor;
-  long section_length;  /* length of section (non-include section header block), -1 means unknown */
+	u32 block_type;       /* string : "\n\r\r\n" */
+	u32 total_length;
+	u32 magic;            /* detect byte order 0x1a2b3c4d */
+	u16 version_major;
+	u16 version_minor;
+	long section_length;  /* length of section(non-include section header block), -1 mean unknown */
 }__attribute__((packed));
 
 /***
@@ -25,11 +25,11 @@ struct pcapng_section_header {
  *    |- repeated total block length
  * */
 struct interface_description_header {
-  u32 block_type;     /* 0x00000001 */
-  u32 total_length;
-  u16 link_type;
-  u16 reserved;
-  u32 snap_len;       /* max length saved portion of each packet */
+	u32 block_type;     /* 0x00000001 */
+	u32 total_length;
+	u16 link_type;
+	u16 reserved;
+	u32 snap_len;       /* max length saved portion of each packet */
 }__attribute__((packed));
 
 /***
@@ -40,13 +40,13 @@ struct interface_description_header {
  *    |-repeated total block length
  * */
 struct enhanced_packet_header {
-  u32 block_type;     /* 0x00000006 */
-  u32 total_length;
-  u32 interface_id;
-  u32 timetamp_high;
-  u32 timetamp_low;
-  u32 captured_packet_legth;
-  u32 original_packet_length;
+	u32 block_type;     /* 0x00000006 */
+	u32 total_length;
+	u32 interface_id;
+	u32 timetamp_high;
+	u32 timetamp_low;
+	u32 captured_packet_legth;
+	u32 original_packet_length;
 }__attribute__((packed));
 
 /***

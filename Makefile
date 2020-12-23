@@ -16,8 +16,8 @@ LIBS_SEND=
 OBJS= 
 OBJS_CLI =
 
-OBJS += main.o packet.o parse.o MITM.o
-OBJS_CLI += MITM_cli.o
+OBJS += main.o parse.o wireless_peek.o
+OBJS_CLI += wireless_peek_cli.o
 
 OBJS_SEND += send_packet_test.o 
 
@@ -40,7 +40,7 @@ LIBS_CLI_c += -lm
 LIBS_CLI_c += -lssl -lcrypto
 LIBS_CLI_c += -L ./src/pcapng -lpcapng
 
-BINALL=MITM MITM_cli
+BINALL=wireless_peeker peeker_cli
 .phony : ALL
 ALL = $(BINALL)
 all: install $(ALL)
@@ -50,11 +50,11 @@ export CFLAGS CC
 CFLAGS += -DCONFIG_ELOOP_EPOLL -DCONFIG_CRYPTO_INTERNAL -DCONFIG_CTRL_IFACE_UNIX
 #endif
 
-MITM : $(OBJS)	
-	$(CC) $(CFLAGS) $(OBJS) -o MITM  $(LIBS_c)
+wireless_peeker : $(OBJS)	
+	$(CC) $(CFLAGS) $(OBJS) -o $@ $(LIBS_c)
 .phony : MITM_cli
-MITM_cli : $(OBJS_CLI)
-	$(CC) $(CFLAGS) $(OBJS_CLI) -o MITM_cli $(LIBS_CLI_c)
+peeker_cli : $(OBJS_CLI)
+	$(CC) $(CFLAGS) $(OBJS_CLI) -o $@ $(LIBS_CLI_c)
 
 install: 
 	$(MAKE) -C src
@@ -82,6 +82,6 @@ endif
 
 clean:
 	$(MAKE) -C src clean
-	rm *.o
+	rm *.o *.d
 	rm $(ALL)
 

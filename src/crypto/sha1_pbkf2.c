@@ -43,8 +43,7 @@ static int pbkdf2_sha1_f(const char *passphrase, const u8 *ssid, size_t ssid_len
 */
 static void pbkdf2_sha1_f(char *passphrase, char *ssid,
 		        size_t ssid_len, int iterations, int count,
-						        unsigned char *digest, int usecached)
-{
+			unsigned char *digest, int usecached) {
 	unsigned char tmp[SHA1_MAC_LEN], tmp2[SHA1_MAC_LEN];
 	int i, j;
 	unsigned char count_buf[4];
@@ -100,9 +99,8 @@ int pbkdf2_sha1(const char *passphrase, const u8 *ssid, size_t ssid_len,
 }
 */
 
-int pbkdf2_sha1(char *passphrase, char *ssid, size_t ssid_len, int iterations,
-		     unsigned char *buf, size_t buflen, int usecached)
-{
+int pbkdf2_sha1(char *passphrase, char *ssid, size_t ssid_len,
+	int iterations, unsigned char *buf, size_t buflen, int usecached) {
 	int count = 0;
 	unsigned char *pos = buf;
 	size_t left = buflen, plen;

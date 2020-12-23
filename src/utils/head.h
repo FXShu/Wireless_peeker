@@ -74,17 +74,4 @@ typedef struct{
 	unsigned short check_sum;
 }udp_header;
 
-
-/* MITM information */
-typedef struct {
-	unsigned char* TARGET_MAC;
-	unsigned char* ATTACKER_MAC;
-	unsigned char* GATEWAY_MAC;
-	unsigned char* TARGET_IP;
-	unsigned char* GATEWAY_IP;
-	char dev[10];
-	char* filter;
-	int mode;
-} MITM_info;
-
 #endif

@@ -1,11 +1,11 @@
-#ifndef MITM_CTRL_H
-#define MITM_CTRL_H
+#ifndef __PEEK_CTRL_H__
+#define __PEEK_CTRL_H__
 
 #include "common.h"
 #include "command.h"
-#include "mitm_action.h"
+#include "peek_action.h"
 
-struct mitm_ctrl {
+struct peek_ctrl {
 #ifdef CONFIG_CTRL_IFACE_UDP
 	        int s;
 #ifdef CONFIG_CTRL_IFACE_UDP_IPV6
@@ -29,14 +29,14 @@ struct mitm_ctrl {
 #endif /* CONFIG_CTRL_IFACE_NAMED_PIPE */
 };
 
-struct mitm_ctrl* mitm_server_open(struct MITM *MITM, const char *ctrl_path);
+struct peek_ctrl* peek_ctrl_server_open(struct wireless_peek *this, const char *ctrl_path);
 
-struct mitm_ctrl * mitm_ctrl_open(const char *ctrl_path);
+struct peek_ctrl * peek_ctrl_open(const char *ctrl_path);
 
-struct mitm_ctrl * mitm_ctrl_open2(const char *ctrl_path, const char *cli_path, 
-		struct MITM_info *info);
+struct peek_ctrl * peek_ctrl_open2(const char *ctrl_path, const char *cli_path, 
+		struct wireless_peek_info *info);
 
-void mitm_ctrl_close(struct mitm_ctrl *ctrl);
+void peek_ctrl_close(struct peek_ctrl *ctrl);
 
 /* mitm_ctrl_request
  * send a request to caller and wait the caller reply.
@@ -46,18 +46,18 @@ void mitm_ctrl_close(struct mitm_ctrl *ctrl);
  * msg_cd - when the caller reply is illgel, this function will used
  * 	    to warn caller.  
  * */
-int mitm_ctrl_request(struct mitm_ctrl *ctrl, const char *cmd, size_t cmd_len);
+int peek_ctrl_request(struct peek_ctrl *ctrl, const char *cmd, size_t cmd_len);
 
-int mitm_ctrl_recv(struct mitm_ctrl *ctrl, char *reply, size_t *reply_len);
+int peek_ctrl_recv(struct peek_ctrl *ctrl, char *reply, size_t *reply_len);
 
 /* mitm_ctrl_pending
  * This function is called, when the user want to wait a message from parter.
  * Return - 1 for having a message from parter, 0 for no message receive
  * when the function is return by 0, should call the mitm_ctrl_recv to receive the message.  
  * */
-int mitm_ctrl_pending(struct mitm_ctrl *ctrl);
+int peek_ctrl_pending(struct peek_ctrl *ctrl);
 
-int mitm_ctrl_get_fd(struct mitm_ctrl *ctrl);
+int peek_ctrl_get_fd(struct peek_ctrl *ctrl);
 
-int mitm_get_action_num();
-#endif /* MITM_CTRL_H */
+int peek_get_action_num();
+#endif /* __PEEK_CTRL_H__ */
