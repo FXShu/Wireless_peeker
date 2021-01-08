@@ -12,8 +12,7 @@ include ../lib.rules
 
 
 LIB_OBJS= \
-	  interface_handle.o iw_implement.o \
-	  if_control.o
+	  interface_handle.o iw_implement.o
 libiw.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
 

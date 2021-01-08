@@ -2,7 +2,7 @@
 #define __IW_H
 
 #include "include.h"
-#include "nl80211.h"
+#include "peek_netlink.h"
 
 #ifndef ETH_ALEN 
 #define ETH_ALEN 6

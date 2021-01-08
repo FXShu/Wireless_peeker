@@ -1,6 +1,19 @@
-#ifndef NL_80211_h
-#define NL_80211_h
+#ifndef __PEEK_NETLINK_H__
+#define __PEEK_NETLINK_H__
 
+#if 0
+/* generic netlink flag */
+/* GET request */
+#define NLM_F_ROOT	(1u << 0) /* specify tree root */
+#define NLM_F_MATCH	(1u << 1) /* return all matching */
+#define NLM_F_ATOMIC	(1u << 2) /* atomic GET */
+#define NLM_F_DUMP	(NLM_F_ROOT|NLM_F_MATCH)
+/* NEW request */
+#define NLM_F_REPLACE	(1u << 0) /* Override existing */
+#define NLM_F_EXCL	(1u << 1) /* Do not touch, if it exists */
+#define NLM_F_CREATE	(1u << 2) /* Create, if it does not exist */
+#define NLM_F_APPEND	(1u << 3) /* Add to end of list */
+#endif
 enum nl80211_attrs {
 /*don't change the order or add anything between, this is ABI!*/
         NL80211_ATTR_UNSPEC,
@@ -569,4 +582,4 @@ enum nl80211_commands{
         __NL80211_CMD_AFTER_LAST,
         NL80211_CMD_MAX = __NL80211_CMD_AFTER_LAST - 1
 };
-#endif /* NL_80211_h */
+#endif /*  __PEEK_NETLINK_H__ */

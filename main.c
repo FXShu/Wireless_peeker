@@ -77,7 +77,8 @@ create_monitor_interface:
 		       	MITM->monitor_dev,"type", "monitor"};
 			if(!nl80211_init()) {
 				if(!interface_handler(interface_add_command)) {
-					if(if_up(MITM->monitor_dev) < 0) 
+					if(!peek_iface_setup_flags(MITM->monitor_dev,
+						IFF_UP | IFF_RUNNING)) 
 						return -1;
 					log_printf(MSG_DEBUG, 
 							"hang up monitor interface %s successful", 

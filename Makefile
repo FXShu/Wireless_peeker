@@ -16,7 +16,7 @@ LIBS_SEND=
 OBJS= 
 OBJS_CLI =
 
-OBJS += main.o parse.o wireless_peek.o
+OBJS += main.o wireless_peek.o
 OBJS_CLI += wireless_peek_cli.o
 
 OBJS_SEND += send_packet_test.o 
@@ -27,7 +27,7 @@ LIBS_c += -L ./src/interaction -lctrl
 LIBS_c += -L ./src/l2_packet -ll2_packet
 LIBS_c += -L ./src/crypto -lcry
 LIBS_c += -L ./src/interface -liw
-LIBS_c += -lnl-3 -lnl-genl-3
+LIBS_c += -lnl-3
 LIBS_c += -L ./src/utils -lutils
 LIBS_c += -lssl -lcrypto
 LIBS_c += -L ./src/pcapng -lpcapng

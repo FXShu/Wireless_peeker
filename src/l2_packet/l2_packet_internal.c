@@ -93,13 +93,13 @@ static int fill_encry_info(struct wireless_peek *this,
 				"start dictionary attack.");
 			*state = wireless_peek_state_crash_PTK;
 			/* Dictionary attack , if crash password success, reset enough. */
-			if (!dictionary_attack(this->dict_path, info, cracked)) {
+			if (!dictionary_attack(this->config.dict_path, info, cracked)) {
 				log_printf(MSG_INFO, "[CRASH] Crash WPA2 encryption success!"RED
 					" SSID = %s, Password = %s"NONE, 
 					info->SSID, info->password);
 				*state = wireless_peek_state_ready;
 				l2_packet_change_callback(this->l2_packet, peek_encrypted_data);
-				write_header(this->pcapng_path, DLT_IEEE802_11_RADIO, 0, MTU);
+				write_header(this->status.loots, DLT_IEEE802_11_RADIO, 0, MTU);
 				info->enough = 0;
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
@@ -351,7 +351,7 @@ static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, 
 			//lamont_hdump(MSG_DEBUG, "Decryption plain", plain, plain_len);
 			memcpy(packet_buffer + offset, plain, plain_len);
 			os_get_reltime(&date);
-			write_packet_to_file(this->pcapng_path, packet_buffer,
+			write_packet_to_file(this->status.loots, packet_buffer,
 				offset + plain_len, 0, date.sec);
 		}
 	} else {

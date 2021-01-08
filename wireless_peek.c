@@ -7,15 +7,15 @@ int wireless_peek_init(struct wireless_peek *this, char *iface, char *dict, char
 		return -1;
 	}
 
-	this->pcapng_path = fopen(database, "w+");
-	if (this->pcapng_path) {
+	this->status.loots = fopen(database, "w+");
+	if (this->status.loots) {
 		log_printf(MSG_ERROR, "[%s]: establish database fail, error %s\n",
 			__func__, strerror(errno));
 		return -1;
 	}
-	this->usr_dev = strdup(iface);
-	this->dict_path = strdup(dict);
-	if (!this->usr_dev || !this->dict_path) {
+	this->config.usr_dev = strdup(iface);
+	this->config.dict_path = strdup(dict);
+	if (!this->config.usr_dev || !this->config.dict_path) {
 		log_printf(MSG_ERROR, "[%s]: out of memory\n", __func__);
 		return -1;
 	}
@@ -23,7 +23,7 @@ int wireless_peek_init(struct wireless_peek *this, char *iface, char *dict, char
 	this->state = wireless_peek_state_idle;
 	dl_list_init(&this->ap_list);
 	/* TODO: create monitor interface */
-	this->l2_packet = l2_packet_init(this->monitor_dev, ETH_P_ALL,
+	this->l2_packet = l2_packet_init(this->config.monitor_dev, ETH_P_ALL,
 					 handle_four_way_shakehand, this, 1);
 	if (!this->l2_packet)
 		return -1;
@@ -32,11 +32,11 @@ int wireless_peek_init(struct wireless_peek *this, char *iface, char *dict, char
 }
 
 int wireless_peek_deinit(struct wireless_peek *this) {
-	if (this->pcapng_path)
-		fclose(this->pcapng_path);
-	if (this->dict_path)
-		free(this->dict_path);
-	if (this->usr_dev)
-		free(this->usr_dev);
+	if (this->status.loots)
+		fclose(this->status.loots);
+	if (this->config.dict_path)
+		free(this->config.dict_path);
+	if (this->config.usr_dev)
+		free(this->config.usr_dev);
 	l2_packet_deinit(this->l2_packet);
 }

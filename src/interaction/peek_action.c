@@ -128,9 +128,9 @@ void peek_set_dictionary_reply_action(void *action_data, void *usr_data, char *o
 	struct wireless_peek *this = (struct wireless_peek*) usr_data;
 	char *path = strchr(options, '?');
 	if (*path == '?') path++;
-	if (this->dict_path)
-		free(this->dict_path);
-	this->dict_path = strdup(path);
+	if (this->config.dict_path)
+		free(this->config.dict_path);
+	this->config.dict_path = strdup(path);
 }
 
 void peek_set_victim_request_action (void *action_data, void *usr_data, char *options){
