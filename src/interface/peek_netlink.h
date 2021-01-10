@@ -1,6 +1,11 @@
 #ifndef __PEEK_NETLINK_H__
 #define __PEEK_NETLINK_H__
 
+#include <linux/netlink.h>
+#include "common.h"
+
+#define MAX_PAYLOAD 1024
+
 #if 0
 /* generic netlink flag */
 /* GET request */
@@ -582,4 +587,51 @@ enum nl80211_commands{
         __NL80211_CMD_AFTER_LAST,
         NL80211_CMD_MAX = __NL80211_CMD_AFTER_LAST - 1
 };
+
+/***
+ * peek_netlink_put_u16 - pending attribute and value to payload
+ *
+ * @param payload: payload of packet
+ * @param len: remaining len of payload
+ * @param attr: referebnce peek_netlink.h define
+ * @param value: value of specific attribute.
+ *
+ * @return: no return
+ */
+void peek_netlink_put_u16(char *payload, int *len, u16 attr, u16 value);
+
+/***
+ * peek_netlink_put_str - pending attribute and string to payload
+ *
+ * @param payload: payload of packet
+ * @param len: remaining len of payload
+ * @param attr: referebnce peek_netlink.h define
+ * @param str: value of specific attribute.
+ * @param strlen: length of str
+ *
+ * @return: no return
+ */
+void peek_netlink_put_str(char *payload, int *len, u16 attr,const char *str);
+
+
+/***
+ * peek_netlink_send - send message to netlink
+ *
+ * @param sock: socket to communicate to netlink.
+ * @param hdr: packet which prepare to send to netlink.
+ * @param group: group of netlink family.
+ *
+ * @return: 0 on success, -1 when error occur.
+ */
+int peek_netlink_send(int sock, struct nlmsghdr *hdr, int group);
+
+/***
+ * peek_netlink_recv - recv message from netlink
+ *
+ * @param sock: socket to communicate to netlink.
+ * @param hdr: receive tmp.
+ *
+ * @return: bytes of received.
+ */
+int peek_netlink_recv(int sock, struct nlmsghdr **hdr);
 #endif /*  __PEEK_NETLINK_H__ */

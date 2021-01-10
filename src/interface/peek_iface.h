@@ -1,6 +1,7 @@
 #ifndef __PEEK_IFACE_H__
 #define __PEEK_IFACE_H__
 
+#include "wireless_peek.h"
 
 /* reference "include/linux/nl80211.h" */
 enum peek_nl80211_iftype {
@@ -18,28 +19,30 @@ enum peek_nl80211_iftype {
 	
 	/* keep last */
 	PEEK_NUM_NL80211_IFTYPES,
-	PEEK_NL80211_IFTYPE_MAX = NUM_NL80211_IFTYPES - 1
+	PEEK_NL80211_IFTYPE_MAX = PEEK_NUM_NL80211_IFTYPES - 1
 };
 
 /***
  * peek_iface_setup_flags - setup interface flags via ioctl
  *
+ * @param this: global variable
  * @param iface: name of specify interface
  * @param flags: interface flag, reference "include/net/if.h"
  *
  * @return: 0 on success, -1 when error occur.
  */
-int peek_iface_setup_flags(const char *iface, short flags);
+int peek_iface_setup_flags(struct wireless_peek *this, const char *iface, short flags);
 
 /***
  * peek_iface_clean_flags - clean interface flags via ioctl
  *
+ * @param this: global variable
  * @param iface: name of specify interface
  * @param flags: interface flag, reference "include/net/if.h"
  *
  * @return: 0 on success, -1 when error occur.
  */
-int peek_iface_clean_flags(const char *iface, short flags);
+int peek_iface_clean_flags(struct wireless_peek *this, const char *iface, short flags);
 
 /***
  * peek_iface_add_by_dev - add new virtual interface base on device name.
@@ -50,7 +53,8 @@ int peek_iface_clean_flags(const char *iface, short flags);
  *
  * @return: 0 on success, -1 when error occur.
  */
-int peek_iface_add_by_dev(const char *dev, const char *iface, enum peek_nl800211_iftype type);
+int peek_iface_add_by_dev(struct wireless_peek *this, const char *dev,
+	const char *iface, int type);
 
 /***
  * peek_iface_add_by_phy - add new virtual interface base on phy id.
@@ -61,5 +65,7 @@ int peek_iface_add_by_dev(const char *dev, const char *iface, enum peek_nl800211
  *
  * @return: 0 on success, -1 when error occur.
  */
-int peek_iface_add_by_phy(int phy, const char *iface, enum peek_nl80211_iftype type);
+int peek_iface_add_by_phy(struct wireless_peek *this, int phy,
+	const char *iface, enum peek_nl80211_iftype type);
+int peek_system_init(struct wireless_peek *this);
 #endif /* __PEEK_IFACE_H__ */

@@ -2,6 +2,7 @@
 #define __WIRELESS_PEEK_HH__
 
 #include "common.h"
+#include "crypto.h"
 
 #ifndef WIRELESS_PEEK_CTRL_DIR
 #define WIRELESS_PEEK_CTRL_DIR "/tmp/wireless_peek"

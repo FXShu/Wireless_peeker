@@ -1,4 +1,5 @@
-#include "include.h"
+#include <string.h>
+#include "common.h"
 #include "wireless_peek.h"
 
 int wireless_peek_init(struct wireless_peek *this, char *iface, char *dict, char *database) {

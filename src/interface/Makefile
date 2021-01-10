@@ -6,13 +6,14 @@ clean:
 intstall:
 	@echo Nothing to be made
 
-
+CFLAGS += -I ../..
+CFLAGS += -I ../utils
 
 include ../lib.rules
 
 
-LIB_OBJS= \
-	  interface_handle.o iw_implement.o
+LIB_OBJS= peek_iface.o peek_netlink.o
+
 libiw.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
 

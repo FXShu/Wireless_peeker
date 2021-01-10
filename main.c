@@ -1,5 +1,8 @@
 #include "wireless_peek.h"
 #include "common.h"
+#include "crypto.h"
+#include "l2_packet.h"
+
 #include "./src/interaction/peek_ctrl.h"
 
 int debug_level;
