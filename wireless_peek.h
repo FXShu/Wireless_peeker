@@ -1,8 +1,12 @@
 #ifndef __WIRELESS_PEEK_HH__
 #define __WIRELESS_PEEK_HH__
 
+#include <linux/genetlink.h>
+
 #include "common.h"
 #include "crypto.h"
+
+#define PEEK_DEFAULT_MONITOR_VAP_NAME "mon0"
 
 #ifndef WIRELESS_PEEK_CTRL_DIR
 #define WIRELESS_PEEK_CTRL_DIR "/tmp/wireless_peek"
@@ -40,20 +44,21 @@ enum wireless_peek_state {
  */
 struct wireless_peek_config {
 	char* usr_dev;
-	char* monitor_dev;
+	char monitor_dev[IFNAMSIZ];
 	char* dict_path;
 	char *packet_path;
 };
 
 /***
- * genl_net - generic netlink family information.
+ * nl_family - generic netlink family.
  *
- * @member sock - socket of generic netlink
- * @member 80211_family - family ID of nl80211 module
+ * @member name: name of genl_family
+ * @member id: ID of genl_family, instead "nlctrl",
+ *	other family ID should get by sending "CTRL_CMD_GETFAMILY" command.
  */
-struct genl_net {
-	int sock;
-	int family_nl80211;
+struct nl_family {
+	char name[GENL_NAMSIZ];
+	u32 id;
 };
 
 /***
@@ -64,8 +69,23 @@ struct genl_net {
  */
 struct peek_system {
 	int ioctl;
-	struct genl_net genl;
+	int genl_sock;
 }; 
+
+/***
+ * wiphy - phy information query by netlink.
+ *
+ * @member name: name of phy.
+ * @member id: ID of phy.
+ * @member iftype_sup: phy support device type.
+ * @member next: linked list, point to next phy.
+ */
+struct wiphy {
+	char name[128];
+	u32 id;
+	u16 iftype_sup;
+	struct wiphy *next;
+};
 
 /***
  * wireless_peek_comm_list - IPC list of wireless peeker
@@ -78,9 +98,28 @@ struct wireless_peek_comm_list {
 	struct peek_system system;
 };
 
+/***
+ * wireless_peek_status - dynamic database of wireless peek
+ *
+ * @member state: state machine of wireless peek.
+ * @member loots: file which record the decrypted data.
+ * @member phy: current phy which execute sniffer.
+ */
 struct wireless_peek_status {
 	enum wireless_peek_state state;
 	FILE *loots;
+	struct wiphy *phy;
+};
+
+/***
+ * wireless_peek_info - static database, only assigned when init state.
+ *
+ * @member nl80211: nl80211 family of generic netlink.
+ * @member phys: all the phy existed.
+ */
+struct wireless_peek_info {
+	struct nl_family nl80211;
+	struct wiphy *phys;
 };
 
 /***
@@ -99,16 +138,13 @@ struct wireless_peek_status {
 struct wireless_peek {
 	struct wireless_peek_config config;
 	struct wireless_peek_comm_list comm_list;
+	struct wireless_peek_info info;
 	struct wireless_peek_status status;
 	struct l2_packet_data *l2_packet;
 	struct dl_list ap_list;  //used to foreach access_point_info array.
 	struct encrypto_info encry_info;
 	enum wireless_peek_state state;
 
-};
-
-struct wireless_peek_info {
-	enum wireless_peek_state state;
 };
 
 int wireless_peek_init(struct wireless_peek *this, char *iface, char *dict, char *database);

@@ -3,6 +3,7 @@
 #include <sys/ioctl.h>
 #include <linux/netlink.h>
 #include <linux/genetlink.h>
+#include <linux/nl80211.h>
 #include "common.h"
 #include "peek_iface.h"
 #include "peek_netlink.h"
@@ -49,53 +50,48 @@ int peek_iface_clean_flags(struct wireless_peek *this, const char *iface, short 
 	return 0;
 }
 
-static int get_genetlink_family_id(struct wireless_peek *this) {
-	struct nlmsghdr *hdr;
-	struct genlmsghdr *ghdr;
-	int len;
-	struct msghdr message;
-	struct nlmsghdr *recv;
-
-	hdr = malloc(NLMSG_SPACE(MAX_PAYLOAD));
-	if (!hdr) {
-		log_printf(MSG_ERROR, "[%s]: memory alloc fail\n", __func__);
+static int parse_family_id(struct nlattr **tb, void *user_data) {
+	struct nl_family *family = (struct nl_family *)user_data;
+	if (!tb || !tb[CTRL_ATTR_FAMILY_ID] || !tb[CTRL_ATTR_FAMILY_NAME]) {
+		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
 		return -1;
 	}
-	memset(hdr, 0, NLMSG_SPACE(MAX_PAYLOAD));
-	memset(&message, 0, sizeof(struct msghdr));
-	len = MAX_PAYLOAD;
-	/* get family id */
-	hdr->nlmsg_type = GENL_ID_CTRL;
-	hdr->nlmsg_flags = htons(NLM_F_ROOT | NLM_F_ATOMIC); 
-	hdr->nlmsg_seq = 0;
-	hdr->nlmsg_pid = getpid();
-	len -= NLMSG_HDRLEN;
-	ghdr = NLMSG_DATA(hdr);
-	ghdr->cmd = CTRL_CMD_GETFAMILY;
-	ghdr->version = 1;
-	len -= GENL_HDRLEN;
-	peek_netlink_put_str((char *)ghdr + GENL_HDRLEN, &len, CTRL_ATTR_FAMILY_NAME, "nl80211");
-	
-	hdr->nlmsg_len = MAX_PAYLOAD - len;
-	if (peek_netlink_send(this->comm_list.system.genl.sock, hdr, NETLINK_GENERIC))
-		goto fail;
+	if (!strncmp(family->name, (char *)NLA_DATA(tb[CTRL_ATTR_FAMILY_NAME]), GENL_NAMSIZ))
+		family->id = *(u16 *)NLA_DATA(tb[CTRL_ATTR_FAMILY_ID]);
 
-	len = peek_netlink_recv(this->comm_list.system.genl.sock, &recv);
-	if (len < 0)
-		goto fail;
-
-	peek_parse(recv, len);
-	if (hdr)
-		free(hdr);
-	if (recv)
-		free(recv);
 	return 0;
+}
+
+static int get_genetlink_family_id(struct wireless_peek *this, struct nl_family *family) {
+	int ret = -1;
+	struct nlmsghdr *hdr;
+	struct nlattr* tb[CTRL_ATTR_MAX];
+	char *payload;
+	int len = MAX_PAYLOAD;
+
+	if (!this || !family) {
+		log_printf(MSG_ERROR, "[%s]: invalid parameter\n", __func__);
+	}
+	hdr = peek_alloc_generic_packet(GENL_ID_CTRL, NLM_FLAG_ROOT | NLM_FLAG_ATOMIC,
+		0, 0, CTRL_CMD_GETFAMILY);
+	if (!hdr) {
+		log_printf(MSG_ERROR, "[%s]: alloc netlink message header fail\n", __func__);
+		return -1;
+	}
+
+	len -= (NLMSG_HDRLEN + GENL_HDRLEN);
+	payload = GENL_DATA(NLMSG_DATA(hdr));
+	peek_netlink_put_str(&payload, &len, CTRL_ATTR_FAMILY_NAME, family->name);
+
+	hdr->nlmsg_len = MAX_PAYLOAD - len;
+	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
+		goto fail;
+
+	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, parse_family_id, family);
 fail:
 	if (hdr)
 		free(hdr);
-	if (recv)
-		free(recv);
-	return -1;
+	return ret;
 }
 
 static int peek_genl_net_init(struct wireless_peek *this) {
@@ -106,18 +102,21 @@ static int peek_genl_net_init(struct wireless_peek *this) {
 	addr.nl_pid = 0;
 	addr.nl_groups = NETLINK_GENERIC;
 
-	this->comm_list.system.genl.sock = socket(PF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
-	if (this->comm_list.system.genl.sock < 0) {
+	this->comm_list.system.genl_sock = socket(PF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+	if (this->comm_list.system.genl_sock < 0) {
 		log_printf(MSG_ERROR, "[%s]: create scoket to communicate with netlink kernel fail"
 			",error: %s\n", __func__, strerror(errno));
 		return -1;
 	}
 	/* release fd when global destory */
-	if (bind(this->comm_list.system.genl.sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_nl))) {
+	if (bind(this->comm_list.system.genl_sock, (struct sockaddr *)&addr,
+		sizeof(struct sockaddr_nl))) {
 		log_printf(MSG_ERROR, "[%s]: bind socket fail, error %s\n", __func__, strerror(errno));
 		return -1;
 	}
-	if (get_genetlink_family_id(this))
+
+	get_genetlink_family_id(this, &this->info.nl80211);
+	if (this->info.nl80211.id < 0)
 		return -1;
 	return 0;
 }
@@ -128,60 +127,213 @@ int peek_system_init(struct wireless_peek *this) {
 	return 0;
 }
 
-static char *get_interface_type_name(enum peek_nl80211_iftype type) {
+static char *get_interface_type(enum nl80211_iftype type) {
 	switch(type) {
-	case PEEK_NL80211_IFTYPE_ADHOC:
+	case NL80211_IFTYPE_ADHOC:
 		return "adhoc";
 	break;
-	case PEEK_NL80211_IFTYPE_STATION:
+	case NL80211_IFTYPE_STATION:
 		return "station";
 	break;
-	case PEEK_NL80211_IFTYPE_AP:
+	case NL80211_IFTYPE_AP:
 		return "ap";
 	break;
-	case PEEK_NL80211_IFTYPE_AP_VLAN:
+	case NL80211_IFTYPE_AP_VLAN:
 		return "vlan";
 	break;
-	case PEEK_NL80211_IFTYPE_WDS:
+	case NL80211_IFTYPE_WDS:
 		return "wds";
 	break;
-	case PEEK_NL80211_IFTYPE_MONITOR:
+	case NL80211_IFTYPE_MONITOR:
 		return "monitor";
 	break;
-	case PEEK_NL80211_IFTYPE_MESH_POINT:
+	case NL80211_IFTYPE_MESH_POINT:
 		return "mesh";
 	break;
-	case PEEK_NL80211_IFTYPE_P2P_CLIENT:
+	case NL80211_IFTYPE_P2P_CLIENT:
 		return "p2p client";
 	break;
-	case PEEK_NL80211_IFTYPE_P2P_GO:
+	case NL80211_IFTYPE_P2P_GO:
 		return "p2p go";
 	break;
-	case PEEK_NL80211_IFTYPE_P2P_DEVICE:
+	case NL80211_IFTYPE_P2P_DEVICE:
 		return "p2p device";
 	break;
-	case PEEK_NL80211_IFTYPE_UNSPECIFIED:
+	case NL80211_IFTYPE_UNSPECIFIED:
 	default:
 		return "unkonw";
 	}
 }
-int peek_iface_add_by_dev(struct wireless_peek *this, const char *dev,
-	const char *iface, int type) {
-	struct nl_msg *msg;
 
-	if (!dev || !iface) {
+static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
+	struct wireless_peek *this = (struct wireless_peek *)user_data;
+	struct wiphy *phys = this->info.phys;
+
+	if (!tb || !tb[NL80211_ATTR_WIPHY] || !tb[NL80211_ATTR_WIPHY_NAME]) {
+		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
+		return -1;
+	}
+
+	while(phys) {
+		if (!strcmp(phys->name, (char *)NLA_DATA(tb[NL80211_ATTR_WIPHY_NAME])))
+			break;
+		phys = phys->next;
+	}
+
+	if (!phys) {
+		phys = malloc(sizeof(struct wiphy));
+		memset(phys, 0 ,sizeof(struct wiphy));
+		assert(phys);
+		strcpy(phys->name, (char *)NLA_DATA(tb[NL80211_ATTR_WIPHY_NAME]));
+	}
+	phys->id = *(u32 *)NLA_DATA(tb[NL80211_ATTR_WIPHY]);
+	if (tb[NL80211_ATTR_SUPPORTED_IFTYPES])
+		phys->iftype_sup = *(u16 *)NLA_DATA(tb[NL80211_ATTR_SUPPORTED_IFTYPES]);
+	return 0;
+}
+
+int peek_get_all_wiphy(struct wireless_peek *this) {
+	struct nlmsghdr *hdr;
+	struct nlattr *tb[NL80211_ATTR_MAX];
+	int len = MAX_PAYLOAD;
+	int ret = -1;
+
+	hdr = peek_alloc_generic_packet(this->info.nl80211.id,
+		NLM_FLAG_DUMP, 0, 0, NL80211_CMD_GET_WIPHY);
+	if (!hdr) {
+		log_printf(MSG_WARNING, "[%s]: alloc netlink message header fail\n", __func__);
+		return -1;
+	}
+	len -= (NLMSG_HDRLEN + GENL_HDRLEN);
+	hdr->nlmsg_len = MAX_PAYLOAD - len;
+	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
+		goto fail;
+	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, get_all_wiphy_cb, this);
+fail:
+	if (hdr)
+		free(hdr);
+	return ret;
+}
+
+int peek_get_interfaces_by_phy(struct wireless_peek *this, netlink_cb cb) {
+	struct nlmsghdr *hdr;
+	struct nlattr *tb[NL80211_ATTR_MAX];
+	int len = MAX_PAYLOAD;
+	int ret = -1;
+
+	hdr = peek_alloc_generic_packet(this->info.nl80211.id,
+		NLM_FLAG_DUMP, 0, 0, NL80211_CMD_GET_INTERFACE);
+	if (!hdr) {
+		log_printf(MSG_WARNING, "[%s]: alloc netlink message header fail\n", __func__);
+		return -1;
+	}
+	len -= (NLMSG_HDRLEN + GENL_HDRLEN);
+	hdr->nlmsg_len = MAX_PAYLOAD - len;
+	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
+		goto fail;
+	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, cb, this);
+fail:
+	if (hdr)
+		free(hdr);
+	return ret;
+}
+
+static struct wiphy *phy_candidate_select(struct wireless_peek *this) {
+	struct wiphy *phys;
+	struct wiphy *candidate = NULL;
+	phys = this->info.phys;
+	if (!this) {
+		log_printf(MSG_WARNING, "[%s]: invalid parameter\n", __func__);
+		return NULL;
+	}
+	while(phys) {
+		if (phys->iftype_sup & BIT(NL80211_IFTYPE_MONITOR)) {
+			if(!candidate)
+				candidate = phys;
+			if (phys->iftype_sup & BIT(NL80211_IFTYPE_MESH_POINT)) {
+				candidate = phys;
+				break;
+			}
+		}
+		phys = phys->next;
+	}
+	return candidate;
+}
+
+static int check_monitor_iface_existed(struct nlattr **tb, void *user_data) {
+	struct wireless_peek *this = (struct wireless_peek *)user_data;
+
+	if (!tb || !tb[NL80211_ATTR_WIPHY] || !tb[NL80211_ATTR_IFNAME] ||
+		!tb[NL80211_ATTR_IFTYPE] || !tb[NL80211_ATTR_IFINDEX]) {
+		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
+		return -1;
+	}
+
+	if (*(u32 *)NLA_DATA(tb[NL80211_ATTR_IFTYPE]) == NL80211_IFTYPE_MONITOR) {
+		strcpy(this->config.monitor_dev, (char *)NLA_DATA(tb[NL80211_ATTR_IFNAME]));
+		return *(u32 *)NLA_DATA(tb[NL80211_ATTR_IFINDEX]);
+	}
+	return 0;
+}
+
+int peek_create_new_interface(struct wireless_peek *this, enum nl80211_iftype type, struct wiphy *phy) {
+	struct nlmsghdr *hdr;
+	struct nlattr *tb[NL80211_ATTR_MAX];
+	char *payload;
+	int len = MAX_PAYLOAD;
+	int ret = -1;
+
+	hdr = peek_alloc_generic_packet(this->info.nl80211.id,
+		NLM_FLAG_CREATE, 0, 0, NL80211_CMD_NEW_INTERFACE);
+	if (!hdr) {
+		log_printf(MSG_WARNING, "[%s]: alloc netlink message header fail\n", __func__);
+		return -1;
+	}
+	len -= (NLMSG_HDRLEN + GENL_HDRLEN);
+	payload = GENL_DATA(NLMSG_DATA(hdr));
+	peek_netlink_put_u32(&payload, &len, NL80211_ATTR_WIPHY, phy->id);
+	peek_netlink_put_u32(&payload, &len, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
+	peek_netlink_put_str(&payload, &len, NL80211_ATTR_IFNAME, this->config.monitor_dev);
+	hdr->nlmsg_len = MAX_PAYLOAD - len;
+	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
+		goto fail;
+	peek_netlink_recv(this->comm_list.system.genl_sock, tb, NULL, NULL);
+	ret = 0;
+fail:
+	if (hdr)
+		free(hdr);
+	return ret;
+}
+
+int peek_create_monitor_iface(struct wireless_peek *this) {
+	int ret;
+
+	if (!this) {
 		log_printf(MSG_ERROR, "[%s]: invalid parameter\n", __func__);
 		return -1;
 	}
-	log_printf(MSG_DEBUG, "[%s]: add new virtual interface %s, type %s\n",
-		__func__, iface, get_interface_type_name(type));
-	//msg = nlmsg_alloc();
-	if (!msg) {
-		log_printf(MSG_ERROR, "[%s]: out of memory\n", __func__);
+
+	this->status.phy = phy_candidate_select(this);
+	if (!this->status.phy) {
+		log_printf(MSG_ERROR, "[%s]: no wireless device support monitor mode available\n",
+			__func__);
 		return -1;
 	}
-	/* add netlink header */
+	ret = peek_get_interfaces_by_phy(this, check_monitor_iface_existed);
+	/* check monitor VAP existed. */
+	if (ret > 0) {
+		/* monitor device is already existed. */
+		log_printf(MSG_DEBUG, "[%s]: monitor VAP %s is existed\n",
+			__func__, this->config.monitor_dev);
+	} else if (ret == 0) {
+		/* monitor device not existed, create new interface */
+		peek_create_new_interface(this, NL80211_IFTYPE_MONITOR, this->status.phy);
+		log_printf(MSG_DEBUG, "[%s]: create new interface %s, type %s\n", __func__,
+			this->config.monitor_dev, get_interface_type(NL80211_IFTYPE_MONITOR));
+	} else {
+		/* query interface information fail. */
+		log_printf(MSG_WARNING, "[%s]: query interface information fail\n", __func__);
+		return -1;
+	}
+	return 0;
 }
-
-int peek_iface_add_by_phy(struct wireless_peek *this, int phy,
-	const char *iface, enum peek_nl80211_iftype type);

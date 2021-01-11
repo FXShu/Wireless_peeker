@@ -2,30 +2,84 @@
 #include "peek_netlink.h"
 #include "common.h"
 
-void peek_netlink_put_u16(char *payload, int *len, u16 attr, u16 value) {
-	if (!payload || *len <= 0) {
+struct nlmsghdr *peek_alloc_generic_packet(int type, int flags, int seq, int pid, int cmd) {
+	struct nlmsghdr *hdr;
+	struct genlmsghdr *ghdr;
+	hdr = malloc(NLMSG_SPACE(MAX_PAYLOAD));
+	if (!hdr) {
+		log_printf(MSG_ERROR, "[%s]: memory alloc fail\n", __func__);
+		return NULL;
+	}
+	memset(hdr, 0, NLMSG_SPACE(MAX_PAYLOAD));
+
+	hdr->nlmsg_type = type;
+	hdr->nlmsg_flags = flags;
+	hdr->nlmsg_seq = seq;
+	if (pid > 0)
+		hdr->nlmsg_pid = pid;
+	else
+		hdr->nlmsg_pid = getpid();
+
+	ghdr = NLMSG_DATA(hdr);
+	ghdr->cmd = cmd;
+	ghdr->version = 1;
+	return hdr;
+}
+
+void peek_netlink_put_u16(char **payload, int *len, u16 attr, u16 value) {
+	struct nlattr nla;
+
+	if (!*payload || *len <= 0) {
 		log_printf(MSG_WARNING, "[%s]: invalid parameter\n", __func__);
 		return;
 	}
 
-	if (*len < (sizeof(attr) + sizeof(value))) {
+	nla.nla_type = attr;
+	nla.nla_len = NLA_HDRLEN + sizeof(value);
+
+	if (*len < nla.nla_len) {
 		log_printf(MSG_WARNING, "[%s]: remaining length not enough\n", __func__);
 		return;
 	}
-	*(u16 *)payload = attr;
-	payload += sizeof(attr);
-	*len -= sizeof(attr);
-	*(u16 *)payload = value;
-	payload += sizeof(value);
+	memcpy(*payload, &nla, sizeof(struct nlattr));
+	*payload += sizeof(struct nlattr);
+	*len -= sizeof(struct nlattr);
+
+	*(u16 *)(*payload) = value;
+	*payload += sizeof(value);
 	*len -= sizeof(value);
 }
 
-void peek_netlink_put_str(char *payload, int *len, u16 attr,const char *str) {
-	int length;
-	length = strlen(str);
+void peek_netlink_put_u32(char **payload, int *len, u16 attr, u32 value) {
 	struct nlattr nla;
 
-	if (!payload || *len <= 0 || !str || length <=0) {
+	if (!*payload || *len <= 0) {
+		log_printf(MSG_WARNING, "[%s]: invalid parameter\n", __func__);
+		return;
+	}
+
+	nla.nla_type = attr;
+	nla.nla_len = NLA_HDRLEN + sizeof(value);
+
+	if (*len < nla.nla_len) {
+		log_printf(MSG_WARNING, "[%s]: remaining length not enough\n", __func__);
+		return;
+	}
+	memcpy(*payload, &nla, sizeof(struct nlattr));
+	*payload += sizeof(struct nlattr);
+	*len -= sizeof(struct nlattr);
+
+	*(u16 *)(*payload) = value;
+	*payload += sizeof(value);
+	*len -= sizeof(value);
+}
+
+void peek_netlink_put_str(char **payload, int *len, u16 attr,const char *str) {
+	int length;
+	struct nlattr nla;
+
+	length = strlen(str);
+	if (!*payload || *len <= 0 || !str || length <=0) {
 		log_printf(MSG_WARNING, "[%s]: invalid parameter\n", __func__);
 		return;
 	}
@@ -38,12 +92,12 @@ void peek_netlink_put_str(char *payload, int *len, u16 attr,const char *str) {
 		return;
 	}
 
-	memcpy(payload, &nla, sizeof(struct nlattr));
-	payload += sizeof(struct nlattr);
+	memcpy(*payload, &nla, sizeof(struct nlattr));
+	*payload += sizeof(struct nlattr);
 	*len -= sizeof(struct nlattr);
 
-	strcpy(payload, str);
-	payload += NLMSG_ALIGN(length);
+	strcpy(*payload, str);
+	*payload += NLMSG_ALIGN(length);
 	*len -= NLMSG_ALIGN(length);
 }
 
@@ -68,11 +122,10 @@ int peek_netlink_send(int sock, struct nlmsghdr *hdr, int group) {
 	msg.msg_namelen = sizeof(struct sockaddr_nl);
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
-    msg.msg_iovlen = 1;
-    for (int i = 0; i < msg.msg_iov->iov_len; i++) {
-        printf("0x%x ", *((char *)(msg.msg_iov->iov_base) + i));
-    }
-    printf("\n");
+	for (int i = 0; i < msg.msg_iov->iov_len; i++) {
+		printf("0x%x ", *((char *)(msg.msg_iov->iov_base) + i));
+	}
+	printf("\n");
 
 	if (sendmsg(sock, &msg, 0) < 0) {
 		log_printf(MSG_WARNING, "[%s]: send netlink to kernel fail, error %s\n",
@@ -81,8 +134,34 @@ int peek_netlink_send(int sock, struct nlmsghdr *hdr, int group) {
 	}
 	return 0;
 }
+/* TODO: policy check. */
+static int peek_netlink_parse(struct nlmsghdr *hdr, int len,
+	struct nlattr **tb, netlink_cb cb, void *user_data) {
+	struct genlmsghdr *ghdr;
+	struct nlattr *nla;
+	int ret = 0;
 
-int peek_netlink_recv(int sock, struct nlmsghdr **hdr) {
+	if (!cb) {
+		return 0;
+	}
+
+	while(NLMSG_OK(hdr, len)) {
+		ghdr = NLMSG_DATA(hdr);
+		len -= GENL_HDRLEN;
+		nla = GENL_DATA(ghdr);
+
+		while(NLA_OK(nla, len)) {
+			tb[nla->nla_type] = nla;
+			nla = NLA_NEXT(nla, len);
+		}
+		ret |= cb(tb, user_data);
+		hdr = NLMSG_NEXT(hdr, len);
+	}
+	return ret;
+}
+
+int peek_netlink_recv(int sock, struct nlattr **tb, netlink_cb cb, void *user_data) {
+	struct nlmsghdr *hdr;
 	int len;
 	char buffer[MAX_PAYLOAD];
 	struct iovec iov = {
@@ -91,7 +170,7 @@ int peek_netlink_recv(int sock, struct nlmsghdr **hdr) {
 	};
 	struct msghdr message = {
 		.msg_iov = &iov,
-		.msg_iovlen =1,
+		.msg_iovlen = 1,
 	};
 
 	memset(buffer, 0, MAX_PAYLOAD);
@@ -101,42 +180,7 @@ int peek_netlink_recv(int sock, struct nlmsghdr **hdr) {
 			__func__, strerror(errno));
 		return -1;
 	}
-	*hdr = malloc(len);
-	assert(*hdr);
-	memcpy((void *)*hdr, message.msg_iov->iov_base, len);
-	return len;
+	hdr = (struct nlmsghdr *)message.msg_iov->iov_base;
+	return peek_netlink_parse(hdr, len, tb, cb, user_data);
 }
 
-#define GENL_DATA(gnlh) ((void *)gnlh + GENL_HDRLEN)
-#define NLA_OK(nla, len) ((len) >= (int)sizeof(struct nlattr) && \
-							nla->nla_len >= sizeof(struct nlattr) && \
-							nla->nla_len <= len)
-
-#define NLA_NEXT(nla, len) (len -= NLA_ALIGN(nla->nla_len), \
-							(struct nlattr *)(((char *)nla) + NLA_ALIGN(nla->nla_len)))
-
-#define NLA_DATA(nla) *(u16 *)((char *)nla + NLA_HDRLEN)
-#define CTRL_ATTR_FAMILY_ID 1
-void peek_parse(struct nlmsghdr *hdr, int len) {
-	struct genlmsghdr *ghdr;
-	struct nlattr *nla;
-
-	while(NLMSG_OK(hdr, len)) {
-		printf("netlink packet: len %d, type 0x%x, flags 0x%x, seq %d, pid %d\n",
-			hdr->nlmsg_len, hdr->nlmsg_type, hdr->nlmsg_flags, hdr->nlmsg_seq, hdr->nlmsg_pid);
-
-		ghdr = NLMSG_DATA(hdr);
-		len -= GENL_HDRLEN;
-		printf("generic netlink packet: cmd 0x%x, version %d\n",
-			ghdr->cmd, ghdr->version);
-		nla = GENL_DATA(ghdr);
-
-		while(NLA_OK(nla, len)) {
-			if (nla->nla_type == CTRL_ATTR_FAMILY_ID) {
-				printf("attr %d = %d\n", nla->nla_type, NLA_DATA(nla));
-			}
-			nla = NLA_NEXT(nla, len);
-		}
-		hdr = NLMSG_NEXT(hdr, len);
-	}
-}
