@@ -195,6 +195,7 @@ static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 int peek_get_all_wiphy(struct wireless_peek *this) {
 	struct nlmsghdr *hdr;
 	struct nlattr *tb[NL80211_ATTR_MAX];
+	char *payload;
 	int len = MAX_PAYLOAD;
 	int ret = -1;
 
@@ -205,6 +206,9 @@ int peek_get_all_wiphy(struct wireless_peek *this) {
 		return -1;
 	}
 	len -= (NLMSG_HDRLEN + GENL_HDRLEN);
+	payload = GENL_DATA(NLMSG_DATA(hdr));
+	/* tb[NL80211_ATTR_WIPHY] = 0, don't filter any phy instant. */
+	peek_netlink_put_u32(&payload, &len, NL80211_ATTR_WIPHY, 0);
 	hdr->nlmsg_len = MAX_PAYLOAD - len;
 	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
 		goto fail;
