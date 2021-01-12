@@ -2,7 +2,7 @@
 #define __PEEK_IFACE_H__
 
 #include "wireless_peek.h"
-
+#include "peek_netlink.h"
 /***
  * peek_iface_setup_flags - setup interface flags via ioctl
  *
@@ -49,11 +49,13 @@ int peek_get_all_wiphy(struct wireless_peek *this);
  * @param this: global variable.
  * @param type: type of VAP.
  * @param phy: specific phy.
+ * @param cb: callback function when receive netlink response, NULL if don't care.
  *
  * @return: 0 on success, -1 when error occur.
  *
  */
-int peek_create_new_interface(struct wireless_peek *this, enum nl80211_iftype type, struct wiphy *phy);
+int peek_create_new_interface(struct wireless_peek *this, enum nl80211_iftype type,
+	struct wiphy *phy, netlink_cb cb);
 
 /***
  * peek_create_monitor_iface - create a monitor type VAP.

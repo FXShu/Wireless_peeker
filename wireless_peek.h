@@ -88,6 +88,22 @@ struct wiphy {
 };
 
 /***
+ * wireless_iface - wireless interface describe
+ *
+ * @member name: name of VAP.
+ * @member id: interface index of VAP.
+ * @member type: interface type.
+ * @member phy: belong phy.
+ */
+struct wireless_iface {
+	char name[IFNAMSIZ];
+	u32 id;
+	u32 type;
+	struct wiphy *phy;
+	struct wireless_iface *next;
+};
+
+/***
  * wireless_peek_comm_list - IPC list of wireless peeker
  *
  * @member ctrl: communicate with peeker ctrl.
@@ -96,6 +112,7 @@ struct wiphy {
 struct wireless_peek_comm_list {
 //	struct peek_ctrl ctrl;
 	struct peek_system system;
+	int sniffer_sock;
 };
 
 /***
@@ -109,17 +126,20 @@ struct wireless_peek_status {
 	enum wireless_peek_state state;
 	FILE *loots;
 	struct wiphy *phy;
+	struct wireless_iface *sniffer_iface;
 };
 
 /***
  * wireless_peek_info - static database, only assigned when init state.
  *
  * @member nl80211: nl80211 family of generic netlink.
- * @member phys: all the phy existed.
+ * @member phys: list of all existed phy.
+ * @member vaps: list of all working VAP.
  */
 struct wireless_peek_info {
 	struct nl_family nl80211;
 	struct wiphy *phys;
+	struct wireless_iface *ifaces;
 };
 
 /***
