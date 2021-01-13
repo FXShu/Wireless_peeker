@@ -56,8 +56,11 @@ static int parse_family_id(struct nlattr **tb, void *user_data) {
 		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
 		return -1;
 	}
-	if (!strncmp(family->name, (char *)NLA_DATA(tb[CTRL_ATTR_FAMILY_NAME]), GENL_NAMSIZ))
+	if (!strncmp(family->name, (char *)NLA_DATA(tb[CTRL_ATTR_FAMILY_NAME]), GENL_NAMSIZ)) {
 		family->id = *(u16 *)NLA_DATA(tb[CTRL_ATTR_FAMILY_ID]);
+		log_printf(MSG_DEBUG, "[%s]: generic netlink family %s, id %d\n",
+			__func__, family->name, family->id);
+	}
 
 	return 0;
 }
@@ -114,6 +117,8 @@ static int peek_genl_net_init(struct wireless_peek *this) {
 		log_printf(MSG_ERROR, "[%s]: bind socket fail, error %s\n", __func__, strerror(errno));
 		return -1;
 	}
+
+	strcpy(this->info.nl80211.name, "nl80211");
 
 	get_genetlink_family_id(this, &this->info.nl80211);
 	if (this->info.nl80211.id < 0)
@@ -197,7 +202,7 @@ int peek_get_all_wiphy(struct wireless_peek *this) {
 	struct nlattr *tb[NL80211_ATTR_MAX];
 	int len = MAX_PAYLOAD;
 	int ret = -1;
-
+	memset(&tb, 0, NL80211_ATTR_MAX);
 	hdr = peek_alloc_generic_packet(this->info.nl80211.id,
 		NLM_FLAG_DUMP, 0, 0, NL80211_CMD_GET_WIPHY);
 	if (!hdr) {
@@ -208,6 +213,7 @@ int peek_get_all_wiphy(struct wireless_peek *this) {
 	hdr->nlmsg_len = MAX_PAYLOAD - len;
 	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
 		goto fail;
+	printf("1\n");
 	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, get_all_wiphy_cb, this);
 fail:
 	if (hdr)
