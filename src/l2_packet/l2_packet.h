@@ -61,11 +61,6 @@ struct l2_packet_data * l2_packet_init(const char *ifname,
 		       	const char *buf, size_t len),
 	       	void *rx_callback_ctx, int l2_hdr);
 
-struct l2_packet_data * l2_packet_init_bridge(const char *br_ifname, 
-		const char *ifname, const u8 *own_addr, unsigned short protocol,
-	       	void (*rx_callback)(void *ctx, const u8 *src_addr, const char *buf, size_t len), 
-		      void *rx_callback_ctx, int l2_hdr);
-
 void l2_packet_deinit(struct l2_packet_data *l2);
 
 int l2_packet_get_ip_addr(struct l2_packet_data *l2, char *buf, size_t len);

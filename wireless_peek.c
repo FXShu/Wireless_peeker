@@ -36,7 +36,9 @@ int wireless_peek_init(struct wireless_peek *this, char *iface, char *dict, char
 
 	if (peek_create_monitor_iface(this))
 		return -1;
-	/* TODO: create monitor interface */
+
+	if (peek_sniffer_init(this))
+		return -1;
 	this->l2_packet = l2_packet_init(this->config.monitor_dev, ETH_P_ALL,
 					 handle_four_way_shakehand, this, 1);
 	if (!this->l2_packet)

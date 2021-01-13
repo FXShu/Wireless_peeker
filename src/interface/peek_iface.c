@@ -7,6 +7,7 @@
 #include "common.h"
 #include "peek_iface.h"
 #include "peek_netlink.h"
+#include "peek_iface_common.h"
 
 int peek_iface_setup_flags(struct wireless_peek *this, const char *iface, short flags) {
 	struct ifreq ifr;
@@ -173,6 +174,7 @@ static char *get_interface_type(enum nl80211_iftype type) {
 static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 	struct wireless_peek *this = (struct wireless_peek *)user_data;
 	struct wiphy *phys = this->info.phys;
+	struct wiphy *previous;
 
 	if (!tb || !tb[NL80211_ATTR_WIPHY] || !tb[NL80211_ATTR_WIPHY_NAME]) {
 		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
@@ -182,6 +184,7 @@ static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 	while(phys) {
 		if (!strcmp(phys->name, (char *)NLA_DATA(tb[NL80211_ATTR_WIPHY_NAME])))
 			break;
+		previous = phys;
 		phys = phys->next;
 	}
 
@@ -190,6 +193,7 @@ static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 		memset(phys, 0 ,sizeof(struct wiphy));
 		assert(phys);
 		strcpy(phys->name, (char *)NLA_DATA(tb[NL80211_ATTR_WIPHY_NAME]));
+		previous->next = phys;
 	}
 	phys->id = *(u32 *)NLA_DATA(tb[NL80211_ATTR_WIPHY]);
 	if (tb[NL80211_ATTR_SUPPORTED_IFTYPES])
@@ -200,6 +204,7 @@ static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 int peek_get_all_wiphy(struct wireless_peek *this) {
 	struct nlmsghdr *hdr;
 	struct nlattr *tb[NL80211_ATTR_MAX];
+	char *payload;
 	int len = MAX_PAYLOAD;
 	int ret = -1;
 	memset(&tb, 0, NL80211_ATTR_MAX);
@@ -210,6 +215,9 @@ int peek_get_all_wiphy(struct wireless_peek *this) {
 		return -1;
 	}
 	len -= (NLMSG_HDRLEN + GENL_HDRLEN);
+	payload = GENL_DATA(NLMSG_DATA(hdr));
+	/* tb[NL80211_ATTR_WIPHY] = 0, don't filter any phy instant. */
+	peek_netlink_put_u32(&payload, &len, NL80211_ATTR_WIPHY, 0);
 	hdr->nlmsg_len = MAX_PAYLOAD - len;
 	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
 		goto fail;
@@ -268,21 +276,40 @@ static struct wiphy *phy_candidate_select(struct wireless_peek *this) {
 
 static int check_monitor_iface_existed(struct nlattr **tb, void *user_data) {
 	struct wireless_peek *this = (struct wireless_peek *)user_data;
+	struct wireless_iface *iface, *previous;
 
 	if (!tb || !tb[NL80211_ATTR_WIPHY] || !tb[NL80211_ATTR_IFNAME] ||
 		!tb[NL80211_ATTR_IFTYPE] || !tb[NL80211_ATTR_IFINDEX]) {
 		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
 		return -1;
 	}
+	iface = this->info.ifaces;
+	while(iface) {
+		if (strncmp(iface->name, (char *)NLA_DATA(tb[NL80211_ATTR_IFNAME]), IFNAMSIZ))
+			break;
+		previous = iface;
+		iface = iface->next;
+	}
+	if(!iface) {
+		iface = malloc(sizeof(struct wireless_iface));
+		memset(iface, 0, sizeof(struct wireless_iface));
+		strcpy(iface->name, (char *)NLA_DATA(tb[NL80211_ATTR_IFNAME]));
+		previous->next = iface;
+	}
+	iface->id = *(u32 *)NLA_DATA(tb[NL80211_ATTR_IFINDEX]);
+	iface->type = *(u32 *)NLA_DATA(tb[NL80211_ATTR_IFTYPE]);
+	iface->phy = peek_iface_search_wiphy_by_id(this, *(u32 *)NLA_DATA(tb[NL80211_ATTR_WIPHY]));
 
 	if (*(u32 *)NLA_DATA(tb[NL80211_ATTR_IFTYPE]) == NL80211_IFTYPE_MONITOR) {
 		strcpy(this->config.monitor_dev, (char *)NLA_DATA(tb[NL80211_ATTR_IFNAME]));
+		this->status.sniffer_iface = iface;
 		return *(u32 *)NLA_DATA(tb[NL80211_ATTR_IFINDEX]);
 	}
 	return 0;
 }
 
-int peek_create_new_interface(struct wireless_peek *this, enum nl80211_iftype type, struct wiphy *phy) {
+int peek_create_new_interface(struct wireless_peek *this, enum nl80211_iftype type,
+	struct wiphy *phy, netlink_cb cb) {
 	struct nlmsghdr *hdr;
 	struct nlattr *tb[NL80211_ATTR_MAX];
 	char *payload;
@@ -303,7 +330,7 @@ int peek_create_new_interface(struct wireless_peek *this, enum nl80211_iftype ty
 	hdr->nlmsg_len = MAX_PAYLOAD - len;
 	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
 		goto fail;
-	peek_netlink_recv(this->comm_list.system.genl_sock, tb, NULL, NULL);
+	peek_netlink_recv(this->comm_list.system.genl_sock, tb, cb, this);
 	ret = 0;
 fail:
 	if (hdr)
@@ -333,7 +360,8 @@ int peek_create_monitor_iface(struct wireless_peek *this) {
 			__func__, this->config.monitor_dev);
 	} else if (ret == 0) {
 		/* monitor device not existed, create new interface */
-		peek_create_new_interface(this, NL80211_IFTYPE_MONITOR, this->status.phy);
+		peek_create_new_interface(this, NL80211_IFTYPE_MONITOR,
+			this->status.phy, check_monitor_iface_existed);
 		log_printf(MSG_DEBUG, "[%s]: create new interface %s, type %s\n", __func__,
 			this->config.monitor_dev, get_interface_type(NL80211_IFTYPE_MONITOR));
 	} else {

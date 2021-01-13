@@ -12,7 +12,7 @@ CFLAGS += -I ../utils
 include ../lib.rules
 
 
-LIB_OBJS= peek_iface.o peek_netlink.o
+LIB_OBJS= peek_iface_common.o peek_iface.o peek_netlink.o
 
 libiw.a: $(LIB_OBJS)
 	$(AR) crT $@ $?
