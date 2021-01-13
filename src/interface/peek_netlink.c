@@ -28,7 +28,7 @@ struct nlmsghdr *peek_alloc_generic_packet(int type, int flags, int seq, int pid
 
 void peek_netlink_put_u16(char **payload, int *len, u16 attr, u16 value) {
 	struct nlattr nla;
-
+	printf("0\n");
 	if (!*payload || *len <= 0) {
 		log_printf(MSG_WARNING, "[%s]: invalid parameter\n", __func__);
 		return;
@@ -46,8 +46,9 @@ void peek_netlink_put_u16(char **payload, int *len, u16 attr, u16 value) {
 	*len -= sizeof(struct nlattr);
 
 	*(u16 *)(*payload) = value;
-	*payload += sizeof(value);
-	*len -= sizeof(value);
+	*payload += NLA_ALIGN(sizeof(value));
+	*len -= NLA_ALIGN(sizeof(value));
+	printf("1\n");
 }
 
 void peek_netlink_put_u32(char **payload, int *len, u16 attr, u32 value) {
@@ -122,10 +123,7 @@ int peek_netlink_send(int sock, struct nlmsghdr *hdr, int group) {
 	msg.msg_namelen = sizeof(struct sockaddr_nl);
 	msg.msg_iov = &iov;
 	msg.msg_iovlen = 1;
-	for (int i = 0; i < msg.msg_iov->iov_len; i++) {
-		printf("0x%x ", *((char *)(msg.msg_iov->iov_base) + i));
-	}
-	printf("\n");
+	lamont_hdump(MSG_DEBUG, __func__, (char *)msg.msg_iov->iov_base, msg.msg_iov->iov_len);
 
 	if (sendmsg(sock, &msg, 0) < 0) {
 		log_printf(MSG_WARNING, "[%s]: send netlink to kernel fail, error %s\n",
@@ -180,6 +178,7 @@ int peek_netlink_recv(int sock, struct nlattr **tb, netlink_cb cb, void *user_da
 			__func__, strerror(errno));
 		return -1;
 	}
+	lamont_hdump(MSG_DEBUG, __func__, (char *)message.msg_iov->iov_base, len);
 	hdr = (struct nlmsghdr *)message.msg_iov->iov_base;
 	return peek_netlink_parse(hdr, len, tb, cb, user_data);
 }

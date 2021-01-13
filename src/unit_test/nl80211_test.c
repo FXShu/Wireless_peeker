@@ -15,4 +15,5 @@ int main(int argc, char **argv) {
 		log_printf(MSG_DEBUG, "[%s]: phy %s, id %d, type %d\n", __func__, phys->name, phys->id, phys->iftype_sup);
 		phys = phys->next;
 	}
+	close(peeker.comm_list.system.genl_sock);
 }

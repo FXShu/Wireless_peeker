@@ -22,7 +22,7 @@
 #define NLM_FLAG_ROOT	(1u << 0) /* specify tree root */
 #define NLM_FLAG_MATCH	(1u << 1) /* return all matching */
 #define NLM_FLAG_ATOMIC	(1u << 2) /* atomic GET */
-#define NLM_FLAG_DUMP	(NLM_F_ROOT|NLM_F_MATCH)
+#define NLM_FLAG_DUMP	(NLM_FLAG_ROOT|NLM_FLAG_MATCH)
 /* NEW request */
 #define NLM_FLAG_REPLACE	(1u << 0) /* Override existing */
 #define NLM_FLAG_EXCL		(1u << 1) /* Do not touch, if it exists */

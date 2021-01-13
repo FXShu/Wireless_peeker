@@ -73,10 +73,11 @@ static int get_genetlink_family_id(struct wireless_peek *this, struct nl_family 
 	char *payload;
 	int len = MAX_PAYLOAD;
 
+	memset(tb, 0, CTRL_ATTR_MAX);
 	if (!this || !family) {
 		log_printf(MSG_ERROR, "[%s]: invalid parameter\n", __func__);
 	}
-	hdr = peek_alloc_generic_packet(GENL_ID_CTRL, NLM_FLAG_ROOT | NLM_FLAG_ATOMIC,
+	hdr = peek_alloc_generic_packet(GENL_ID_CTRL, NLM_FLAG_ROOT,
 		0, 0, CTRL_CMD_GETFAMILY);
 	if (!hdr) {
 		log_printf(MSG_ERROR, "[%s]: alloc netlink message header fail\n", __func__);
@@ -92,6 +93,7 @@ static int get_genetlink_family_id(struct wireless_peek *this, struct nl_family 
 		goto fail;
 
 	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, parse_family_id, family);
+//	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, parse_family_id, family);
 fail:
 	if (hdr)
 		free(hdr);
@@ -174,7 +176,10 @@ static char *get_interface_type(enum nl80211_iftype type) {
 static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 	struct wireless_peek *this = (struct wireless_peek *)user_data;
 	struct wiphy *phys = this->info.phys;
-	struct wiphy *previous;
+	struct wiphy *previous = NULL;
+	if (!tb || tb[NL80211_CMD_UNSPEC]) {
+		log_printf(MSG_WARNING, "[%s]: error netlink request format\n", __func__);
+	}
 
 	if (!tb || !tb[NL80211_ATTR_WIPHY] || !tb[NL80211_ATTR_WIPHY_NAME]) {
 		log_printf(MSG_WARNING, "[%s]: necessary attribute not available\n", __func__);
@@ -193,7 +198,10 @@ static int get_all_wiphy_cb(struct nlattr **tb, void *user_data) {
 		memset(phys, 0 ,sizeof(struct wiphy));
 		assert(phys);
 		strcpy(phys->name, (char *)NLA_DATA(tb[NL80211_ATTR_WIPHY_NAME]));
-		previous->next = phys;
+		if (previous)
+			previous->next = phys;
+		else
+			this->info.phys = phys;
 	}
 	phys->id = *(u32 *)NLA_DATA(tb[NL80211_ATTR_WIPHY]);
 	if (tb[NL80211_ATTR_SUPPORTED_IFTYPES])
@@ -209,7 +217,7 @@ int peek_get_all_wiphy(struct wireless_peek *this) {
 	int ret = -1;
 	memset(&tb, 0, NL80211_ATTR_MAX);
 	hdr = peek_alloc_generic_packet(this->info.nl80211.id,
-		NLM_FLAG_DUMP, 0, 0, NL80211_CMD_GET_WIPHY);
+		NLM_FLAG_DUMP, 1, 0, NL80211_CMD_GET_WIPHY);
 	if (!hdr) {
 		log_printf(MSG_WARNING, "[%s]: alloc netlink message header fail\n", __func__);
 		return -1;
@@ -221,7 +229,6 @@ int peek_get_all_wiphy(struct wireless_peek *this) {
 	hdr->nlmsg_len = MAX_PAYLOAD - len;
 	if (peek_netlink_send(this->comm_list.system.genl_sock, hdr, NETLINK_GENERIC))
 		goto fail;
-	printf("1\n");
 	ret = peek_netlink_recv(this->comm_list.system.genl_sock, tb, get_all_wiphy_cb, this);
 fail:
 	if (hdr)
