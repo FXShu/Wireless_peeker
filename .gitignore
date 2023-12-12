@@ -2,8 +2,10 @@ tags
 *.o
 MITM
 MITM_cli
+decryptor
 *.b
 *.a
 *.so
 *.d
 *.swp
+cscope.*

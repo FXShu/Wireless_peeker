@@ -18,6 +18,7 @@ OBJS_CLI =
 
 OBJS += main.o packet.o parse.o MITM.o
 OBJS_CLI += MITM_cli.o
+OBJS_DECRYPTOR += decryptor.o
 
 OBJS_SEND += send_packet_test.o 
 
@@ -40,7 +41,7 @@ LIBS_CLI_c += -lm
 LIBS_CLI_c += -lssl -lcrypto
 LIBS_CLI_c += -L ./src/pcapng -lpcapng
 
-BINALL=MITM MITM_cli
+BINALL=MITM MITM_cli decryptor
 .phony : ALL
 ALL = $(BINALL)
 all: install $(ALL)
@@ -56,6 +57,8 @@ MITM : $(OBJS)
 MITM_cli : $(OBJS_CLI)
 	$(CC) $(CFLAGS) $(OBJS_CLI) -o MITM_cli $(LIBS_CLI_c)
 
+decryptor: $(OBJS_DECRYPTOR)
+	$(CC) $(CFLAGS) $(OBJS_DECRYPTOR) -o decryptor $(LIBS_c)
 install: 
 	$(MAKE) -C src
 
