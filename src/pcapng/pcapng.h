@@ -66,6 +66,9 @@ struct enhanced_packet_header {
   u32 original_packet_length;
 }__attribute__((packed));
 
+int check_file_integrity(FILE *fp);
+int pop_packet_from_file(FILE *fp, struct pcapng_packet_header *header, u8 *buffer, int *buffer_len);
+
 /***
  * write_header - write down the pcapng format header (include SHB and IDB)
  * @fp : pointer of file
@@ -85,4 +88,6 @@ int write_header(FILE *fp, int linktype, int thiszone, int snaplen);
  */
 int write_packet_to_file(FILE *fp, u8 *packet, u32 len, u32 id, struct os_reltime tv);
 
+int write_packet_to_file_with_header(FILE *fp, u8 *packet,
+		u32 len, struct pcapng_packet_header *header);
 #endif /* PCAPNG_H */
