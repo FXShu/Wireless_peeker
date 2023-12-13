@@ -321,7 +321,7 @@ static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, 
 //        lamont_hdump(MSG_DEBUG, "Decryption plain", plain, plain_len);
         memcpy(packet_buffer + offset, plain, plain_len);
         os_get_reltime(&date);
-        write_packet_to_file(MITM->pcapng_path, packet_buffer, offset + plain_len, 0, date.sec);
+        write_packet_to_file(MITM->pcapng_path, packet_buffer, offset + plain_len, 0, date);
       }
     } else {
       /* Non-Encryption Data */

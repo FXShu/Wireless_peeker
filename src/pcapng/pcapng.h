@@ -2,6 +2,7 @@
 #define PCAPNG_H
 
 #include "common.h"
+#include "os.h"
 
 /***
  *  Section Header Block :
@@ -18,6 +19,22 @@ struct pcapng_section_header {
   long section_length;  /* length of section (non-include section header block), -1 means unknown */
 }__attribute__((packed));
 
+struct pcapng_global_header {
+  u32 magic_number;
+  u16 version_major;
+  u16 version_minor;
+  u32 this_zone;
+  u32 sigfigs;
+  u32 snaplen;
+  u32 network;
+}__attribute__((packed));
+
+struct pcapng_packet_header {
+  u32 ts_sec;
+  u32 ts_usec;
+  u32 incl_len;
+  u32 orig_len;
+}__attribute__((packed));
 /***
  *  Interface Description Block
  *    |- interface_description_header
@@ -66,6 +83,6 @@ int write_header(FILE *fp, int linktype, int thiszone, int snaplen);
  * @id : interface ID, should be same with IDB
  * @tv : capture timestamp
  */
-int write_packet_to_file(FILE *fp, u8 *packet, u32 len, u32 id, os_time_t tv);
+int write_packet_to_file(FILE *fp, u8 *packet, u32 len, u32 id, struct os_reltime tv);
 
 #endif /* PCAPNG_H */

@@ -4,16 +4,16 @@
 #include "../utils/common.h"
 
 #ifndef PCAP_VERSION_MINOR
-#define PCAP_VERSION_MINOR 0
+#define PCAP_VERSION_MINOR 4
 #endif
 
 #ifndef PCAP_VERSION_MAJOR
-#define PCAP_VERSION_MAJOR 1
+#define PCAP_VERSION_MAJOR 2
 #endif
 
 
 #define DLT_IEEE802_11_RADIO 127
-#define TCPDUMP_MAGIC 0x1a2b3c4d
+#define TCPDUMP_MAGIC 0xa1b2c3d4
 #define ANSII_CHECK 0x0a0d0d0a
 #define INTERFACE_BLOCK_TYPE 0x00000001
 #define ENHANCED_BLOCK_TYPE 0x00000006
