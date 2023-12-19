@@ -19,7 +19,7 @@ struct pcapng_section_header {
   long section_length;  /* length of section (non-include section header block), -1 means unknown */
 }__attribute__((packed));
 
-struct pcapng_global_header {
+struct pcap_global_header {
   u32 magic_number;
   u16 version_major;
   u16 version_minor;
@@ -29,7 +29,7 @@ struct pcapng_global_header {
   u32 network;
 }__attribute__((packed));
 
-struct pcapng_packet_header {
+struct pcap_packet_header {
   u32 ts_sec;
   u32 ts_usec;
   u32 incl_len;
@@ -62,12 +62,15 @@ struct enhanced_packet_header {
   u32 interface_id;
   u32 timetamp_high;
   u32 timetamp_low;
-  u32 captured_packet_legth;
+  u32 captured_packet_length;
   u32 original_packet_length;
 }__attribute__((packed));
 
-int check_file_integrity(FILE *fp);
-int pop_packet_from_file(FILE *fp, struct pcapng_packet_header *header, u8 *buffer, int *buffer_len);
+int check_file_integrity_pcapng(FILE *fp, int *is_little_endian);
+int pop_packet_from_file_pcapng(FILE *fp, struct enhanced_packet_header *header, u8 *buffer, int *buffer_len);
+
+int check_file_integrity_pcap(FILE *fp, int *is_little_endian);
+int pop_packet_from_file_pcap(FILE *fp, struct pcap_packet_header *header, u8 *buffer, int *buffer_len);
 
 /***
  * write_header - write down the pcapng format header (include SHB and IDB)
@@ -76,7 +79,7 @@ int pop_packet_from_file(FILE *fp, struct pcapng_packet_header *header, u8 *buff
  * @thiszone : 
  * @snaplen : Maximum bytes of packet capture
  */
-int write_header(FILE *fp, int linktype, int thiszone, int snaplen);
+int write_header_pcap(FILE *fp, int linktype, int thiszone, int snaplen);
 
 /***
  * write_packet_to_file - write down packet data to pcapng file
@@ -86,8 +89,8 @@ int write_header(FILE *fp, int linktype, int thiszone, int snaplen);
  * @id : interface ID, should be same with IDB
  * @tv : capture timestamp
  */
-int write_packet_to_file(FILE *fp, u8 *packet, u32 len, u32 id, struct os_reltime tv);
+int write_packet_to_pcap_file(FILE *fp, u8 *packet, u32 len, u32 id, struct os_reltime tv);
 
-int write_packet_to_file_with_header(FILE *fp, u8 *packet,
-		u32 len, struct pcapng_packet_header *header);
+int write_packet_to_pcap_file_with_header(FILE *fp, u8 *packet,
+		u32 len, struct pcap_packet_header *header);
 #endif /* PCAPNG_H */

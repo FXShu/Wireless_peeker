@@ -121,7 +121,7 @@ static int fill_encry_info(struct MITM *MITM, const struct WPA2_handshake_packet
 						info->SSID, info->password);
 				*state = MITM_state_ready;
         l2_packet_change_callback(MITM->l2_packet, peek_encrypted_data);
-        write_header(MITM->pcapng_path, DLT_IEEE802_11_RADIO, 0, MTU);
+        write_header_pcap(MITM->pcapng_path, DLT_IEEE802_11_RADIO, 0, MTU);
         info->enough = 0;
 			} else {
 				log_printf(MSG_DEBUG, "Dictionary attack failed\n");
@@ -321,7 +321,7 @@ static void peek_encrypted_data(void *ctx, const u8 *src_addr, const char *buf, 
 //        lamont_hdump(MSG_DEBUG, "Decryption plain", plain, plain_len);
         memcpy(packet_buffer + offset, plain, plain_len);
         os_get_reltime(&date);
-        write_packet_to_file(MITM->pcapng_path, packet_buffer, offset + plain_len, 0, date);
+        write_packet_to_pcap_file(MITM->pcapng_path, packet_buffer, offset + plain_len, 0, date);
       }
     } else {
       /* Non-Encryption Data */

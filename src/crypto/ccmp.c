@@ -211,6 +211,7 @@ u8 *ccmp_decrypt(const u8 *tk, const struct ieee80211_hdr_3addr *hdr,
 		return NULL;
 	}
 	*decrypted_len = mlen;
+	lamont_hdump(MSG_EXCESSIVE, "plain", plain, mlen);
 	return plain;
 }
 #else

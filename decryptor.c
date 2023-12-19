@@ -84,9 +84,9 @@ static int is_target_encrypted_packet(struct ieee80211_hdr *hdr, u8 *target) {
 	return -1;
 }
 
-static int decrypt_packet_file(FILE *input, FILE *output, u8 *target, u8 *tk) {
+static int decrypt_packet_file(FILE *input, FILE *output, u8 *target, u8 *tk, int is_pcapng) {
 	assert(input != NULL && output != NULL);
-	struct pcapng_packet_header pcapng_header;
+	struct pcap_packet_header pcap_header;
 	u8 buffer[MTU];
 	int buffer_len = ARRAY_SIZE(buffer);
 	u8 radiotap[256];
@@ -100,14 +100,28 @@ static int decrypt_packet_file(FILE *input, FILE *output, u8 *target, u8 *tk) {
 	int is_encrypted = 0;
 
 	/* pop the next packet from pcap file */
-	if (pop_packet_from_file(input, &pcapng_header, buffer, &buffer_len)) {
-		log_printf(MSG_WARNING,
-				"%s: pop packet from file failed, stop decrypting", __func__);
-		return -1;
+	if (is_pcapng) {
+		struct enhanced_packet_header pcapng_header;
+		if (pop_packet_from_file_pcapng(input, &pcapng_header, buffer, &buffer_len)) {
+			log_printf(MSG_WARNING,
+					"%s: pop packet from file failed, stop decrypting", __func__);
+			return -1;
+		} else {
+			
+			log_printf(MSG_DEBUG,
+					"%s: pop packet from file\n\tpacket_size = %d",
+					__func__, buffer_len);
+		}
 	} else {
-		log_printf(MSG_DEBUG,
-				"%s: pop packet from file\n\tpacket_size = %d",
-				__func__, buffer_len);
+		if (pop_packet_from_file_pcap(input, &pcap_header, buffer, &buffer_len)) {
+			log_printf(MSG_WARNING,
+					"%s: pop packet from file failed, stop decrypting", __func__);
+			return -1;
+		} else {
+			log_printf(MSG_DEBUG,
+					"%s: pop packet from file\n\tpacket_size = %d",
+					__func__, buffer_len);
+		}
 	}
 
 	/* dismember the raw data to radiotap, 80211 header and payload */
@@ -122,13 +136,15 @@ static int decrypt_packet_file(FILE *input, FILE *output, u8 *target, u8 *tk) {
 	 * and remove the CCMP header */
 	if (!is_target_encrypted_packet((struct ieee80211_hdr *)ieee80211_header, target)) {
 		struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)ieee80211_header;
-		u16 fc = ntohs(hdr->frame_control);
+		u16 fc;
+		fc = ntohs(hdr->frame_control);
 		fc &= ~ WLAN_FC_PROTECTED;
 		hdr->frame_control = htons(fc);
 		ieee80211_header_len -= 8 /* CCMP_HEADER */;
 		is_encrypted = 1;
 	} 
 
+	log_printf(MSG_DEBUG, "packet is %s", is_encrypted? "encrypted":"non encrypted");
 	/* populate packet by radiotap, 80211 header and payload */
 	memset(packet, 0, ARRAY_SIZE(packet));
 	memcpy(packet, radiotap, radiotap_len);
@@ -143,15 +159,15 @@ static int decrypt_packet_file(FILE *input, FILE *output, u8 *target, u8 *tk) {
 		packet_len += plain_len;
 		/* Because the length of the decoded data may be different from the encrypted data,
 		 * overwrite the length in the pcapng header."*/
-		pcapng_header.incl_len = packet_len;
-		pcapng_header.orig_len = packet_len;
+		pcap_header.incl_len = packet_len;
+		pcap_header.orig_len = packet_len;
 		if (plain)
 			free(plain);
 	} else {
 		memcpy(packet + packet_len, payload, payload_len);
 		packet_len += payload_len;
 	}
-	return write_packet_to_file_with_header(output, packet, packet_len, &pcapng_header);
+	return write_packet_to_pcap_file_with_header(output, packet, packet_len, &pcap_header);
 }
 
 int main(int argc, char **argv) {
@@ -159,6 +175,7 @@ int main(int argc, char **argv) {
 	u8 tk[16] = {0};
 	int c;
 	FILE *input, *output;
+	int is_pcapng = 0, is_little_endian = 0;
 	for(;;){
 		c=getopt(argc, argv,"f:d:hw:");
 		if(c < 0)break;
@@ -181,7 +198,11 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 	}
+#if 1
 	u8 target[ETH_ALEN] = {0x00, 0x90, 0xe8, 0x10, 0x00, 0x50};
+#else
+	u8 target[ETH_ALEN] = {0x00, 0x90, 0xe8, 0x10, 0x00, 0x70};
+#endif
 	if (!input) {
 		log_printf(MSG_ERROR, "The encrypted packet file is not existed");
 		exit(EXIT_FAILURE);
@@ -191,13 +212,17 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	if (check_file_integrity(input)) {
-		exit(EXIT_FAILURE);
+	if (check_file_integrity_pcap(input, &is_little_endian)) {
+		if (check_file_integrity_pcapng(input, &is_little_endian)) {
+			exit(EXIT_FAILURE);
+		} else {
+			is_pcapng = 1;
+		}
 	}
-	write_header(output, DLT_IEEE802_11_RADIO, 0, MTU);
+	write_header_pcap(output, DLT_IEEE802_11_RADIO, 0, MTU);
 
 	while(!feof(input)) {
-		decrypt_packet_file(input, output, target, tk);
+		decrypt_packet_file(input, output, target, tk, is_pcapng);
 	}
 	exit(EXIT_SUCCESS);
 }

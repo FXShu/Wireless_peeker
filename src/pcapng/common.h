@@ -13,7 +13,12 @@
 
 
 #define DLT_IEEE802_11_RADIO 127
-#define TCPDUMP_MAGIC 0xa1b2c3d4
+#if 1
+#define PCAP_MAGIC 0xa1b2c3d4
+#else
+#define PCAP_MAGIC 0x1a2b3c4d
+#endif
+#define PCAPNG_MAGIC 0x1a2b3c4d
 #define ANSII_CHECK 0x0a0d0d0a
 #define INTERFACE_BLOCK_TYPE 0x00000001
 #define ENHANCED_BLOCK_TYPE 0x00000006
