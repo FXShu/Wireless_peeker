@@ -1,4 +1,5 @@
 #include "pcapng.h"
+#include <stdint.h>
 
 static inline void add_option (u8 *buffer, int *offset, u16 code, char *info) {
     MITM_PUT_LE16(buffer + *offset, code);
@@ -8,6 +9,22 @@ static inline void add_option (u8 *buffer, int *offset, u16 code, char *info) {
     strcpy(buffer + *offset, info);
     *offset += strlen(info) + FILL_IN(info);
 }
+
+void convert_pcapng_packet_header_to_pcap(struct enhanced_packet_header *pcapng,
+		struct pcap_packet_header *pcap) {
+	int64_t timestamp;
+	if (!pcapng || !pcap) {
+		log_printf(MSG_WARNING, "%s: invalid parameter");
+		return;
+	}
+	pcap->incl_len = pcapng->captured_packet_length;
+	pcap->orig_len = pcapng->original_packet_length;
+
+	timestamp = (((int64_t) pcapng->timestamp_high) << 32) + pcapng->timestamp_low;
+	pcap->ts_sec = timestamp / 1000000;
+	pcap->ts_usec = timestamp % 1000000;
+}
+
 int write_header_pcap(FILE *fp, int linktype, int thiszone, int snaplen) {
 	struct pcap_global_header header;
 	header.magic_number = PCAP_MAGIC;

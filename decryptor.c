@@ -111,6 +111,7 @@ static int decrypt_packet_file(FILE *input, FILE *output, u8 *target, u8 *tk, in
 			log_printf(MSG_DEBUG,
 					"%s: pop packet from file\n\tpacket_size = %d",
 					__func__, buffer_len);
+			convert_pcapng_packet_header_to_pcap(&pcapng_header, &pcap_header);
 		}
 	} else {
 		if (pop_packet_from_file_pcap(input, &pcap_header, buffer, &buffer_len)) {
@@ -198,7 +199,7 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 	}
-#if 1
+#if 0
 	u8 target[ETH_ALEN] = {0x00, 0x90, 0xe8, 0x10, 0x00, 0x50};
 #else
 	u8 target[ETH_ALEN] = {0x00, 0x90, 0xe8, 0x10, 0x00, 0x70};

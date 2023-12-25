@@ -60,12 +60,14 @@ struct enhanced_packet_header {
   u32 block_type;     /* 0x00000006 */
   u32 total_length;
   u32 interface_id;
-  u32 timetamp_high;
-  u32 timetamp_low;
+  u32 timestamp_high;
+  u32 timestamp_low;
   u32 captured_packet_length;
   u32 original_packet_length;
 }__attribute__((packed));
 
+void convert_pcapng_packet_header_to_pcap(struct enhanced_packet_header *pcapng,
+		struct pcap_packet_header *pcap);
 int check_file_integrity_pcapng(FILE *fp, int *is_little_endian);
 int pop_packet_from_file_pcapng(FILE *fp, struct enhanced_packet_header *header, u8 *buffer, int *buffer_len);
 
